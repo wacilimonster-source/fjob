@@ -1,7 +1,7 @@
 name: todayagain
 description: 今日又白干 — 工资、行情与月供在同一间办公室相遇。
 publish_to: none
-version: 0.1.1+2
+version: 0.1.2+3
 
 environment:
   sdk: ^3.6.0
@@ -18,6 +18,8 @@ dependencies:
   path_provider: ^2.1.5
   sqflite: ^2.4.2
   sqflite_common: ^2.5.4
+  package_info_plus: ^10.2.2
+  crypto: ^3.0.8
 
 dev_dependencies:
   flutter_test:

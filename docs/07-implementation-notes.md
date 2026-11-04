@@ -136,4 +136,13 @@ tools/                     契约校验与会话交付脚本
 - 新增“系统深色 → 应用浅色”回归测试；`flutter test` 29 项通过。
 - CI：`ci` 5/5 jobs 通过（run `41835804870`）；`android-release` 因未配置签名 Secrets 按设计失败。
 - Release：<https://github.com/wacilimonster-source/fjob/releases/tag/v0.1.1>（prerelease），校验和见 `docs/releases/v0.1.1.md`。
+
+### v0.1.2
+
+- 新增应用内检查更新与下载安装：GitHub Releases API、语义化版本比较、分架构 APK 优先、SHA-256/大小校验、下载进度与取消、Android FileProvider 安装器与“安装未知应用”授权引导；iOS 仅提示 TestFlight。
+- 更新检查只发送版本请求，不上传账本；`REQUEST_INSTALL_PACKAGES` 仅用于用户主动下载后的系统安装。
+- `versionName 0.1.2 / versionCode 3`，沿用同一发布密钥，已在模拟器覆盖安装。
+- `flutter test` 38 项通过（含 9 项更新测试）；新增 JSON/下载/摘要/取消边界。
+- 设备端完整“检查→下载→安装”点按流程因共享模拟器第三方悬浮层未完成，已用单元测试和发布后真实 API 集成测试替代验证。
+- Release：<https://github.com/wacilimonster-source/fjob/releases/tag/v0.1.2>（prerelease），校验和见 `docs/releases/v0.1.2.md`。
 - 校验和与安装说明见 `docs/releases/v0.1.0.md`。

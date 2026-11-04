@@ -1,6 +1,7 @@
 /// SETTINGS-01 设置。
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,8 +11,9 @@ import '../../data/market_client.dart';
 import '../../domain/ledger.dart';
 import '../ledger/ledger_controller.dart';
 import '../onboarding/onboarding_controller.dart';
+import 'update_controller.dart';
 
-const String appVersion = '0.1.0 (M0–M4 开发版)';
+const String appVersion = '0.1.2';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -143,6 +145,10 @@ class SettingsPage extends ConsumerWidget {
             },
           ),
           const Divider(height: 24),
+          const SectionLabel('更新'),
+          const SizedBox(height: 6),
+          const _UpdateSection(),
+          const Divider(height: 24),
           const SectionLabel('关于'),
           const SizedBox(height: 6),
           _AboutRow('统计时区', settings.salaryTimezone),
@@ -153,7 +159,7 @@ class SettingsPage extends ConsumerWidget {
                 : '行情网关 · ${AppConfig.gatewayBaseUrl}',
           ),
           _AboutRow('账本修订', '${settings.ledgerRevision}'),
-          _AboutRow('版本', appVersion),
+          _AboutRow('版本', ref.watch(appVersionProvider).value ?? appVersion),
           const SizedBox(height: 14),
           Text(
             '个人账本保存在应用沙盒。行情请求只包含标的 ID，'
@@ -189,4 +195,178 @@ class _AboutRow extends StatelessWidget {
           ],
         ),
       );
+}
+
+class _UpdateSection extends ConsumerWidget {
+  const _UpdateSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final state = ref.watch(updateControllerProvider);
+    final versionAsync = ref.watch(appVersionProvider);
+    final controller = ref.read(updateControllerProvider.notifier);
+    final release = state.release;
+    final currentVersion =
+        state.currentVersion ?? versionAsync.value ?? appVersion;
+    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+    final canDownload = release != null &&
+        state.phase != UpdatePhase.checking &&
+        state.phase != UpdatePhase.unsupported;
+
+    return PaperCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('当前版本',
+                        style: Theme.of(context).textTheme.bodySmall),
+                    Text(currentVersion,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              if (state.phase == UpdatePhase.available)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: palette.yellow,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: const Text('有新版本',
+                      style: TextStyle(fontSize: 11)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            state.message ??
+                (isAndroid
+                    ? '从 GitHub Releases 检查更新，下载后校验 SHA-256 再交给系统安装。'
+                    : '从 GitHub Releases 检查版本；iOS 通过 TestFlight 更新。'),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          if (release != null &&
+              state.phase != UpdatePhase.upToDate &&
+              state.phase != UpdatePhase.checking) ...[
+            const SizedBox(height: 10),
+            Text(release.title,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              '${release.tag} · ${release.sizeLabel}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            if (release.notes.trim().isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                _excerpt(release.notes),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.6),
+                maxLines: 6,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            const SizedBox(height: 4),
+            SelectableText(
+              '发布页：${release.pageUrl}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
+            ),
+          ],
+          if (state.phase == UpdatePhase.downloading) ...[
+            const SizedBox(height: 10),
+            LinearProgressIndicator(
+              value: state.progress <= 0 ? null : state.progress,
+              minHeight: 6,
+              backgroundColor: palette.line,
+              valueColor: AlwaysStoppedAnimation<Color>(palette.positive),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${(state.progress * 100).toStringAsFixed(0)}% · '
+              '${release?.sizeLabel ?? ''}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+          if (state.needsInstallPermission) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Android 8 起需要允许本应用安装未知应用，授权后返回再试。',
+              style: TextStyle(fontSize: 12, color: palette.negative),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: controller.openInstallPermissionSettings,
+                child: const Text('前往授权'),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: state.isBusy ? null : controller.check,
+                  child: Text(
+                    state.phase == UpdatePhase.checking ? '检查中…' : '检查更新',
+                  ),
+                ),
+              ),
+              if (isAndroid && canDownload) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: state.phase == UpdatePhase.downloading
+                        ? null
+                        : controller.downloadAndInstall,
+                    child: Text(
+                      state.phase == UpdatePhase.downloading
+                          ? '下载中…'
+                          : '下载并安装',
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (state.phase == UpdatePhase.downloading)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: controller.cancelDownload,
+                child: const Text('取消下载'),
+              ),
+            ),
+          if (!isAndroid)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'iOS 版本通过 TestFlight 或 App Store 更新。',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          const SizedBox(height: 6),
+          Text(
+            '更新检查只访问 GitHub Releases，不发送工资、持仓或账单数据。'
+            '安装包必须与发布页提供的 SHA-256 一致才会打开安装器。',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _excerpt(String notes) {
+    final compact = notes.replaceAll(RegExp(r'[#*`>\-]'), ' ').replaceAll(
+          RegExp(r'\s+'),
+          ' ',
+        );
+    final trimmed = compact.trim();
+    return trimmed.length <= 280 ? trimmed : '${trimmed.substring(0, 280)}…';
+  }
 }
