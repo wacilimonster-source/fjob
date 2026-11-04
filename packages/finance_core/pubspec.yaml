@@ -1,0 +1,14 @@
+name: finance_core
+description: Pure Dart ledger entities and calculation engine for FJOB (今日又白干).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  timezone: ^0.10.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

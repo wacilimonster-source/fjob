@@ -1,0 +1,527 @@
+<div id="fjob-prototype" class="viz-dotted-background">
+<style>
+#fjob-prototype{color-scheme:light dark;padding:12px 0;font-family:ui-rounded,"Microsoft YaHei",system-ui,sans-serif}
+#fjob-prototype *{box-sizing:border-box}
+#fjob-prototype [hidden]{display:none!important}
+#fjob-prototype .app{--paper:light-dark(#f7f2e9,#242823);--panel:light-dark(#fffdf7,#30362f);--ink:light-dark(#323a32,#eeeadd);--muted:light-dark(#686e61,#b9c0ae);--line:light-dark(#d5d6c8,#565f50);--soft:light-dark(#e9eddf,#3c4738);--yellow:light-dark(#f2dfac,#685c36);--rose:light-dark(#f0d2c5,#68483e);--bad:light-dark(#ad4736,#ffab95);--good:light-dark(#46644e,#b6d5a7);max-width:440px;margin:auto;background:var(--paper);color:var(--ink);border:1.5px solid var(--ink);border-radius:28px 23px 26px 22px;overflow:hidden;box-shadow:5px 6px 0 color-mix(in srgb,var(--ink) 13%,transparent);font-size:14px;line-height:1.55}
+#fjob-prototype button,#fjob-prototype input,#fjob-prototype select{font:inherit;color:inherit}
+#fjob-prototype button{cursor:pointer;touch-action:manipulation}
+#fjob-prototype button:focus-visible,#fjob-prototype input:focus-visible,#fjob-prototype select:focus-visible{outline:3px solid var(--good);outline-offset:3px}
+#fjob-prototype .topnote{padding:8px 16px;text-align:center;background:var(--soft);font-size:11px;letter-spacing:.08em}
+#fjob-prototype .header{padding:22px 22px 12px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+#fjob-prototype .eyebrow{font-size:11px;letter-spacing:.16em;color:var(--muted)}
+#fjob-prototype h1{font-size:25px;letter-spacing:-1px;font-weight:700;margin:3px 0}
+#fjob-prototype h2{font-size:18px;margin:0 0 12px;font-weight:650}
+#fjob-prototype h3{font-size:14px;margin:0;font-weight:650}
+#fjob-prototype p{margin:0}
+#fjob-prototype .stamp{border:1.5px solid var(--bad);color:var(--bad);transform:rotate(8deg);padding:5px 8px;border-radius:5px;font-size:12px;white-space:nowrap}
+#fjob-prototype .content{padding:0 18px 18px}
+#fjob-prototype .segments{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+#fjob-prototype .segments button{flex:1;border:1px solid transparent;background:transparent;border-radius:10px;padding:8px 6px;min-height:40px;color:var(--muted);font-size:12px}
+#fjob-prototype .segments button[aria-pressed=true]{background:var(--soft);border-color:var(--line);color:var(--ink)}
+#fjob-prototype .moneybox{padding:18px 16px;background:var(--panel);border:1.5px solid var(--ink);border-radius:19px 23px 17px 20px;position:relative}
+#fjob-prototype .row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#fjob-prototype .sub{color:var(--muted);font-size:12px}
+#fjob-prototype .amount{font-family:ui-monospace,"Cascadia Code",monospace;font-size:clamp(32px,8vw,46px);font-weight:650;letter-spacing:-2px;font-variant-numeric:tabular-nums;white-space:nowrap;margin:4px 0 6px;overflow-wrap:anywhere}
+#fjob-prototype .amount.negative{color:var(--bad)}
+#fjob-prototype .amount.positive{color:var(--good)}
+#fjob-prototype .tag{background:var(--yellow);padding:3px 8px;border-radius:5px;font-size:11px;white-space:nowrap}
+#fjob-prototype .quote{font-size:13px;border-left:3px solid var(--rose);padding-left:9px}
+#fjob-prototype .scene{margin-top:14px;position:relative}
+#fjob-prototype canvas{display:block;width:100%;aspect-ratio:380/238;border-radius:14px}
+#fjob-prototype .scene-caption{text-align:center;font-size:11px;color:var(--muted);margin:4px 0 13px}
+#fjob-prototype .bar{height:5px;background:var(--line);border-radius:8px;overflow:hidden;margin:8px 0 4px}
+#fjob-prototype .bar span{display:block;height:100%;background:var(--good);transition:width .5s}
+#fjob-prototype .lines{margin-top:16px;border-top:1px dashed var(--line)}
+#fjob-prototype .entry{display:grid;grid-template-columns:1fr auto;gap:3px 10px;padding:11px 0;border-bottom:1px dashed var(--line)}
+#fjob-prototype .entry strong{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums;font-weight:600}
+#fjob-prototype .entry .sub{grid-column:1/-1;font-size:11px}
+#fjob-prototype details{margin-top:13px}
+#fjob-prototype summary{cursor:pointer;font-size:12px;padding:8px 0;color:var(--muted)}
+#fjob-prototype .note{font-size:12px;color:var(--muted);padding:12px 0;line-height:1.8}
+#fjob-prototype .box{border:1px solid var(--line);border-radius:17px;padding:16px;background:var(--panel);margin-top:12px}
+#fjob-prototype .box .row{margin-bottom:8px;align-items:start}
+#fjob-prototype .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+#fjob-prototype label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+#fjob-prototype input,#fjob-prototype select{width:100%;min-width:0;border:1px solid var(--line);border-radius:9px;background:var(--paper);padding:10px;font-size:16px}
+#fjob-prototype .action{border:1px solid var(--ink);background:var(--soft);border-radius:11px;padding:11px 14px;min-height:44px;font-weight:600;width:100%;margin-top:8px}
+#fjob-prototype .tinyaction{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:6px 9px;font-size:12px;min-height:36px}
+#fjob-prototype .nav{display:grid;grid-template-columns:repeat(4,1fr);border-top:1.5px solid var(--ink);padding:9px 8px 12px;background:var(--panel)}
+#fjob-prototype .nav button{border:0;background:transparent;min-height:53px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;font-size:11px;color:var(--muted);border-radius:11px}
+#fjob-prototype .nav button[aria-selected=true]{background:var(--soft);color:var(--ink);font-weight:650}
+#fjob-prototype .nav svg{width:19px;height:19px}
+#fjob-prototype .status{font-size:12px;color:var(--good);min-height:20px;padding-top:6px}
+#fjob-prototype .status.error{color:var(--bad)}
+#fjob-prototype .widget-stage{padding:24px 12px;background:var(--soft);border-radius:18px;margin:16px 0;min-height:200px;display:flex;align-items:center;justify-content:center}
+#fjob-prototype .desktop-widget{background:var(--panel);border:1.5px solid var(--ink);border-radius:22px;padding:18px;width:100%;box-shadow:3px 4px 0 color-mix(in srgb,var(--ink) 12%,transparent)}
+#fjob-prototype .desktop-widget.small{max-width:190px}
+#fjob-prototype .desktop-widget.ios{border-radius:28px}
+#fjob-prototype .widget-number{font-family:ui-monospace,monospace;font-size:30px;letter-spacing:-1px;font-weight:650;margin:8px 0;font-variant-numeric:tabular-nums}
+#fjob-prototype .widget-split{display:flex;justify-content:space-between;gap:6px;margin:10px 0;font-size:11px}
+#fjob-prototype .widget-split span{display:flex;flex-direction:column;gap:3px}
+#fjob-prototype .check{display:flex;flex-direction:row;align-items:center;gap:8px;min-height:44px}
+#fjob-prototype .check input{width:19px;min-height:19px;accent-color:var(--good)}
+#fjob-prototype .asset-stat{font-family:ui-monospace,monospace;font-size:23px;font-variant-numeric:tabular-nums;margin:5px 0}
+#fjob-prototype .full{grid-column:1/-1}
+#fjob-prototype .bad{color:var(--bad)}
+#fjob-prototype .quiet{color:var(--muted)}
+#fjob-prototype .loan-receipts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+#fjob-prototype .loan-receipt{min-width:0;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--panel);text-align:left;position:relative}
+#fjob-prototype .loan-receipt canvas{aspect-ratio:320/165;border-radius:4px}
+#fjob-prototype .loan-receipt strong{display:block;font:600 18px ui-monospace,monospace;margin:3px 0;overflow-wrap:anywhere}
+#fjob-prototype .receipt-label{display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:12px}
+#fjob-prototype .receipt-label small{font-size:10px;color:var(--muted)}
+#fjob-prototype .loan-receipt .sub{font-size:11px}
+#fjob-prototype .loan-cover{position:relative;border-bottom:1px dashed var(--line);margin:0 0 14px;padding-bottom:10px}
+#fjob-prototype .loan-cover canvas{aspect-ratio:320/155;border-radius:8px;background:var(--soft)}
+#fjob-prototype .loan-cover .eyebrow{margin:12px 0 3px;letter-spacing:.1em;font-size:10px}
+#fjob-prototype .loan-cover .asset-stat{font-size:28px;margin:0}
+#fjob-prototype .bill-meta{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:12px;font-size:11px;color:var(--muted)}
+#fjob-prototype .bill-note{font-size:12px;color:var(--muted);margin-top:8px}
+#fjob-prototype .onboarding{padding:24px 22px 22px;min-height:650px}
+#fjob-prototype .onboarding h2{font-size:25px;letter-spacing:-.7px;margin:22px 0 10px}
+#fjob-prototype .onboarding .lead{font-size:14px;color:var(--muted);margin-bottom:18px}
+#fjob-prototype .onboard-dots{display:flex;gap:7px;margin:15px 0}
+#fjob-prototype .onboard-dots span{height:5px;flex:1;border-radius:4px;background:var(--line)}
+#fjob-prototype .onboard-dots span.passed{background:var(--good)}
+#fjob-prototype .onboard-actions{display:flex;gap:10px;margin-top:18px}
+#fjob-prototype .onboard-actions .action{flex:1;width:auto}
+#fjob-prototype .onboard-actions .secondary{flex:0 0 76px;background:transparent}
+#fjob-prototype .onboarding fieldset{border:0;padding:0;margin:0;min-width:0}
+#fjob-prototype .onboarding .check{font-size:14px;color:var(--ink);margin:12px 0}
+#fjob-prototype .onboard-summary{margin:16px 0}
+#fjob-prototype .onboard-summary .entry{font-size:13px}
+#fjob-prototype .restart{border:0;background:transparent;color:var(--muted);font-size:11px;padding:5px 8px;text-decoration:underline}
+@media(max-width:360px){#fjob-prototype .header{padding:18px 16px 10px}#fjob-prototype .content{padding:0 13px 15px}#fjob-prototype .moneybox{padding:15px 12px}#fjob-prototype .formgrid{gap:10px}#fjob-prototype .stamp{font-size:11px}}
+@media(prefers-reduced-motion:reduce){#fjob-prototype *{transition:none!important}}
+</style>
+<div class="app" aria-label="今日又白干手机原型">
+ <div class="topnote">交互原型 · 全部行情均为模拟数据</div>
+ <section class="onboarding" id="fj-onboarding" aria-label="首次入职引导">
+  <div class="row"><span class="eyebrow">欢迎加入人生有限公司</span><button type="button" class="restart" id="fj-onboard-cancel" hidden>返回工位</button></div>
+  <div class="onboard-dots" id="fj-onboard-dots" aria-label="引导进度"></div>
+  <div data-onboard-step="0"><h2>入职手续，<br>生活替你准备好了。</h2><p class="lead">花两分钟，让工资、行情和月供在同一间办公室相遇。</p><canvas id="fj-onboard-office" width="760" height="476" role="img" aria-label="手绘办公室里坐着一个疲惫的小人，旁边是小房子和汽车"></canvas><div class="box"><p>工资和排班必填，资产与固定支出按需添加。</p><p class="note">原型演示数据只用于体验。正式版默认将个人账本保存在设备本地。</p></div><button type="button" class="action" id="fj-onboard-demo">先替示例打工人焦虑一下</button></div>
+  <form data-onboard-step="1" hidden><h2>每个月，<br>生活给你多少安慰费？</h2><p class="lead">填写到手月薪，我们把它拆成每个工作瞬间。</p><div class="formgrid"><label class="full">到手月薪 / 元<input name="salary" type="number" min="0" max="10000000" step="0.01" placeholder="例如 12000" required></label></div><p class="note">可以填 0。人生偶尔缓冲，也值得被认真记录。</p></form>
+  <form data-onboard-step="2" hidden><h2>你几点上线，<br>又几点归还自己？</h2><p class="lead">工资按当月排班工时分摊，午休暂停计薪。</p><div class="formgrid"><label class="full">本月排班天数<input name="days" type="number" min="1" max="30" step="1" required value="21"></label><label>上班时间<input name="start" type="time" required value="09:00"></label><label>下班时间<input name="end" type="time" required value="18:00"></label><label>午休开始<input name="breakStart" type="time" required value="12:00"></label><label>午休结束<input name="breakEnd" type="time" required value="13:00"></label></div><p class="note">本原型演示 2026 年 11 月的同日班次，正式版提供排班日历与跨夜班。没有午休时，将开始与结束设为同一时间。</p></form>
+  <form data-onboard-step="3" hidden><h2>除了上班，<br>钱包还在哪几个战场？</h2><p class="lead">有就填，没有就继续。生活的支线任务可以晚点接。</p><label class="check"><input type="checkbox" name="hasStock">我有A股持仓</label><fieldset data-onboard-fields="hasStock" hidden disabled><div class="formgrid"><label class="full">证券代码 / 名称<input name="stockName" maxlength="24" required placeholder="例如 000001"></label><label>持仓 / 股<input name="stockQty" type="number" min="0" max="10000000" step="1" required></label><label>成本价 / 元<input name="stockCost" type="number" min="0" max="100000" step="0.001" required></label><label class="full">演示昨收参考价 / 元<input name="stockPrev" type="number" min="0.001" max="100000" step="0.001" required placeholder="原型手填，正式版自动获取"></label></div></fieldset><label class="check"><input type="checkbox" name="hasGold">我有按克持有的黄金</label><fieldset data-onboard-fields="hasGold" hidden disabled><div class="formgrid"><label>克重 / 克<input name="goldQty" type="number" min="0" max="1000000" step="0.001" required></label><label>成本 / 元每克<input name="goldCost" type="number" min="0" max="100000" step="0.01" required></label><label class="full">演示昨日参考价 / 元每克<input name="goldPrev" type="number" min="0.01" max="100000" step="0.01" required placeholder="原型手填，正式版自动获取"></label></div></fieldset><p class="note">原型使用模拟行情。正式版按证券代码与统一人民币每克参考金价获取报价，参考估值会标记数据来源和时间。</p></form>
+  <form data-onboard-step="4" hidden><h2>接下来，<br>登记生活的固定嘉宾。</h2><p class="lead">房子可以租，也可以买。每月的固定嘉宾按自然日分摊。</p><label>住房支出方式<select name="housingMode" id="fj-onboard-housing"><option value="none">暂无，生活暂时放过这一项</option><option value="mortgage">房贷，每月还一点自己的家</option><option value="rent">房租，给疲惫的自己续个住</option></select></label><fieldset data-onboard-fields="hasMortgage" hidden disabled><div class="formgrid"><label>本月房贷月供 / 元<input name="mortgage" type="number" min="0" max="10000000" step="0.01" required></label><label>其中本金 / 元（选填）<input name="mortgagePrincipal" type="number" min="0" max="10000000" step="0.01" placeholder="可晚点按账单补齐"></label></div></fieldset><fieldset data-onboard-fields="hasRent" hidden disabled><div class="formgrid"><label class="full">本月租金 / 元<input name="rent" type="number" min="0" max="10000000" step="0.01" required placeholder="例如 2500"></label></div><p class="note">租金按当月自然日分摊，本金与利息明细适用于贷款。</p></fieldset><label class="check"><input type="checkbox" name="hasCar">车贷也有固定席位</label><fieldset data-onboard-fields="hasCar" hidden disabled><div class="formgrid"><label>本月固定支出 / 元<input name="car" type="number" min="0" max="10000000" step="0.01" required></label><label>其中本金 / 元（选填）<input name="carPrincipal" type="number" min="0" max="10000000" step="0.01" placeholder="可晚点按账单补齐"></label></div></fieldset><p class="note">贷款本金未知时可留空，明细显示待补充。分摊金额用于展示生活压力，实际支付以账单为准。</p></form>
+  <div data-onboard-step="5" hidden><h2>核对一下，<br>这就是你的开局配置。</h2><p class="lead">填错也能回头改。人生至少在这里允许编辑。</p><div class="onboard-summary" id="fj-onboard-summary"></div><label class="check"><input type="checkbox" id="fj-onboard-private">小部件默认隐藏金额</label><p class="note">进入后可编辑全部信息，并在桌面分身页预览小部件。</p></div>
+  <p class="status" id="fj-onboard-status" role="status"></p>
+  <div class="onboard-actions"><button type="button" class="action secondary" id="fj-onboard-back" hidden>上一步</button><button type="button" class="action" id="fj-onboard-next">办理入职</button></div>
+ </section>
+ <header class="header"><div><div class="eyebrow">ANOTHER DAY, ANOTHER DEBT.</div><h1>今日又白干</h1><p class="sub" id="fj-date">11月04日 · 星期三</p></div><div class="stamp">在岗求生中</div></header>
+ <div class="content">
+  <section id="fj-home" role="tabpanel" aria-labelledby="fj-nav-home">
+   <div class="segments" aria-label="演示时段"><button type="button" data-scenario="work" aria-pressed="true">工作日</button><button type="button" data-scenario="off" aria-pressed="false">下班后</button><button type="button" data-scenario="weekend" aria-pressed="false">周末</button></div>
+   <div class="moneybox"><div class="row"><span>今日生存结余</span><span class="tag" id="fj-state">努力回本</span></div><div class="amount negative" id="fj-total">−¥55.26</div><p class="quote" id="fj-quote">工资正在努力追赶上午的亏损。</p></div>
+   <div class="scene"><canvas id="fj-office" width="760" height="476" role="img" aria-label="疲惫的打工人在办公室敲键盘，硬币流向两侧的住宅楼和汽车"></canvas></div>
+   <p class="scene-caption" id="fj-scene-caption">工位 0001 · 钱路过了你一下</p>
+   <div class="row"><span class="sub" id="fj-countdown">距离下班还有 03:24:00</span><button type="button" class="tinyaction" id="fj-comfort">拍拍他</button></div>
+   <div class="bar" role="progressbar" aria-label="今日排班完成比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="58"><span id="fj-progress" style="width:58%"></span></div>
+   <div class="loan-receipts" aria-label="房贷和车贷还款账单"><button type="button" class="loan-receipt" data-loan="mortgage"><div class="receipt-label"><span>住房按揭</span><small>11月账单</small></div><canvas data-debt-art="mortgage" role="img" aria-label="粗线条手绘房子，包含屋顶、窗户和门"></canvas><span class="sub">本月应还</span><strong id="fj-home-mortgage">¥4,800.00</strong><p class="sub" id="fj-home-mortgage-day">每日分摊 ¥160.00</p></button><button type="button" class="loan-receipt" data-loan="car"><div class="receipt-label"><span>车辆贷款</span><small>11月账单</small></div><canvas data-debt-art="car" role="img" aria-label="圆润的手绘小汽车，包含车窗、车灯和两个车轮"></canvas><span class="sub">本月应还</span><strong id="fj-home-car">¥1,800.00</strong><p class="sub" id="fj-home-car-day">每日分摊 ¥60.00</p></button></div>
+   <div class="lines">
+    <div class="entry"><span>打工 · 今日已挣</span><strong id="fj-wage">+¥328.57</strong><span class="sub" id="fj-wage-note">到手月薪 ¥12,000 / 本月排班 168 小时</span></div>
+    <div class="entry"><span>股票 · 今日浮动</span><strong id="fj-stock">−¥350.00</strong><span class="sub" id="fj-stock-note">示例A股 · 模拟报价</span></div>
+    <div class="entry"><span>黄金 · 今日浮动</span><strong id="fj-gold">+¥100.00</strong><span class="sub" id="fj-gold-note">20 克 · 人民币参考金价估值</span></div>
+    <div class="entry"><span>住房 + 车贷 · 已分摊</span><strong id="fj-debt">−¥133.83</strong><span class="sub" id="fj-debt-note">按自然日全天分摊 · 今日总压力 ¥220.00</span></div>
+   </div>
+   <details><summary>展开统计口径</summary><p class="note">今日生存结余 = 今日工资估算 + 持仓今日浮动盈亏 − 今日已分摊固定支出。固定支出按本月自然日及今日已过时间连续分摊。该数值含未实现盈亏和本金还款分摊。股票与黄金的持有总盈亏单独展示。原型仅演示固定持仓，未模拟交易及费用。</p></details>
+   <details><summary>工资与排班设置</summary><form id="fj-salary-form"><div class="formgrid"><label>到手月薪 / 元<input name="salary" type="number" min="0" max="10000000" step="0.01" required value="12000"></label><label>当月排班天数<input name="days" type="number" min="1" max="30" step="1" required value="21"></label><label>上班时间<input name="start" type="time" required value="09:00"></label><label>下班时间<input name="end" type="time" required value="18:00"></label><label>午休开始<input name="breakStart" type="time" required value="12:00"></label><label>午休结束<input name="breakEnd" type="time" required value="13:00"></label></div><p class="note">本月为演示排班，可手动修正天数。午休暂停计薪，原型支持同日班次。</p><button class="action" type="submit">保存排班，继续求生</button><p class="status" id="fj-salary-status" role="status"></p></form></details>
+  </section>
+  <section id="fj-assets" role="tabpanel" aria-labelledby="fj-nav-assets" hidden>
+   <h2>市场替你安排了</h2><p class="sub">A股 + 按克黄金 · 模拟报价每 5 秒变化</p>
+   <div class="segments" style="margin-top:12px" aria-label="模拟行情走势"><button type="button" data-market="down" aria-pressed="true">股跌金涨</button><button type="button" data-market="up" aria-pressed="false">一起回暖</button><button type="button" data-market="flat" aria-pressed="false">风平浪静</button></div>
+   <form id="fj-assets-form">
+    <div class="box"><div class="row"><h3>我的A股</h3><span class="tag">演示标的</span></div><p class="asset-stat" id="fj-stock-price">¥12.050</p><p class="sub" id="fj-stock-pnl">今日 −¥350.00 · 持有 −¥950.00</p><div class="formgrid"><label class="full">证券代码 / 名称<input name="stockName" maxlength="24" required value="000001 · 示例A股"></label><label>持仓 / 股<input name="stockQty" type="number" min="0" max="10000000" step="1" required value="1000"></label><label>成本价 / 元<input name="stockCost" type="number" min="0" max="100000" step="0.001" required value="13"></label><label class="full">昨收参考价 / 元<input name="stockPrev" type="number" min="0.001" max="100000" step="0.001" required value="12.4"></label></div></div>
+    <div class="box"><div class="row"><h3>我的黄金</h3><span class="tag">参考价估值</span></div><p class="asset-stat" id="fj-gold-price">¥905.00 / 克</p><p class="sub" id="fj-gold-pnl">今日 +¥100.00 · 持有 +¥1,100.00</p><div class="formgrid"><label>持有克重 / 克<input name="goldQty" type="number" min="0" max="1000000" step="0.001" required value="20"></label><label>成本 / 元每克<input name="goldCost" type="number" min="0" max="100000" step="0.01" required value="850"></label><label class="full">昨日参考价 / 元每克<input name="goldPrev" type="number" min="0.01" max="100000" step="0.01" required value="900"></label></div></div>
+    <button class="action" type="submit">更新持仓，接受安排</button><p class="status" id="fj-assets-status" role="status"></p>
+   </form><p class="note" id="fj-quote-time">模拟行情 · 演示时钟 14:36:00</p><p class="note">自动行情接入将匹配A股证券代码及统一人民币每克参考金价，并展示来源、报价时间、延迟和交易状态。</p>
+  </section>
+  <section id="fj-loans" role="tabpanel" aria-labelledby="fj-nav-loans" hidden>
+   <h2>生活的固定节目</h2><p class="sub">自然日全天分摊 · 周末照常营业</p>
+   <div class="moneybox" style="margin-top:16px"><span>每天醒来的基础负担</span><div class="amount" id="fj-daily-debt">¥220.00</div><p class="sub" id="fj-debt-rate">每分钟分摊 ¥0.1528</p></div>
+   <form id="fj-loans-form">
+    <div class="formgrid"><label class="full">住房支出方式<select name="housingMode" id="fj-housing-mode"><option value="mortgage">房贷</option><option value="rent">房租</option><option value="none">暂无住房支出</option></select></label><label class="full" id="fj-rent-field" hidden>本月租金 / 元<input name="rent" type="number" min="0" max="10000000" step="0.01" value="0" disabled required></label></div>
+    <div class="box" id="fj-mortgage-bill"><div class="bill-meta"><span>住房按揭 · 本月还款账单</span><span>2026.11</span></div><div class="loan-cover"><canvas data-debt-art="mortgage" role="img" aria-label="丧萌手绘房子，奶油色墙面、歪歪的屋顶和亮着灯的窗户"></canvas><p class="eyebrow">本月应还 / CNY</p><p class="asset-stat" id="fj-bill-mortgage">¥4,800.00</p><p class="bill-note" id="fj-mortgage-allocation">每日分摊 ¥160.00 · 今日已分摊 ¥97.33</p></div><div class="formgrid"><label>本月固定支出 / 元<input name="mortgage" type="number" min="0" max="10000000" step="0.01" required value="4800"></label><label>其中本金 / 元<input name="mortgagePrincipal" type="number" min="0" max="10000000" step="0.01" value="2800"></label></div><p class="sub" id="fj-mortgage-interest">本月利息 ¥2,000.00</p><p class="bill-note">灯亮着，月供也在走。</p></div>
+    <div class="box" id="fj-car-bill"><div class="bill-meta"><span>车辆贷款 · 本月还款账单</span><span>2026.11</span></div><div class="loan-cover"><canvas data-debt-art="car" role="img" aria-label="丧萌手绘小汽车，粗线条、扁平桃色车身与圆圆的车轮"></canvas><p class="eyebrow">本月应还 / CNY</p><p class="asset-stat" id="fj-bill-car">¥1,800.00</p><p class="bill-note" id="fj-car-allocation">每日分摊 ¥60.00 · 今日已分摊 ¥36.50</p></div><div class="formgrid"><label>本月固定支出 / 元<input name="car" type="number" min="0" max="10000000" step="0.01" required value="1800"></label><label>其中本金 / 元<input name="carPrincipal" type="number" min="0" max="10000000" step="0.01" value="1500"></label></div><p class="sub" id="fj-car-interest">本月利息 ¥300.00</p><p class="bill-note">车停在楼下，月供继续前进。</p></div>
+    <button class="action" type="submit">保存本月还款账单</button><p class="status" id="fj-loans-status" role="status"></p>
+   </form>
+   <div class="lines"><div class="entry"><span>今日已分摊本金</span><strong id="fj-principal">¥87.19</strong></div><div class="entry"><span>今日已分摊利息</span><strong id="fj-interest">¥46.64</strong></div></div><p class="note">原型录入本月住房支出、车贷及贷款本金。正式版可增加贷款计划、利率调整及提前还款。首页从零点起连续分摊，全天累计达到当天分摊额。</p>
+  </section>
+  <section id="fj-widgets" role="tabpanel" aria-labelledby="fj-nav-widgets" hidden>
+   <h2>把无力感搬到桌面</h2><p class="sub">小部件外观预览 · 与当前模拟账本同步</p>
+   <div class="segments" style="margin-top:14px" aria-label="小部件平台"><button type="button" data-platform="android" aria-pressed="true">Android</button><button type="button" data-platform="ios" aria-pressed="false">iOS</button></div>
+   <div class="segments" aria-label="小部件尺寸"><button type="button" data-size="small" aria-pressed="false">小号 · 一眼破防</button><button type="button" data-size="medium" aria-pressed="true">中号 · 收支现场</button><button type="button" data-size="large" aria-pressed="false">大号 · 带上工位</button></div>
+   <div class="widget-stage"><div class="desktop-widget" id="fj-widget"><div class="row"><h3>今日又白干</h3><span id="fj-widget-face" aria-label="疲惫表情">(－_－)</span></div><div class="widget-number" id="fj-widget-total">−¥55.26</div><p class="sub" id="fj-widget-quote">钱路过了你一下。</p><div class="widget-split" id="fj-widget-breakdown"><span>打工<strong id="fj-widget-wage">+328.57</strong></span><span>投资<strong id="fj-widget-invest">−250.00</strong></span><span>固定支出<strong id="fj-widget-debt">−133.83</strong></span></div><canvas id="fj-widget-office" width="760" height="476" role="img" aria-label="大号小部件中的办公室场景" hidden></canvas><p class="sub" style="margin-top:12px" id="fj-widget-time">模拟快照 · 14:36</p></div></div>
+   <label class="check"><input id="fj-privacy" type="checkbox">隐藏金额，只让表情替你说话</label><p class="note" id="fj-platform-note">Android 桌面布局预览。正式小部件按系统机制刷新，并显示数据时间。</p>
+  </section>
+ </div>
+ <nav class="nav" role="tablist" aria-label="主要页面"><button type="button" id="fj-nav-home" role="tab" aria-controls="fj-home" aria-selected="true" data-page="home"><i data-lucide="coffee" aria-hidden="true"></i>求生现场</button><button type="button" id="fj-nav-assets" role="tab" aria-controls="fj-assets" aria-selected="false" data-page="assets"><i data-lucide="chart-no-axes-combined" aria-hidden="true"></i>资产风浪</button><button type="button" id="fj-nav-loans" role="tab" aria-controls="fj-loans" aria-selected="false" data-page="loans"><i data-lucide="house" aria-hidden="true"></i>固定牵挂</button><button type="button" id="fj-nav-widgets" role="tab" aria-controls="fj-widgets" aria-selected="false" data-page="widgets"><i data-lucide="panels-top-left" aria-hidden="true"></i>桌面分身</button></nav>
+ <div style="text-align:center;padding:6px"><button type="button" class="restart" id="fj-onboard-restart">重新走一遍入职引导</button></div>
+</div>
+<script>
+(()=>{
+ const root=document.getElementById('fjob-prototype');
+ const app=root.querySelector('.app');
+ const $=id=>root.querySelector('#fj-'+id);
+ root.querySelector('#fj-mortgage-bill .bill-meta span').id='fj-housing-bill-title';
+ const defaults={salary:12000,days:21,start:'09:00',end:'18:00',breakStart:'12:00',breakEnd:'13:00',stockName:'000001 · 示例A股',stockQty:1000,stockCost:13,stockPrev:12.4,goldQty:20,goldCost:850,goldPrev:900,housingMode:'mortgage',rent:0,mortgage:4800,mortgagePrincipal:2800,car:1800,carPrincipal:1500};
+ let config={...defaults};
+ let ui={page:'home',scenario:'work',market:'down',platform:'android',size:'medium',privacy:false};
+ let onboarding={complete:false,step:0,draft:{...defaults,salary:'',stockQty:0,goldQty:0,housingMode:'none',rent:0,mortgage:0,car:0,mortgagePrincipal:null,carPrincipal:null},hasStock:false,hasGold:false,hasMortgage:false,hasRent:false,hasCar:false};
+ let origin=performance.now(),frame=0,comfortUntil=0;
+ const design={animated:true,tone:'温柔地丧'};
+ const motion=matchMedia('(prefers-reduced-motion: reduce)');
+ const number=(n,d=2)=>Number(n).toLocaleString('zh-CN',{minimumFractionDigits:d,maximumFractionDigits:d});
+ const money=(n,signed=false)=>`${n<0?'−':signed?'+':''}¥${number(Math.abs(n))}`;
+ const housingAmount=c=>c.housingMode==='rent'?c.rent:c.housingMode==='mortgage'?c.mortgage:0;
+ const timeValue=s=>{const [h,m]=s.split(':').map(Number);return h*3600+m*60;};
+ const clock=t=>[Math.floor(t/3600),Math.floor(t%3600/60),Math.floor(t%60)].map(n=>String(n).padStart(2,'0')).join(':');
+ function persist(){if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{page:ui.page,scenario:ui.scenario,market:ui.market,platform:ui.platform,widgetSize:ui.size,onboardingComplete:onboarding.complete,onboardingStep:onboarding.step},privateContent:{config,ui,onboarding}}).catch(()=>{});}
+ function restore(saved){
+  const data=saved?.privateContent;
+  if(!data)return;
+  const restored={...defaults};
+  for(const key of Object.keys(defaults)){
+   const value=data.config?.[key];
+   if(typeof defaults[key]==='number'&&Number.isFinite(value)&&value>=0)restored[key]=value;
+   if(typeof defaults[key]==='string'&&typeof value==='string')restored[key]=value;
+   if(key.endsWith('Principal')&&value===null)restored[key]=null;
+  }
+  if(restored.days<1||restored.days>30||!validSchedule(restored)||restored.mortgagePrincipal>restored.mortgage||restored.carPrincipal>restored.car||restored.stockPrev<=0||restored.goldPrev<=0)return;
+  config=restored;
+  const allowed={page:['home','assets','loans','widgets'],scenario:['work','off','weekend'],market:['down','up','flat'],platform:['android','ios'],size:['small','medium','large']};
+  for(const [key,values]of Object.entries(allowed))if(values.includes(data.ui?.[key]))ui[key]=data.ui[key];
+  ui.privacy=data.ui?.privacy===true;
+  if(data.onboarding&&Number.isInteger(data.onboarding.step)&&data.onboarding.step>=0&&data.onboarding.step<=5){onboarding={...onboarding,...data.onboarding,draft:{...defaults,...data.onboarding.draft}};}
+ }
+ function validSchedule(c){
+  const vals=[c.start,c.end,c.breakStart,c.breakEnd];
+  if(vals.some(s=>!/^\d{2}:\d{2}$/.test(s)||Number(s.slice(0,2))>23||Number(s.slice(3))>59))return false;
+  const [s,e,b,be]=vals.map(timeValue);return s<=b&&b<=be&&be<=e&&e-s-(be-b)>0;
+ }
+ function fillForms(){root.querySelectorAll('.content form input,.content form select').forEach(input=>{if(input.name in config)input.value=config[input.name]??'';});$('privacy').checked=ui.privacy;updateLoanFields();}
+ function updateLoanFields(){
+  const mode=$('housing-mode').value;
+  const rentField=$('rent-field');rentField.hidden=mode!=='rent';rentField.querySelector('input').disabled=mode!=='rent';
+  const mortgageGrid=$('mortgage-bill').querySelector('.formgrid');mortgageGrid.hidden=mode!=='mortgage';mortgageGrid.querySelectorAll('input').forEach(input=>input.disabled=mode!=='mortgage');
+  $('mortgage-interest').hidden=mode!=='mortgage';
+ }
+ $('housing-mode').addEventListener('change',updateLoanFields);
+ function setUI(){
+  $('onboarding').hidden=onboarding.complete;
+  for(const selector of ['.header','.content','.nav'])app.querySelector(selector).hidden=!onboarding.complete;
+  $('onboard-restart').parentElement.hidden=!onboarding.complete;
+  root.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.page===ui.page)));
+  ['home','assets','loans','widgets'].forEach(page=>$(page).hidden=page!==ui.page);
+  for(const key of ['scenario','market','platform','size'])root.querySelectorAll(`[data-${key}]`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[key]===ui[key])));
+  $('widget').className='desktop-widget '+ui.size+' '+ui.platform;
+  $('widget-breakdown').hidden=ui.size==='small';$('widget-office').hidden=ui.size!=='large';
+  $('platform-note').textContent=ui.platform==='android'?'Android 桌面布局预览。正式小部件按系统机制刷新，并显示数据时间。':'iOS 小部件布局预览。正式版使用系统时间线刷新，并显示数据时间。';
+  renderOnboarding();
+ }
+ function syncOnboardingFields(){
+  $('onboarding').querySelectorAll('input[name],select[name]').forEach(input=>{
+   if(input.type==='checkbox')input.checked=onboarding[input.name]===true;
+   else input.value=onboarding.draft[input.name]??'';
+  });
+  $('onboard-private').checked=ui.privacy;
+  for(const fieldset of $('onboarding').querySelectorAll('fieldset')){const enabled=onboarding[fieldset.dataset.onboardFields]===true;fieldset.hidden=!enabled;fieldset.disabled=!enabled;}
+ }
+ function renderOnboarding(){
+  $('onboarding').querySelectorAll('[data-onboard-step]').forEach(step=>step.hidden=Number(step.dataset.onboardStep)!==onboarding.step);
+  $('onboard-dots').replaceChildren(...Array.from({length:6},(_,i)=>{const dot=document.createElement('span');dot.className=i<=onboarding.step?'passed':'';return dot;}));
+  $('onboard-dots').setAttribute('aria-label',`入职引导，第 ${onboarding.step+1} 步，共 6 步`);
+  $('onboard-back').hidden=onboarding.step===0;
+  $('onboard-next').textContent=onboarding.step===0?'办理入职':onboarding.step===5?'配置已阅，开始求生':'下一步，生活还在等';
+  $('onboard-cancel').hidden=!onboarding.wasComplete;
+  $('onboard-demo').hidden=onboarding.wasComplete===true;
+  if(onboarding.step===5){
+   const d=onboarding.draft;
+   const rows=[['到手月薪',money(d.salary)],['本月排班',`${d.days} 天 · ${d.start}—${d.end}`],['午休',`${d.breakStart}—${d.breakEnd}`],['资产支线',`${onboarding.hasStock?d.stockQty+' 股A股':'暂未添加A股'} / ${onboarding.hasGold?d.goldQty+' 克黄金':'暂未添加黄金'}`],['住房方式',d.housingMode==='rent'?'房租':d.housingMode==='mortgage'?'房贷':'暂无住房支出'],['本月固定支出',money(housingAmount(d)+(onboarding.hasCar?d.car:0))]];
+   $('onboard-summary').replaceChildren(...rows.map(([label,value])=>{const row=document.createElement('div');row.className='entry';const l=document.createElement('span'),v=document.createElement('strong');l.textContent=label;v.textContent=value;row.append(l,v);return row;}));
+  }
+ }
+ function collectOnboarding(){
+  const step=$('onboarding').querySelector(`[data-onboard-step="${onboarding.step}"]`);
+  if(step.tagName!=='FORM')return true;
+  if(!step.reportValidity())return false;
+  for(const [key,value]of new FormData(step)){
+   if(key.startsWith('has'))continue;
+   onboarding.draft[key]=typeof defaults[key]==='number'?(key.endsWith('Principal')&&value.trim()===''?null:Number(value)):value.trim();
+  }
+  const d=onboarding.draft;
+  let error='';
+  if(onboarding.step===2&&!validSchedule(d))error='午休请安排在上下班之间，也给工资留一点出场时间。';
+  if(onboarding.step===4&&((onboarding.hasMortgage&&d.mortgagePrincipal>d.mortgage)||(onboarding.hasCar&&d.carPrincipal>d.car)))error='本金比月供还大了，生活暂时还没学会这个算法。';
+  $('onboard-status').textContent=error;$('onboard-status').className='status'+(error?' error':'');
+  return !error;
+ }
+ $('onboarding').querySelectorAll('form').forEach(form=>form.addEventListener('submit',event=>event.preventDefault()));
+ $('onboarding').querySelectorAll('input[name]:not([type=checkbox])').forEach(input=>{
+  input.addEventListener('input',()=>{
+   const value=input.value;
+   onboarding.draft[input.name]=typeof defaults[input.name]==='number'?(value===''?(input.name.endsWith('Principal')?null:''):Number(value)):value;
+  });
+  input.addEventListener('change',persist);
+ });
+ $('onboarding').querySelectorAll('input[type=checkbox][name]').forEach(input=>input.addEventListener('change',()=>{
+  onboarding[input.name]=input.checked;
+  const fields=$('onboarding').querySelector(`[data-onboard-fields="${input.name}"]`);fields.hidden=!input.checked;fields.disabled=!input.checked;
+  persist();
+ }));
+ $('onboard-housing').addEventListener('change',event=>{
+  onboarding.draft.housingMode=event.target.value;onboarding.hasMortgage=event.target.value==='mortgage';onboarding.hasRent=event.target.value==='rent';
+  for(const key of ['hasMortgage','hasRent']){const fields=$('onboarding').querySelector(`[data-onboard-fields="${key}"]`);fields.hidden=!onboarding[key];fields.disabled=!onboarding[key];}
+  persist();
+ });
+ $('onboard-next').addEventListener('click',()=>{
+  if(!collectOnboarding())return;
+  if(onboarding.step<5){onboarding.step++;renderOnboarding();persist();return;}
+  const d={...onboarding.draft};
+  if(!onboarding.hasStock)d.stockQty=0;
+  if(!onboarding.hasGold)d.goldQty=0;
+  if(!onboarding.hasMortgage){d.mortgage=0;d.mortgagePrincipal=0;}
+  if(!onboarding.hasRent)d.rent=0;
+  if(!onboarding.hasCar){d.car=0;d.carPrincipal=0;}
+  config=d;ui.privacy=$('onboard-private').checked;onboarding.complete=true;ui.page='home';origin=performance.now();fillForms();setUI();render();persist();
+ });
+ $('onboard-back').addEventListener('click',()=>{if(onboarding.step>0)onboarding.step--;$('onboard-status').textContent='';renderOnboarding();persist();});
+ $('onboard-demo').addEventListener('click',()=>{config={...defaults};onboarding.complete=true;ui.page='home';origin=performance.now();fillForms();setUI();render();persist();});
+ $('onboard-restart').addEventListener('click',()=>{
+  onboarding={complete:false,wasComplete:true,step:0,draft:{...config},hasStock:config.stockQty>0,hasGold:config.goldQty>0,hasMortgage:config.housingMode==='mortgage',hasRent:config.housingMode==='rent',hasCar:config.car>0};
+  syncOnboardingFields();setUI();persist();
+ });
+ $('onboard-cancel').addEventListener('click',()=>{onboarding.complete=true;setUI();persist();});
+ function snapshot(){
+  const elapsed=(performance.now()-origin)/1000;
+  const base=ui.scenario==='off'?18.5*3600:14.6*3600;
+  const time=Math.min(base+elapsed,86399);
+  const start=timeValue(config.start),end=timeValue(config.end),bs=timeValue(config.breakStart),be=timeValue(config.breakEnd);
+  const duration=end-start-(be-bs);
+  const worked=ui.scenario==='weekend'?0:Math.max(0,Math.min(time,end)-start-Math.max(0,Math.min(time,be)-bs));
+  const wage=config.salary/(config.days*duration)*worked;
+  const bucket=Math.floor(elapsed/5);
+  const wiggle=ui.scenario==='work'?Math.sin(bucket*1.7)*.001:0;
+  const stockRate=ui.market==='down'?-.35/12.4:ui.market==='up'?.022:0;
+  const goldRate=ui.market==='down'?5/900:ui.market==='up'?.009:0;
+  const stockPrice=Math.round(config.stockPrev*(1+stockRate+wiggle)*1000)/1000;
+  const goldPrice=Math.round(config.goldPrev*(1+goldRate+wiggle/3)*100)/100;
+  const stock=ui.scenario==='weekend'?0:(stockPrice-config.stockPrev)*config.stockQty;
+  const gold=ui.scenario==='weekend'?0:(goldPrice-config.goldPrev)*config.goldQty;
+  const mortgageActive=config.housingMode==='mortgage'&&config.mortgage>0;
+  const debt=(housingAmount(config)+config.car)/30*time/86400;
+  const rentAllocated=(config.housingMode==='rent'?config.rent:0)/30*time/86400;
+  const breakdownKnown=!(mortgageActive&&config.mortgagePrincipal===null)&&!(config.car>0&&config.carPrincipal===null);
+  const principal=breakdownKnown?((mortgageActive?config.mortgagePrincipal:0)+(config.car>0?config.carPrincipal:0))/30*time/86400:null;
+  return {time,wage,stock,gold,debt,principal,interest:breakdownKnown?debt-rentAllocated-principal:null,total:wage+stock+gold-debt,stockPrice,goldPrice,worked,duration,end,elapsed,stockRate:(stockPrice/config.stockPrev-1)*100,goldRate:(goldPrice/config.goldPrev-1)*100};
+ }
+ let current;
+ function render(){
+  const s=current=snapshot();
+  $('date').textContent=`2026年11月${ui.scenario==='weekend'?'07日 · 星期六':'04日 · 星期三'} · ${clock(s.time)}`;
+  const resting=ui.scenario==='weekend';
+  const onShift=!resting&&s.time>=timeValue(config.start)&&s.time<s.end;
+  const onBreak=onShift&&s.time>=timeValue(config.breakStart)&&s.time<timeValue(config.breakEnd);
+  root.querySelector('.stamp').textContent=resting?'休息也计费':onShift?'在岗求生中':'月供接班中';
+  $('total').textContent=money(s.total);$('total').className='amount '+(s.total<0?'negative':'positive');
+  $('state').textContent=s.total<0?'努力回本':'暂时领先';
+  let quote=resting?'今天不上班，生活照常扣费。':!onShift?'人下班了，生活还在全勤。':s.total<0?'工资正在努力追赶上午的亏损。':'今天暂时领先，先小声开心一下。';
+  if(design.tone==='再狠一点')quote=resting?'你休息了，账单觉得你想多了。':s.total<0?'辛苦一天，成功把亏损补小了一点。':'难得赢一局，房贷已经在候场。';
+  if(performance.now()<comfortUntil)quote='辛苦了。先喘口气，硬币会自己走。';
+  $('quote').textContent=quote;
+  $('wage').textContent=money(s.wage,true);
+  $('wage-note').textContent=`到手月薪 ${money(config.salary)} / 本月排班 ${number(config.days*s.duration/3600,1)} 小时${onBreak?' · 午休暂停':''}`;
+  $('stock').textContent=money(s.stock,true);$('gold').textContent=money(s.gold,true);$('debt').textContent=money(-s.debt);
+  $('stock-note').textContent=`${config.stockName} · ${resting?'休市 · 今日变化归零':`较昨收 ${s.stockRate>=0?'+':''}${number(s.stockRate)}%`} · 模拟快照`;
+  $('gold-note').textContent=`${number(config.goldQty,3)} 克 · ${resting?'周末演示冻结参考价':`参考价 ${money(s.goldPrice)}/克 · ${s.goldRate>=0?'+':''}${number(s.goldRate)}%`}`;
+  const daily=(housingAmount(config)+config.car)/30;
+  $('debt-note').textContent=`按自然日全天分摊 · 今日总压力 ${money(daily)}`;
+  $('countdown').textContent=resting?'工资休息中 · 月供照常营业':s.time>=s.end?'今日排班已结束 · 月供继续营业':s.time<timeValue(config.start)?`距离上班还有 ${clock(timeValue(config.start)-s.time)}`:`距离下班还有 ${clock(s.end-s.time)}`;
+  const progress=100*s.worked/s.duration;
+  $('progress').style.width=progress+'%';root.querySelector('.bar').setAttribute('aria-valuenow',Math.round(progress));
+  $('scene-caption').textContent=onBreak?'午休暂停计薪 · 固定支出继续分摊':resting?'工位空了 · 房子和车的账单还在':'工位 0001 · 赚来的钱，流向房子和车';
+  $('stock-price').textContent=money(s.stockPrice,false);
+  $('stock-pnl').textContent=`今日 ${money(s.stock,true)} · 持有 ${money((s.stockPrice-config.stockCost)*config.stockQty,true)}`;
+  $('gold-price').textContent=money(s.goldPrice)+' / 克';
+  $('gold-pnl').textContent=`今日 ${money(s.gold,true)} · 持有 ${money((s.goldPrice-config.goldCost)*config.goldQty,true)}`;
+  $('quote-time').textContent=`模拟行情 · 报价快照 ${clock(baseQuoteTime(s))}${ui.scenario!=='work'?' · 演示冻结报价':''}`;
+  $('daily-debt').textContent=money(daily);$('debt-rate').textContent=`每分钟分摊 ¥${number(daily/1440,4)}`;
+  $('principal').textContent=s.principal===null?'待补充本金':money(s.principal);$('interest').textContent=s.interest===null?'待补充本金':money(s.interest);
+  $('mortgage-interest').textContent=config.mortgagePrincipal===null?'本金信息待补充，利息暂无法拆分':'本月利息 '+money(config.mortgage-config.mortgagePrincipal);
+  $('car-interest').textContent=config.carPrincipal===null?'本金信息待补充，利息暂无法拆分':'本月利息 '+money(config.car-config.carPrincipal);
+  const housingLabel=config.housingMode==='rent'?'房租':config.housingMode==='mortgage'?'住房按揭':'住房支出';
+  root.querySelector('[data-loan="mortgage"] .receipt-label span').textContent=housingLabel;
+  $('housing-bill-title').textContent=housingLabel+' · 本月账单';
+  for(const type of ['mortgage','car']){
+   const amount=type==='mortgage'?housingAmount(config):config.car;
+   $('home-'+type).textContent=money(amount);
+   $('home-'+type+'-day').textContent='每日分摊 '+money(amount/30);
+   $('bill-'+type).textContent=money(amount);
+   $(type+'-allocation').textContent=`每日分摊 ${money(amount/30)} · 今日已分摊 ${money(amount/30*s.time/86400)}`;
+  }
+  $('widget-total').textContent=ui.privacy?'¥ ••••':money(s.total);
+  $('widget-wage').textContent=ui.privacy?'••••':money(s.wage,true);
+  $('widget-invest').textContent=ui.privacy?'••••':money(s.stock+s.gold,true);
+  $('widget-debt').textContent=ui.privacy?'••••':money(-s.debt);
+  $('widget-face').textContent=s.total<0?'(－_－)':'( ˘ᴗ˘ )';
+  $('widget-quote').textContent=resting?'月供今天也很努力。':s.total<0?'钱路过了你一下。':'今天还有一点盼头。';
+  $('widget-time').textContent='模拟快照 · '+clock(baseQuoteTime(s)).slice(0,5);
+ }
+ function baseQuoteTime(s){return ui.scenario==='work'?Math.floor(s.time/5)*5:15*3600;}
+ let paletteCache=null,paletteTime=-1000;
+ function debtPalette(){
+  if(paletteCache&&performance.now()-paletteTime<500)return paletteCache;
+  const probe=root.querySelector('.color-probe')||Object.assign(document.createElement('span'),{className:'color-probe'});
+  if(!probe.parentNode){probe.hidden=true;app.appendChild(probe);}
+  const palette={};
+  for(const name of ['ink','panel','soft','yellow','rose','muted']){probe.style.color=`var(--${name})`;palette[name]=getComputedStyle(probe).color;}
+  paletteCache=palette;paletteTime=performance.now();return palette;
+ }
+ // Shared product illustrations keep the office, bill covers and compact receipts consistent.
+ function drawDebtObject(ctx,type,p,compact=false){
+  const weight=compact?5:2.8;
+  function polygon(points,fill){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=weight;ctx.stroke();}
+  function line(points,color=p.ink,width=weight){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();}
+  function ellipse(x,y,rx,ry,fill,outline=true){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(outline){ctx.strokeStyle=p.ink;ctx.lineWidth=weight;ctx.stroke();}}
+  ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
+  ellipse(160,149,99,7,p.soft,false);
+  if(type==='mortgage'){
+   // The uneven roof and flat paper fills share the office's doodled drawing language.
+   polygon([[94,61],[222,62],[220,145],[96,147]],p.panel);
+   polygon([[190,41],[189,20],[205,21],[207,51]],p.yellow);
+   polygon([[78,67],[152,18],[237,68],[221,74],[152,36],[96,75]],p.rose);
+   polygon([[111,82],[137,81],[138,105],[112,106]],p.soft);
+   polygon([[175,81],[202,82],[200,106],[175,105]],p.yellow);
+   line([[124,82],[124,105]],p.ink,weight*.7);
+   line([[112,94],[137,93]],p.ink,weight*.7);
+   line([[188,82],[188,105]],p.ink,weight*.7);
+   line([[176,94],[201,94]],p.ink,weight*.7);
+   polygon([[145,113],[169,112],[171,146],[145,146]],p.yellow);
+   ellipse(163,131,1.7,1.7,p.ink,false);
+   line([[88,149],[229,149]],p.ink,weight*.7);
+   // A tiny plant is drawn with the same loose strokes as the worker's mug steam.
+   line([[77,146],[77,128],[69,122]],p.muted,weight*.7);
+   line([[77,138],[87,130]],p.muted,weight*.7);
+  }else{
+   // A squat side-view car uses the chair's muted peach and the room's paper palette.
+   ctx.beginPath();ctx.moveTo(48,101);ctx.quadraticCurveTo(48,92,76,89);ctx.lineTo(101,57);ctx.quadraticCurveTo(107,50,122,51);ctx.lineTo(185,53);ctx.quadraticCurveTo(198,53,217,88);ctx.lineTo(249,95);ctx.quadraticCurveTo(270,98,270,114);ctx.lineTo(267,130);ctx.quadraticCurveTo(175,135,55,131);ctx.quadraticCurveTo(45,130,48,101);ctx.closePath();ctx.fillStyle=p.rose;ctx.fill();ctx.strokeStyle=p.ink;ctx.lineWidth=weight;ctx.stroke();
+   polygon([[87,88],[110,62],[145,63],[145,89]],p.panel);
+   polygon([[155,63],[184,64],[204,90],[155,89]],p.soft);
+   line([[151,96],[151,125]],p.ink,weight*.7);
+   line([[163,101],[177,101]],p.ink,weight*.8);
+   line([[63,111],[70,111]],p.ink,weight);
+   polygon([[252,100],[268,103],[268,114],[254,113]],p.yellow);
+   line([[263,123],[275,123]],p.ink,weight);
+   ellipse(94,131,19,19,p.ink);
+   ellipse(94,131,9,9,p.panel);
+   ellipse(227,131,19,19,p.ink);
+   ellipse(227,131,9,9,p.panel);
+   line([[55,150],[270,150]],p.muted,weight*.6);
+  }
+  ctx.restore();
+ }
+ function drawDebtCanvases(){
+  const palette=debtPalette();
+  root.querySelectorAll('[data-debt-art]').forEach(canvas=>{
+   if(!canvas.clientWidth)return;
+   const width=canvas.clientWidth,height=canvas.clientHeight,dpr=Math.min(devicePixelRatio||1,2);
+   const targetWidth=Math.round(width*dpr),targetHeight=Math.round(height*dpr);
+   if(canvas.width!==targetWidth||canvas.height!==targetHeight){canvas.width=targetWidth;canvas.height=targetHeight;}
+   const ctx=canvas.getContext('2d');ctx.setTransform(canvas.width/320,0,0,canvas.height/165,0,0);ctx.clearRect(0,0,320,165);
+   drawDebtObject(ctx,canvas.dataset.debtArt,palette);
+  });
+ }
+ // The illustration uses a fixed logical coordinate system and a DPR-aware backing store.
+ function drawOffice(canvas,s,t){
+  if(!canvas||!canvas.clientWidth)return;
+  const w=canvas.clientWidth,h=w*238/380,dpr=Math.min(devicePixelRatio||1,2);
+  if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}
+  const ctx=canvas.getContext('2d');ctx.setTransform(canvas.width/380,0,0,canvas.height/238,0,0);
+  const styles=getComputedStyle(app),color=k=>styles.getPropertyValue(k).trim();
+  // Resolve light-dark() through a real element so canvas sees computed colors.
+  const probe=root.querySelector('.color-probe')||Object.assign(document.createElement('span'),{className:'color-probe'});
+  if(!probe.parentNode){probe.hidden=true;app.appendChild(probe);}
+  function resolved(k){probe.style.color=`var(${k})`;return getComputedStyle(probe).color;}
+  const ink=resolved('--ink'),paper=resolved('--panel'),soft=resolved('--soft'),yellow=resolved('--yellow'),rose=resolved('--rose'),muted=resolved('--muted');
+  ctx.clearRect(0,0,380,238);ctx.lineWidth=2;ctx.lineJoin='round';ctx.lineCap='round';
+  function line(points,c=ink,width=2){ctx.beginPath();ctx.strokeStyle=c;ctx.lineWidth=width;points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();}
+  function box(x,y,w,h,fill,r=2){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=ink;ctx.lineWidth=1.8;ctx.stroke();}
+  function ellipse(x,y,rx,ry,fill,stroke=true){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=ink;ctx.lineWidth=1.8;ctx.stroke();}}
+  function text(str,x,y,size=12,c=ink){ctx.fillStyle=c;ctx.font=`${size}px "Microsoft YaHei",sans-serif`;ctx.fillText(str,x,y);}
+  ctx.fillStyle=soft;ctx.fillRect(0,0,380,238);ctx.fillStyle=paper;ctx.fillRect(0,187,380,51);line([[0,187],[380,187]],muted,1);
+  const rising=s.total>=0;
+  box(250,17,108,91,paper,7);line([[304,18],[304,108]],muted,1);line([[250,64],[358,64]],muted,1);
+  if(rising){ellipse(329,40,13,13,yellow);for(let i=0;i<8;i++){const a=i*Math.PI/4;line([[329+Math.cos(a)*18,40+Math.sin(a)*18],[329+Math.cos(a)*22,40+Math.sin(a)*22]],muted,1);}}
+  else{ellipse(280,42,17,10,soft);ellipse(294,37,16,13,soft);ellipse(307,44,18,9,soft);for(let i=0;i<7;i++){let offset=(t*.025+i*8)%45;line([[263+i*12,54+offset],[259+i*12,62+offset]],muted,1);}}
+  box(30,21,81,66,yellow,2);line([[48,22],[89,22]],rose,5);text('上班致富',41,46,14);text('暂无进展',41,68,12,muted);
+  box(124,19,36,32,paper,3);text('11 / 04',127,40,10);
+  // Physical assets frame the worker. Coin destinations match the objects shown on the bills.
+  const palette=debtPalette();
+  ctx.save();ctx.translate(-12,109);ctx.scale(.34,.58);drawDebtObject(ctx,'mortgage',palette,true);ctx.restore();
+  ctx.save();ctx.translate(283,158);ctx.scale(.33,.33);drawDebtObject(ctx,'car',palette,true);ctx.restore();
+  text(config.housingMode==='rent'?'房租':config.housingMode==='none'?'住房':'房贷',22,221,11);text('车贷',323,221,11);
+  const resting=ui.scenario==='weekend',onShift=!resting&&s.time>=timeValue(config.start)&&s.time<s.end&&!(s.time>=timeValue(config.breakStart)&&s.time<timeValue(config.breakEnd));
+  ellipse(186,206,75,8,soft,false);
+  box(162,146,43,47,rose,8);line([[182,190],[182,212]],ink,4);line([[162,213],[205,213]],ink,3);
+  if(!resting){
+   const bob=onShift?Math.sin(t*.004)*1.6:3;
+   ctx.save();ctx.translate(0,bob);
+   ellipse(181,143,25,35,paper);line([[170,169],[160,198],[148,199]],ink,5);line([[187,171],[202,196],[217,196]],ink,5);
+   // Tired human face, hair tufts, heavy eyelids, tiny tie.
+   ellipse(178,96,30,35,paper);ctx.fillStyle=ink;ctx.beginPath();ctx.moveTo(149,85);ctx.bezierCurveTo(147,56,199,48,208,85);ctx.lineTo(194,75);ctx.lineTo(192,86);ctx.lineTo(180,76);ctx.lineTo(170,85);ctx.lineTo(162,78);ctx.closePath();ctx.fill();
+   line([[155,69],[152,58],[166,65]],ink,2);line([[173,61],[182,51],[186,61]],ink,2);
+   const happy=performance.now()<comfortUntil||rising;
+   if(happy){line([[159,98],[164,95],[169,98]]);line([[182,98],[187,95],[192,98]]);}else{line([[157,95],[169,96]],ink,2);line([[183,96],[195,95]],ink,2);ellipse(165,101,2,3,ink,false);ellipse(187,101,2,3,ink,false);line([[158,107],[169,108]],muted,1);line([[183,108],[194,107]],muted,1);}
+   line([[171,117],[182,117]],ink,1.5);line([[171,130],[179,138],[186,129]],muted,1);line([[179,138],[176,157],[183,154],[179,138]],ink,2);
+   const tap=onShift?Math.sin(t*.025)*2:0;
+   line([[158,137],[146,151],[169,157+tap]],ink,4);line([[199,136],[214,150],[201,157-tap]],ink,4);
+   ctx.restore();
+  }else{text('人呢？',157,112,17,muted);text('今天轮到工位休息',137,132,11,muted);}
+  // Desk, computer, market trace and a small mug.
+  box(91,163,209,10,yellow,2);line([[102,174],[99,215]],ink,4);line([[287,174],[291,215]],ink,4);
+  box(220,113,63,43,paper,4);line([[250,157],[250,162]],ink,3);line([[232,163],[269,163]],ink,2);
+  line(rising?[[227,144],[237,143],[244,135],[253,138],[263,125],[277,121]]:[[227,123],[238,125],[246,132],[254,130],[264,144],[277,148]],rising?resolved('--good'):resolved('--bad'),2);
+  box(120,147,15,15,paper,3);line([[136,149],[141,150],[141,157],[136,158]],ink,1.5);
+  line([[124,140],[122,134],[125,128]],muted,1);line([[131,140],[133,135],[131,130]],muted,1);
+  // Salary coins travel from the desk to the apartment and sedan.
+  if(onShift){for(let i=0;i<5;i++){const phase=(t*.00014+i/5)%1;const side=i%2===0;const x=side?210-phase*165:210+phase*132;const y=153-Math.sin(phase*Math.PI)*38+phase*(side?-4:39);ellipse(x,y,6,7,yellow);text('¥',x-3,y+3,9);}}
+  text(resting?'贷款全勤奖':onShift?'收入运输中…':'月供夜班中',143,233,11,muted);
+ }
+ root.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{ui.page=b.dataset.page;setUI();render();persist();}));
+ root.querySelectorAll('[data-loan]').forEach(button=>button.addEventListener('click',()=>{
+  ui.page='loans';setUI();render();persist();
+  $(button.dataset.loan+'-bill').scrollIntoView({behavior:motion.matches?'instant':'smooth',block:'nearest'});
+ }));
+ root.querySelectorAll('[role=tab]').forEach((b,index)=>b.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const tabs=[...root.querySelectorAll('[role=tab]')];const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[next].click();tabs[next].focus();}));
+ for(const key of ['scenario','market','platform','size'])root.querySelectorAll(`[data-${key}]`).forEach(b=>b.addEventListener('click',()=>{ui[key]=b.dataset[key];if(key==='scenario')origin=performance.now();setUI();render();persist();}));
+ $('privacy').addEventListener('change',e=>{ui.privacy=e.target.checked;render();persist();});
+ $('comfort').addEventListener('click',()=>{comfortUntil=performance.now()+5000;render();});
+ function bindForm(name){
+  const form=$(name+'-form'),button=form.querySelector('button[type=submit]');
+  // In-conversation previews disallow native form submission. Validate and save locally.
+  button.type='button';
+  form.addEventListener('submit',event=>event.preventDefault());
+  button.addEventListener('click',()=>{
+   if(!form.reportValidity())return;
+   const next={...config};
+   for(const [key,value]of new FormData(form))next[key]=typeof defaults[key]==='number'?(key.endsWith('Principal')&&value.trim()===''?null:Number(value)):value.trim();
+   let error='';
+   if(!validSchedule(next))error='请让午休位于上下班之间，并保留有效计薪时间。';
+   if(next.mortgagePrincipal>next.mortgage||next.carPrincipal>next.car)error='本金不能超过对应月供，请调整金额。';
+   if(Object.keys(defaults).some(k=>typeof defaults[k]==='number'&&!(k.endsWith('Principal')&&next[k]===null)&&!Number.isFinite(next[k])))error='请填写有效数值。';
+   const status=$(name+'-status');status.textContent=error||'已更新，首页与小部件预览已同步。';status.className='status'+(error?' error':'');
+   if(error)return;
+   config=next;render();persist();
+  });
+ }
+ ['salary','assets','loans'].forEach(bindForm);
+ restore(window.openai?.widgetState);fillForms();syncOnboardingFields();setUI();render();
+ window.addEventListener('openai:set_globals',event=>{if(event.detail?.globals?.widgetState){restore(event.detail.globals.widgetState);fillForms();syncOnboardingFields();setUI();render();}});
+ if(globalThis.Tweak){const tweak=new Tweak({container:app,onChange:()=>{render();}});tweak.addToggle(design,'animated',{label:'办公室动态'});tweak.addSelect(design,'tone',{label:'吐槽语气',options:['温柔地丧','再狠一点']});}
+ let lastRender=0;
+ function tick(t){if(!root.isConnected)return;if(t-lastRender>250){render();drawDebtCanvases();lastRender=t;}const anim=design.animated&&!motion.matches?t:0;if(!onboarding.complete&&onboarding.step===0)drawOffice($('onboard-office'),current,anim);if(onboarding.complete&&ui.page==='home')drawOffice($('office'),current,anim);if(onboarding.complete&&ui.page==='widgets'&&ui.size==='large')drawOffice($('widget-office'),current,anim);frame=requestAnimationFrame(tick);}
+ frame=requestAnimationFrame(tick);
+})();
+</script>
+</div>

@@ -1,0 +1,88 @@
+name: ios-release
+
+# Unverified: requires an Apple developer account, two provisioning profiles and
+# the WidgetExtension target wired in Xcode on the macOS runner.
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: Upload the signed build to TestFlight
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+      - name: Resolve
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Import signing material
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          RUNNER_PROFILE_BASE64: ${{ secrets.IOS_RUNNER_PROFILE_BASE64 }}
+          WIDGET_PROFILE_BASE64: ${{ secrets.IOS_WIDGET_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CERTIFICATE_BASE64" ]; then echo "::error::iOS signing secrets are missing"; exit 1; fi
+          CERT_PATH="$RUNNER_TEMP/distribution.p12"
+          KEYCHAIN="$RUNNER_TEMP/fjob.keychain-db"
+          echo "$CERTIFICATE_BASE64" | base64 -d > "$CERT_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$CERT_PATH" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$RUNNER_PROFILE_BASE64" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/runner.mobileprovision
+          echo "$WIDGET_PROFILE_BASE64" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/widget.mobileprovision
+
+      - name: Build IPA
+        working-directory: apps/mobile
+        run: |
+          flutter build ipa --release \
+            --export-options-plist=ios/ExportOptions.plist \
+            --build-name="${GITHUB_RUN_NUMBER}.0" \
+            --build-number="${GITHUB_RUN_NUMBER}"
+
+      - name: Verify the extension is embedded
+        working-directory: apps/mobile
+        run: |
+          IPA=$(ls build/ios/ipa/*.ipa | head -1)
+          unzip -l "$IPA" | grep -q "PlugIns/FjobWidget.appex" \
+            || { echo "::error::Widget extension missing from the IPA"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: apps/mobile/build/ios/ipa/*.ipa
+
+      - name: Upload to TestFlight
+        if: ${{ inputs.upload }}
+        working-directory: apps/mobile
+        env:
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          IPA=$(ls build/ios/ipa/*.ipa | head -1)
+          xcrun altool --upload-app --type ios --file "$IPA" \
+            --apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER_ID"
+
+      - name: Clean signing material
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/fjob.keychain-db" || true
+          rm -f ~/Library/MobileDevice/Provisioning\ Profiles/runner.mobileprovision
+          rm -f ~/Library/MobileDevice/Provisioning\ Profiles/widget.mobileprovision

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">今日又白干</string>
+    <string name="widget_description">今日生存结余、工资与固定支出的桌面分身</string>
+</resources>

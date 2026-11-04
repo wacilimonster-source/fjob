@@ -1,0 +1,40 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Local sandboxes and scratch work
+.scratch/
+tmp/
+
+# Android local signing
+apps/mobile/android/key.properties
+*.jks
+*.keystore
+
+# iOS local signing
+apps/mobile/ios/*.mobileprovision
+apps/mobile/ios/*.p12
+apps/mobile/ios/Pods/
+apps/mobile/ios/.symlinks/
+apps/mobile/ios/Flutter/ephemeral/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# Editors and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Local release signing material (never commit)
+.release/
+apps/mobile/android/.gradle/
+apps/mobile/android/.kotlin/

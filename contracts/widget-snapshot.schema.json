@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:fjob:widget-snapshot:v1",
+  "title": "WidgetSnapshotV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "ledgerRevision", "createdAt", "computedAt", "quotesAsOf", "validUntil", "timezone", "privacy", "tombstone", "completeness", "quoteQuality", "amounts", "housingMode", "scene", "caption", "deepLink"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "ledgerRevision": {"type": "integer", "minimum": 0},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "computedAt": {"type": "string", "format": "date-time"},
+    "quotesAsOf": {"type": ["string", "null"], "format": "date-time"},
+    "validUntil": {"type": "string", "format": "date-time"},
+    "timezone": {"type": "string", "minLength": 1},
+    "privacy": {"type": "boolean"},
+    "tombstone": {"type": "boolean"},
+    "completeness": {"enum": ["complete", "partial", "unavailable"]},
+    "quoteQuality": {"enum": ["live", "delayed", "eod", "stale", "unavailable", "fixture"]},
+    "amounts": {"$ref": "#/$defs/amounts"},
+    "housingMode": {"enum": ["mortgage", "rent", "none"]},
+    "scene": {"enum": ["working", "break", "offDuty", "restDay", "unknown"]},
+    "caption": {"type": "string", "maxLength": 100},
+    "deepLink": {"enum": ["fjob://dashboard", "fjob://expenses/housing", "fjob://expenses/car", "fjob://widgets"]}
+  },
+  "$defs": {
+    "amount": {"type": ["string", "null"], "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$"},
+    "amounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "wage", "stockDaily", "goldDaily", "housing", "car", "principal", "interest", "rent"],
+      "properties": {
+        "total": {"$ref": "#/$defs/amount"},
+        "wage": {"$ref": "#/$defs/amount"},
+        "stockDaily": {"$ref": "#/$defs/amount"},
+        "goldDaily": {"$ref": "#/$defs/amount"},
+        "housing": {"$ref": "#/$defs/amount"},
+        "car": {"$ref": "#/$defs/amount"},
+        "principal": {"$ref": "#/$defs/amount"},
+        "interest": {"$ref": "#/$defs/amount"},
+        "rent": {"$ref": "#/$defs/amount"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"privacy": {"const": true}}, "required": ["privacy"]},
+      "then": {
+        "properties": {
+          "amounts": {
+            "properties": {
+              "total": {"type": "null"}, "wage": {"type": "null"},
+              "stockDaily": {"type": "null"}, "goldDaily": {"type": "null"},
+              "housing": {"type": "null"}, "car": {"type": "null"},
+              "principal": {"type": "null"}, "interest": {"type": "null"}, "rent": {"type": "null"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"tombstone": {"const": true}}, "required": ["tombstone"]},
+      "then": {"properties": {"completeness": {"const": "unavailable"}, "privacy": {"const": true}}}
+    }
+  ]
+}

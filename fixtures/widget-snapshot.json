@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "ledgerRevision": 1,
+  "createdAt": "2026-11-04T06:36:00Z",
+  "computedAt": "2026-11-04T06:36:00Z",
+  "quotesAsOf": "2026-11-04T06:36:00Z",
+  "validUntil": "2026-11-04T07:06:00Z",
+  "timezone": "Asia/Shanghai",
+  "privacy": false,
+  "tombstone": false,
+  "completeness": "complete",
+  "quoteQuality": "fixture",
+  "amounts": {
+    "total": "-55.26", "wage": "328.57", "stockDaily": "-350.00", "goldDaily": "100.00",
+    "housing": "97.33", "car": "36.50", "principal": "87.19", "interest": "46.64", "rent": "0.00"
+  },
+  "housingMode": "mortgage",
+  "scene": "working",
+  "caption": "工资正在努力追赶上午的亏损。",
+  "deepLink": "fjob://dashboard"
+}

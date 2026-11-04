@@ -1,0 +1,30 @@
+name: todayagain
+description: 今日又白干 — 工资、行情与月供在同一间办公室相遇。
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  finance_core:
+    path: ../../packages/finance_core
+  flutter_riverpod: ^2.6.1
+  http: ^1.6.0
+  path_provider: ^2.1.5
+  sqflite: ^2.4.2
+  sqflite_common: ^2.5.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  sqflite_common_ffi: ^2.3.6
+  sqlite3: ^2.4.0
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,27 @@
+{
+  "contractVersion": 1,
+  "rounding": "HALF_UP",
+  "timezone": "Asia/Shanghai",
+  "cases": [
+    {"id": "CALC-01", "operation": "wage", "input": {"monthlyCny": "12000", "monthlyPaidSeconds": 604800, "elapsedPaidSeconds": 16560}, "expected": {"displayCny": "328.57"}},
+    {"id": "CALC-02", "operation": "wage", "input": {"monthlyCny": "12000", "monthlyPaidSeconds": 604800, "elapsedPaidSeconds": 10800}, "expected": {"displayCny": "214.29"}, "note": "Lunch time 12:00 through 13:00 holds the same elapsed paid seconds."},
+    {"id": "CALC-03", "operation": "wage", "input": {"monthlyCny": "12000", "monthlyPaidSeconds": 604800, "elapsedPaidSeconds": 604800}, "expected": {"displayCny": "12000.00"}},
+    {"id": "CALC-04", "operation": "allocation", "input": {"monthlyCny": "6600", "monthDays": 30, "elapsedDaySeconds": 52560, "daySeconds": 86400}, "expected": {"displayCny": "133.83"}},
+    {"id": "CALC-05", "operation": "allocation", "input": {"monthlyCny": "3000", "monthDays": 30, "elapsedDaySeconds": 43200, "daySeconds": 86400, "expenseType": "rent"}, "expected": {"displayCny": "50.00"}},
+    {"id": "CALC-06", "operation": "allocation", "input": {"monthlyCny": "3000", "monthDays": 28, "elapsedDaySeconds": 43200, "daySeconds": 86400, "expenseType": "rent"}, "expected": {"displayCny": "53.57"}},
+    {"id": "CALC-07", "operation": "pnl", "input": {"price": "12.05", "baseline": "12.40", "quantity": "1000"}, "expected": {"displayCny": "-350.00"}},
+    {"id": "CALC-08", "operation": "pnl", "input": {"price": "905", "baseline": "900", "quantity": "20"}, "expected": {"displayCny": "100.00"}},
+    {"id": "CALC-09", "operation": "dashboard", "input": {"monthlySalaryCny": "12000", "monthlyPaidSeconds": 604800, "elapsedPaidSeconds": 16560, "stockDailyCny": "-350", "goldDailyCny": "100", "housingMonthlyCny": "4800", "carMonthlyCny": "1800", "monthDays": 30, "elapsedDaySeconds": 52560, "daySeconds": 86400}, "expected": {"displayCny": "-55.26", "completeness": "complete"}},
+    {"id": "CALC-10", "operation": "loanBreakdown", "input": {"monthlyCny": "4800", "principalCny": null, "monthDays": 30, "elapsedDaySeconds": 52560, "daySeconds": 86400}, "expected": {"displayCny": "97.33", "principalCny": null, "interestCny": null}},
+    {"id": "CALC-11", "operation": "monthAllocation", "input": {"monthlyCny": "6600", "monthDays": 30}, "expected": {"displayCny": "6600.00"}},
+    {"id": "CALC-12", "operation": "wage", "input": {"monthlyCny": "0", "monthlyPaidSeconds": 0, "elapsedPaidSeconds": 0}, "expected": {"displayCny": "0.00"}},
+    {"id": "CALC-13", "operation": "wage", "input": {"monthlyCny": "12000", "monthlyPaidSeconds": 0, "elapsedPaidSeconds": 0}, "expected": {"error": "invalidSchedule"}},
+    {"id": "CALC-14", "operation": "closedStockDay", "input": {"statisticsDate": "2026-11-07", "tradingDate": "2026-11-06", "price": "12.05", "baseline": "12.4", "quantity": "1000"}, "expected": {"displayCny": "0.00"}},
+    {"id": "CALC-15", "operation": "splitWage", "input": {"shiftStart": "2027-01-31T14:00:00Z", "shiftEnd": "2027-01-31T18:00:00Z", "parts": [{"month": "2027-01", "monthlyCny": "3200", "monthlyPaidSeconds": 576000, "elapsedPaidSeconds": 7200}, {"month": "2027-02", "monthlyCny": "4000", "monthlyPaidSeconds": 576000, "elapsedPaidSeconds": 7200}]}, "expected": {"displayCny": "90.00"}},
+    {"id": "CALC-16", "operation": "housingSwitch", "input": {"monthDays": 30, "parts": [{"mode": "mortgage", "monthlyCny": "4800", "fullDays": 15}, {"mode": "rent", "monthlyCny": "3000", "fullDays": 15}]}, "expected": {"displayCny": "3900.00"}},
+    {"id": "CALC-17", "operation": "dashboard", "input": {"monthlySalaryCny": "12000", "monthlyPaidSeconds": 604800, "elapsedPaidSeconds": 16560, "stockDailyCny": null, "goldDailyCny": null, "housingMonthlyCny": "4800", "carMonthlyCny": "1800", "monthDays": 30, "elapsedDaySeconds": 52560, "daySeconds": 86400}, "expected": {"displayCny": "194.74", "completeness": "partial"}},
+    {"id": "CALC-18", "operation": "sum", "input": {"values": ["0.004", "0.004"]}, "expected": {"displayCny": "0.01"}},
+    {"id": "CALC-19", "operation": "pnl", "input": {"price": null, "baseline": null, "quantity": "0"}, "expected": {"displayCny": "0.00"}},
+    {"id": "CALC-20", "operation": "loanBreakdown", "input": {"monthlyCny": "4800", "principalCny": "0", "monthDays": 30, "elapsedDaySeconds": 43200, "daySeconds": 86400}, "expected": {"displayCny": "80.00", "principalCny": "0.00", "interestCny": "80.00"}}
+  ]
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="fjob_paper">#F7F2E9</color>
+    <color name="fjob_panel">#FFFDF7</color>
+    <color name="fjob_ink">#323A32</color>
+    <color name="fjob_muted">#686E61</color>
+    <color name="fjob_line">#D5D6C8</color>
+    <color name="fjob_soft">#E9EDDF</color>
+    <color name="fjob_yellow">#F2DFAC</color>
+    <color name="fjob_rose">#F0D2C5</color>
+    <color name="fjob_negative">#AD4736</color>
+    <color name="fjob_positive">#46644E</color>
+</resources>

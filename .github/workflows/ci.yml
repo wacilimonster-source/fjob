@@ -1,0 +1,107 @@
+name: ci
+
+# Action versions are pinned by tag for the handoff; pin commit SHAs before the
+# first release build (documented in docs/07-implementation-notes.md).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  domain:
+    name: finance_core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+      - name: Resolve
+        working-directory: packages/finance_core
+        run: dart pub get
+      - name: Fixture and regression tests
+        working-directory: packages/finance_core
+        run: dart test
+
+  flutter:
+    name: app analyze and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+      - name: Resolve
+        working-directory: apps/mobile
+        run: flutter pub get
+      - name: Analyze
+        working-directory: apps/mobile
+        run: flutter analyze
+      - name: Tests
+        working-directory: apps/mobile
+        run: flutter test
+      - name: Contract fixture check
+        run: python -m pip install -q pyyaml jsonschema openapi-spec-validator && python tools/verify_handoff.py
+
+  android:
+    name: android debug build and Kotlin tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+      - name: Widget contract parser tests
+        working-directory: apps/mobile/android
+        run: ./gradlew testDebugUnitTest --console=plain
+      - name: Debug APK
+        working-directory: apps/mobile
+        run: flutter build apk --debug
+
+  gateway:
+    name: market gateway
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        working-directory: services/market_gateway
+        run: python -m pip install -r requirements.txt
+      - name: Tests
+        working-directory: services/market_gateway
+        run: python -m pytest -q
+
+  ios-simulator:
+    name: iOS simulator build
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+      - name: Resolve
+        working-directory: apps/mobile
+        run: flutter pub get
+      # The WidgetKit extension target must be added in Xcode on the macOS
+      # runner (see ios/WidgetExtension/README.md). Until then this job only
+      # proves the Runner compiles with the widget bridge and URL scheme.
+      - name: Simulator build
+        working-directory: apps/mobile
+        run: flutter build ios --simulator --no-codesign

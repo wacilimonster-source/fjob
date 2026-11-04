@@ -1,0 +1,73 @@
+{
+  "lockedAt": "2026-11-04",
+  "status": "verified locally on Windows for the Android build and all Dart/Python tests; iOS compiled only through the documented macOS CI task",
+  "flutter": {
+    "channel": "stable",
+    "version": "3.47.9",
+    "revision": "c197ca5199e9ee5661e865596c9c07294dfab51c",
+    "engineRevision": "89c39edfdf",
+    "dart": "3.13.7",
+    "downloadedFrom": "https://storage.flutter-io.cn/flutter_infra_release/releases/stable/windows/flutter_windows_3.47.9-stable.zip"
+  },
+  "java": {
+    "vendor": "Eclipse Temurin",
+    "version": "17.0.20.1+1",
+    "home": "C:/Program Files/Eclipse Adoptium/jdk-17.0.20.101-hotspot"
+  },
+  "android": {
+    "sdkRoot": "G:/Android",
+    "compileSdk": 36,
+    "targetSdk": 36,
+    "minSdk": 26,
+    "buildTools": "36.0.0",
+    "gradle": "9.3.1",
+    "androidGradlePlugin": "9.1.0",
+    "kotlin": "2.4.0",
+    "workManager": "2.10.1",
+    "junit": "4.13.2"
+  },
+  "dartPackages": {
+    "finance_core": {
+      "timezone": "0.10.1"
+    },
+    "apps_mobile": {
+      "flutter_riverpod": "2.6.1",
+      "sqflite": "2.4.2",
+      "sqflite_common": "2.5.4",
+      "http": "1.6.0",
+      "path_provider": "2.1.5",
+      "test_dev": "1.33.0",
+      "sqflite_common_ffi_dev": "2.3.7+1",
+      "sqlite3_dev": "2.9.4"
+    }
+  },
+  "ios": {
+    "deploymentTarget": "16.0",
+    "xcode": "pending macOS CI (not installed on Windows)",
+    "cocoapods": "pending macOS CI",
+    "appGroup": "group.cn.fjob.todayagain",
+    "widgetBundleIdPlaceholder": "cn.fjob.todayagain.widget"
+  },
+  "python": {
+    "version": "3.12.10",
+    "fastapi": "0.138.0",
+    "httpx": "0.28.1",
+    "pytest": "9.2.0"
+  },
+  "commands": {
+    "domainTests": "cd packages/finance_core && dart test",
+    "appAnalyze": "cd apps/mobile && flutter analyze",
+    "appTests": "cd apps/mobile && flutter test",
+    "androidUnitTests": "cd apps/mobile/android && gradlew.bat testDebugUnitTest",
+    "androidDebugBuild": "cd apps/mobile && flutter build apk --debug",
+    "gatewayTests": "cd services/market_gateway && python -m pytest -q",
+    "contractCheck": "python tools/verify_handoff.py"
+  },
+  "unverified": [
+    "iOS Runner and Widget extension build (requires macOS/Xcode)",
+    "Android release signing and AAB",
+    "Real market data access and public-display licensing",
+    "Android/iPhone physical-device widget behaviour and system scheduling",
+    "GitHub Actions workflows (no remote repository configured)"
+  ]
+}

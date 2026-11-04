@@ -1,0 +1,208 @@
+openapi: 3.1.0
+info:
+  title: FJOB Market Gateway
+  version: 1.0.0
+  description: Market-only API. Personal salary, holdings quantities and costs remain on device.
+servers:
+  - url: https://market.example.invalid
+    description: Replace with the verified deployment host before integration.
+paths:
+  /health:
+    get:
+      operationId: health
+      responses:
+        '200':
+          description: Process healthy. Upstream availability is reported per quote.
+  /v1/instruments/search:
+    get:
+      operationId: searchInstruments
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: {type: string, minLength: 1, maxLength: 32}
+        - in: query
+          name: limit
+          schema: {type: integer, minimum: 1, maximum: 20, default: 10}
+      responses:
+        '200':
+          description: Supported instruments
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [requestId, items]
+                properties:
+                  requestId: {type: string}
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Instrument'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /v1/quotes/batch:
+    post:
+      operationId: batchQuotes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [instrumentIds]
+              properties:
+                instrumentIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 30
+                  uniqueItems: true
+                  items: {type: string, minLength: 1, maxLength: 64}
+      responses:
+        '200':
+          description: Per-item quotes or errors. All requested IDs appear exactly once.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [requestId, serverTime, refreshAfterSeconds, items]
+                properties:
+                  requestId: {type: string}
+                  serverTime: {type: string, format: date-time}
+                  refreshAfterSeconds: {type: integer, minimum: 5, maximum: 86400}
+                  items:
+                    type: array
+                    items:
+                      oneOf:
+                        - $ref: '#/components/schemas/Quote'
+                        - $ref: '#/components/schemas/QuoteError'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /v1/calendars:
+    get:
+      operationId: getCalendar
+      parameters:
+        - in: query
+          name: market
+          required: true
+          schema: {type: string, enum: [WORK_CN, SSE, SZSE, BSE, SGE]}
+        - in: query
+          name: from
+          required: true
+          schema: {type: string, format: date}
+        - in: query
+          name: to
+          required: true
+          schema: {type: string, format: date}
+      responses:
+        '200':
+          description: Versioned calendar. Maximum range is 366 days.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [requestId, version, market, timezone, coverageFrom, coverageTo, source, days]
+                properties:
+                  requestId: {type: string}
+                  version: {type: string}
+                  market: {type: string, enum: [WORK_CN, SSE, SZSE, BSE, SGE]}
+                  timezone: {type: string}
+                  coverageFrom: {type: string, format: date}
+                  coverageTo: {type: string, format: date}
+                  source: {type: string}
+                  days:
+                    type: array
+                    items:
+                      type: object
+                      required: [localDate, status, sessions]
+                      properties:
+                        localDate: {type: string, format: date}
+                        status: {type: string, enum: [work, rest, open, closed, unknown]}
+                        sessions:
+                          type: array
+                          items:
+                            type: object
+                            required: [startAt, endAt, tradingDate]
+                            properties:
+                              startAt: {type: string, format: date-time}
+                              endAt: {type: string, format: date-time}
+                              tradingDate: {type: string, format: date}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+components:
+  schemas:
+    Decimal:
+      type: string
+      pattern: '^(0|[1-9][0-9]*)(\.[0-9]+)?$'
+    Instrument:
+      type: object
+      required: [instrumentId, code, name, market, currency, unit, supported]
+      properties:
+        instrumentId: {type: string}
+        code: {type: string}
+        name: {type: string}
+        market: {type: string, enum: [SSE, SZSE, BSE, SGE]}
+        currency: {type: string, const: CNY}
+        unit: {type: string, enum: [share, gram]}
+        supported: {type: boolean}
+    Quote:
+      type: object
+      additionalProperties: false
+      required: [instrumentId, priceCny, baselineCny, quoteAt, fetchedAt, tradingDate, dayBasis, marketState, quality, source, sourceRevision, sourceLicenseStatus, delaySeconds]
+      properties:
+        instrumentId: {type: string}
+        priceCny: {$ref: '#/components/schemas/Decimal'}
+        baselineCny:
+          oneOf:
+            - $ref: '#/components/schemas/Decimal'
+            - {type: 'null'}
+        quoteAt: {type: string, format: date-time}
+        fetchedAt: {type: string, format: date-time}
+        tradingDate: {type: string, format: date}
+        dayBasis: {type: string, enum: [exchangeTradingDay, referenceTradingDay]}
+        marketState: {type: string, enum: [PREOPEN, OPEN, BREAK, CLOSED, SUSPENDED, UNKNOWN]}
+        quality: {type: string, enum: [live, delayed, eod, stale, fixture]}
+        source: {type: string}
+        sourceRevision: {type: integer, minimum: 0}
+        sourceLicenseStatus: {type: string, enum: [verified, developmentOnly, unknown]}
+        delaySeconds: {type: [integer, 'null'], minimum: 0}
+    QuoteError:
+      type: object
+      additionalProperties: false
+      required: [instrumentId, error]
+      properties:
+        instrumentId: {type: string}
+        error:
+          type: object
+          required: [code, message, retryable]
+          properties:
+            code: {type: string, enum: [UNKNOWN_SYMBOL, SOURCE_UNAVAILABLE, RATE_LIMITED, ACCESS_DENIED, PARSE_ERROR, MISSING_BASELINE]}
+            message: {type: string}
+            retryable: {type: boolean}
+    Error:
+      type: object
+      required: [requestId, code, message]
+      properties:
+        requestId: {type: string}
+        code: {type: string}
+        message: {type: string}
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    RateLimited:
+      description: Request limit reached
+      headers:
+        Retry-After:
+          schema: {type: integer, minimum: 1}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Unavailable:
+      description: Service currently unavailable
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
