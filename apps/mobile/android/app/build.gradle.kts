@@ -58,6 +58,12 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // WorkManager's Room implementation is created reflectively; see
+            // proguard-rules.pro for the required keep rules.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

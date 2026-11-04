@@ -117,3 +117,10 @@ tools/                     契约校验与会话交付脚本
 - 本地数据：设置页“清空本地账本”会删除配置、草稿、行情缓存并写入 tombstone 快照；原生端拒绝更低 `ledgerRevision`。
 - 版本迁移：v1 之外的迁移尚未存在；打开更高 schemaVersion 的数据库会由 sqflite 的版本检查拒绝，需要先升级 App。
 - 发布回滚：Android 使用上一版 AAB；iOS 在 App Store Connect 回退 TestFlight 构建。
+
+## 10. v0.1.0 发布记录
+
+- Tag：`v0.1.0`；GitHub Release 附件：`fjob-0.1.0-universal.apk`、`fjob-0.1.0.aab`、`SHA256SUMS.txt`。
+- 发布签名：本地 `.release/fjob-release.jks`（PKCS12，RSA 4096，10,000 天），证书 SHA-256 `4ccda311…0b7b`；密钥与密码不进入仓库。
+- 发布版修复：R8 移除 `androidx.work.impl.WorkDatabase_Impl` 构造器导致启动崩溃，新增 `apps/mobile/android/app/proguard-rules.pro` 保留 Room/WorkManager/Startup 反射入口，并在签名包上复测通过。
+- 校验和与安装说明见 `docs/releases/v0.1.0.md`。
