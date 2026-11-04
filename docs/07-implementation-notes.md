@@ -134,5 +134,6 @@ tools/                     契约校验与会话交付脚本
 - 按最新产品要求改为**固定浅色纸感**：移除主题选择、深色配色与 `ThemeMode` 分支；系统深色下仍显示浅色，状态栏图标固定深色。
 - `versionName 0.1.1 / versionCode 2`，沿用 v0.1.0 发布密钥，已验证在模拟器上覆盖升级。
 - 新增“系统深色 → 应用浅色”回归测试；`flutter test` 29 项通过。
+- CI：`ci` 5/5 jobs 通过（run `41835804870`）；`android-release` 因未配置签名 Secrets 按设计失败。
 - Release：<https://github.com/wacilimonster-source/fjob/releases/tag/v0.1.1>（prerelease），校验和见 `docs/releases/v0.1.1.md`。
 - 校验和与安装说明见 `docs/releases/v0.1.0.md`。
