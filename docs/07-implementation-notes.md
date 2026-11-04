@@ -62,6 +62,8 @@ tools/                     契约校验与会话交付脚本
 | `flutter test tool/capture_screens_test.dart` | 生成 `apps/mobile/build/screenshots/` 五张界面截图 |
 | `adb install` + `am start` + `input` 流程 | 在 1080×1920 Android 模拟器（Android 16, 暗色）安装并启动成功；完成工资→排班→资产→住房→核对→提交；强杀重启后草稿恢复到上次步骤与输入 |
 | `adb shell run-as ... cat shared_prefs/fjob_widget_snapshot.xml` | 提交后原生收到 `payload_kind=timeline`、`ledgerRevision=1` 的时间线，证明 MethodChannel→Kotlin→SharedPreferences 链路可用 |
+| GitHub Actions `ci` | 5/5 jobs 成功（finance_core、Flutter analyze/test、Android debug + Kotlin、gateway、iOS simulator），run `41832316918` |
+| GitHub Actions `android-release` | 按设计在缺少 `ANDROID_KEYSTORE_BASE64` 时失败；v0.1.0 产物由本地发布密钥签名并上传到 GitHub Release |
 
 截图同时复制到 `docs/screenshots/`：
 
@@ -96,13 +98,14 @@ tools/                     契约校验与会话交付脚本
 
 | 项目 | 状态 |
 | --- | --- |
-| iOS Runner 与 Widget 扩展编译 | 未验证：Windows 无 Xcode；`ci.yml` 的 macOS job 仅编译 Runner，扩展 target 待接线 |
+| iOS Runner 编译 | 已通过：GitHub Actions macOS runner `flutter build ios --simulator --no-codesign` 成功 |
+| iOS Widget 扩展编译 | 未验证：扩展 target 仍需在 Xcode 中创建并接入 App Group/签名，尚未嵌入 IPA |
 | iPhone 真机 / TestFlight | 未验证：依赖 Apple 账号、证书、profile |
 | Android release 签名 AAB/APK | 未验证：依赖 keystore Secrets |
 | Android 真机/模拟器小部件放置与系统调度 | 未验证：已在模拟器完成提交流程并确认原生快照写入，但未把小组件添加到桌面观察 RemoteViews 与 30 分钟刷新 |
 | Android 暗色/字体回退 | 已做暗色真机检查；系统字体 200% 与 320dp 仍未逐页截图 |
 | 真实行情在线调用与展示许可 | 未验证：公开候选仅按文档形态实现，未在线调用 |
-| GitHub Actions 工作流 | 未执行：当前目录不是 Git 仓库，也未配置远程 |
+| GitHub Actions 工作流 | 已执行：`ci` 5/5 成功；`android-release` 因未配置签名 Secrets 失败（预期） |
 | 320dp / 系统字体 200% / 暗色全套截图回归 | 部分验证：截图在 390×844 逻辑尺寸；320dp 与 200% 尚未逐页截图 |
 
 ## 8. 下一任务可用接口
@@ -123,4 +126,6 @@ tools/                     契约校验与会话交付脚本
 - Tag：`v0.1.0`；GitHub Release 附件：`fjob-0.1.0-universal.apk`、`fjob-0.1.0.aab`、`SHA256SUMS.txt`。
 - 发布签名：本地 `.release/fjob-release.jks`（PKCS12，RSA 4096，10,000 天），证书 SHA-256 `4ccda311…0b7b`；密钥与密码不进入仓库。
 - 发布版修复：R8 移除 `androidx.work.impl.WorkDatabase_Impl` 构造器导致启动崩溃，新增 `apps/mobile/android/app/proguard-rules.pro` 保留 Room/WorkManager/Startup 反射入口，并在签名包上复测通过。
+- CI 修复：提交 Gradle wrapper、为 Linux job 写入 `local.properties` 并先执行 `flutter pub get`；Runner target 加入共享 `WidgetSnapshot.swift`，macOS 模拟器编译通过。
+- Release：<https://github.com/wacilimonster-source/fjob/releases/tag/v0.1.0>（prerelease）。
 - 校验和与安装说明见 `docs/releases/v0.1.0.md`。
