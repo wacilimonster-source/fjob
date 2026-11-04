@@ -1,6 +1,6 @@
 {
   "lockedAt": "2026-11-04",
-  "status": "verified locally on Windows for the Android build and all Dart/Python tests; iOS compiled only through the documented macOS CI task",
+  "status": "Android release build signed and installed on an emulator; all five CI jobs pass; iOS Runner compiles on macOS CI; Widget extension target and store upload remain pending",
   "flutter": {
     "channel": "stable",
     "version": "3.47.9",
@@ -64,10 +64,10 @@
     "contractCheck": "python tools/verify_handoff.py"
   },
   "unverified": [
-    "iOS Runner and Widget extension build (requires macOS/Xcode)",
-    "Android release signing and AAB",
+    "iOS Widget extension target (must be created in Xcode and embedded in the IPA)",
+    "Android/iPhone physical-device widget placement and 30-minute system scheduling",
     "Real market data access and public-display licensing",
-    "Android/iPhone physical-device widget behaviour and system scheduling",
-    "GitHub Actions workflows (no remote repository configured)"
+    "Store signing upload, TestFlight and physical-device installation",
+    "Android release workflow secrets (the workflow intentionally fails without them)"
   ]
 }
