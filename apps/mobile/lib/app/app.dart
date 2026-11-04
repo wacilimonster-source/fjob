@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../domain/ledger.dart';
 import '../features/ledger/ledger_controller.dart';
 import '../features/onboarding/onboarding_controller.dart';
 import '../features/onboarding/onboarding_page.dart';
@@ -18,18 +17,13 @@ class FjobApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(effectiveLedgerProvider).value?.settings;
-    final themeSetting = settings?.theme ?? ThemeSetting.system;
+    // The product uses one fixed paper-light theme; the device dark setting is
+    // intentionally ignored instead of tinting the hand-drawn scene.
     return MaterialApp(
       title: '今日又白干',
       debugShowCheckedModeBanner: false,
       theme: FjobTheme.light(),
-      darkTheme: FjobTheme.dark(),
-      themeMode: switch (themeSetting) {
-        ThemeSetting.light => ThemeMode.light,
-        ThemeSetting.dark => ThemeMode.dark,
-        ThemeSetting.system => ThemeMode.system,
-      },
+      themeMode: ThemeMode.light,
       locale: const Locale('zh', 'CN'),
       supportedLocales: const [Locale('zh', 'CN'), Locale('en')],
       localizationsDelegates: const [

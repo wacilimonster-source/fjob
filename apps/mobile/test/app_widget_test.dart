@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todayagain/app/app.dart';
+import 'package:todayagain/app/providers.dart';
 
 import 'support/test_env.dart';
 
@@ -73,5 +74,28 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.textContaining('请输入到手月薪'), findsWidgets);
     expect(find.textContaining('生活给你多少安慰费'), findsOneWidget);
+  });
+
+  testWidgets('the interface stays paper-light when the system is dark',
+      (tester) async {
+    initSqliteFfi();
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...testOverrides(),
+          sampleModeProvider.overrideWith((ref) => true),
+        ],
+        child: const FjobApp(),
+      ),
+    );
+    for (var index = 0; index < 6; index++) {
+      await tester.pump(const Duration(milliseconds: 150));
+    }
+    expect(find.text('今日生存结余'), findsOneWidget);
+    final context = tester.element(find.text('今日生存结余'));
+    expect(Theme.of(context).brightness, Brightness.light);
+    expect(Theme.of(context).scaffoldBackgroundColor, const Color(0xFFF7F2E9));
   });
 }

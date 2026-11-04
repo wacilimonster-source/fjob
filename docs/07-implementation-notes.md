@@ -11,7 +11,7 @@
 | M0 建项 | 完成（Android 实构建） | `apps/mobile`、`packages/finance_core`、`toolchain.lock.json`、CI 工作流、`build/app/outputs/flutter-apk/app-debug.apk` |
 | M1 领域引擎 | 完成 | `packages/finance_core`，20 条 fixture + 55 条边界回归全部通过 |
 | M2 本地账本与引导 | 完成 | SQLite v1、草稿恢复、幂等提交、事务失败保留草稿、V0 迁移、六步引导 |
-| M3 主页面与动画 | 完成（开发版） | 四页、设置、手绘办公室/房子/车、硬币与天气状态、减少动效、暗色 |
+| M3 主页面与动画 | 完成（开发版） | 四页、设置、手绘办公室/房子/车、硬币与天气状态、减少动效、固定浅色 |
 | M4 小部件 | Android 完成；iOS 源码就绪 | Kotlin 解析器/RemoteViews/WorkManager + 11 项 JVM 测试；Swift/WidgetKit 源码、App Group、深链；iOS target 待 macOS CI 接线 |
 | M5 行情 | 契约级完成 | FastAPI 网关、fixture 适配器、默认停用的公开候选适配器、缓存/single-flight/限速/429、11 项 pytest |
 | M6 发布 | 模板就绪 | 签名配置读取 `key.properties`、Android/iOS release 工作流；签名与商店上传未执行 |
@@ -60,7 +60,7 @@ tools/                     契约校验与会话交付脚本
 | `python tools/check_widget_payloads.py` | 8 个引擎生成的快照条目通过真实 JSON Schema 校验 |
 | `flutter test tool/generate_office_art_test.dart` | 生成 Android 大号小部件静态场景 `res/drawable-nodpi/office_static.png` |
 | `flutter test tool/capture_screens_test.dart` | 生成 `apps/mobile/build/screenshots/` 五张界面截图 |
-| `adb install` + `am start` + `input` 流程 | 在 1080×1920 Android 模拟器（Android 16, 暗色）安装并启动成功；完成工资→排班→资产→住房→核对→提交；强杀重启后草稿恢复到上次步骤与输入 |
+| `adb install` + `am start` + `input` 流程 | 在 1080×1920 Android 模拟器（Android 16，系统深色下仍显示固定浅色）安装并启动成功；完成工资→排班→资产→住房→核对→提交；强杀重启后草稿恢复到上次步骤与输入 |
 | `adb shell run-as ... cat shared_prefs/fjob_widget_snapshot.xml` | 提交后原生收到 `payload_kind=timeline`、`ledgerRevision=1` 的时间线，证明 MethodChannel→Kotlin→SharedPreferences 链路可用 |
 | GitHub Actions `ci` | 5/5 jobs 成功（finance_core、Flutter analyze/test、Android debug + Kotlin、gateway、iOS simulator），run `41832316918` |
 | GitHub Actions `android-release` | 按设计在缺少 `ANDROID_KEYSTORE_BASE64` 时失败；v0.1.0 产物由本地发布密钥签名并上传到 GitHub Release |
@@ -68,7 +68,7 @@ tools/                     契约校验与会话交付脚本
 截图同时复制到 `docs/screenshots/`：
 
 - 引擎截图（固定示例时钟、390×844 逻辑尺寸）：`01-dashboard-demo.png`、`02-assets-demo.png`、`03-expenses-demo.png`、`04-widgets-demo.png`、`05-onboarding-welcome.png`。
-- 真机（模拟器）暗色截图：`android-welcome.png`、`android-schedule.png`、`android-review.png`、`android-dashboard.png`。
+- 真机（模拟器）浅色截图：`android-welcome.png`、`android-schedule.png`、`android-review.png`、`android-dashboard.png`。
 
 模拟器流程中修正的问题：负号字符在部分字体缺失会导致金额符号消失（改为 ASCII `-`）、星期选择被拉成整行、进入新步骤时提前显示字段错误、内容与状态栏重叠、FilledButton 自定义文字样式丢失中文字体。
 
@@ -103,10 +103,10 @@ tools/                     契约校验与会话交付脚本
 | iPhone 真机 / TestFlight | 未验证：依赖 Apple 账号、证书、profile |
 | Android release 签名 AAB/APK | 未验证：依赖 keystore Secrets |
 | Android 真机/模拟器小部件放置与系统调度 | 未验证：已在模拟器完成提交流程并确认原生快照写入，但未把小组件添加到桌面观察 RemoteViews 与 30 分钟刷新 |
-| Android 暗色/字体回退 | 已做暗色真机检查；系统字体 200% 与 320dp 仍未逐页截图 |
+| Android 字体回退 | 已做系统深色下固定浅色的真机检查；系统字体 200% 与 320dp 仍未逐页截图 |
 | 真实行情在线调用与展示许可 | 未验证：公开候选仅按文档形态实现，未在线调用 |
 | GitHub Actions 工作流 | 已执行：`ci` 5/5 成功；`android-release` 因未配置签名 Secrets 失败（预期） |
-| 320dp / 系统字体 200% / 暗色全套截图回归 | 部分验证：截图在 390×844 逻辑尺寸；320dp 与 200% 尚未逐页截图 |
+| 320dp / 系统字体 200% 截图回归 | 部分验证：截图在 390×844 逻辑尺寸；320dp 与 200% 尚未逐页截图 |
 
 ## 8. 下一任务可用接口
 
@@ -128,4 +128,11 @@ tools/                     契约校验与会话交付脚本
 - 发布版修复：R8 移除 `androidx.work.impl.WorkDatabase_Impl` 构造器导致启动崩溃，新增 `apps/mobile/android/app/proguard-rules.pro` 保留 Room/WorkManager/Startup 反射入口，并在签名包上复测通过。
 - CI 修复：提交 Gradle wrapper、为 Linux job 写入 `local.properties` 并先执行 `flutter pub get`；Runner target 加入共享 `WidgetSnapshot.swift`，macOS 模拟器编译通过。
 - Release：<https://github.com/wacilimonster-source/fjob/releases/tag/v0.1.0>（prerelease）。
+
+### v0.1.1
+
+- 按最新产品要求改为**固定浅色纸感**：移除主题选择、深色配色与 `ThemeMode` 分支；系统深色下仍显示浅色，状态栏图标固定深色。
+- `versionName 0.1.1 / versionCode 2`，沿用 v0.1.0 发布密钥，已验证在模拟器上覆盖升级。
+- 新增“系统深色 → 应用浅色”回归测试；`flutter test` 29 项通过。
+- Release：<https://github.com/wacilimonster-source/fjob/releases/tag/v0.1.1>（prerelease），校验和见 `docs/releases/v0.1.1.md`。
 - 校验和与安装说明见 `docs/releases/v0.1.0.md`。

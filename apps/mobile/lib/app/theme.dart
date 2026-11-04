@@ -31,19 +31,6 @@ final class FjobPalette extends ThemeExtension<FjobPalette> {
     positive: Color(0xFF46644E),
   );
 
-  static const FjobPalette dark = FjobPalette(
-    paper: Color(0xFF242823),
-    panel: Color(0xFF30362F),
-    ink: Color(0xFFEEEADD),
-    muted: Color(0xFFB9C0AE),
-    line: Color(0xFF565F50),
-    soft: Color(0xFF3C4738),
-    yellow: Color(0xFF685C36),
-    rose: Color(0xFF68483E),
-    negative: Color(0xFFFFAB95),
-    positive: Color(0xFFB6D5A7),
-  );
-
   final Color paper;
   final Color panel;
   final Color ink;
@@ -105,8 +92,6 @@ extension PaletteContext on BuildContext {
 
 abstract final class FjobTheme {
   static ThemeData light() => _build(Brightness.light, FjobPalette.light);
-
-  static ThemeData dark() => _build(Brightness.dark, FjobPalette.dark);
 
   static ThemeData _build(Brightness brightness, FjobPalette palette) {
     final base = ThemeData(

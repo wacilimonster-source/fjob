@@ -164,7 +164,7 @@ tag 或显式 workflow_dispatch 触发。从 Secrets 解码 keystore 到 runner 
 
 必需配置包括 Apple Team ID、App Bundle ID、Widget Bundle ID、App Group ID、distribution certificate/P12 password、两个 profile、App Store Connect API key ID/issuer ID/private key。首次生成证书可在 macOS CI 上创建 CSR 并通过 Apple 开发者门户签发，整个初始化流程需落实到受保护手动任务，用户本地无需搭建 Xcode。
 
-Secrets 不具备时 PR 编译与本地 Android 开发仍可推进，签名发布任务明确显示缺少配置。CI 成功需与 iPhone TestFlight 真机验证分开记录，重点验证安装、扩展加载、暗色、大字、刷新与深链。
+Secrets 不具备时 PR 编译与本地 Android 开发仍可推进，签名发布任务明确显示缺少配置。CI 成功需与 iPhone TestFlight 真机验证分开记录，重点验证安装、扩展加载、大字、刷新与深链；应用固定浅色。
 
 ## 9. 安全与运维
 

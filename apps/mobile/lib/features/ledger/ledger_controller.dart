@@ -82,15 +82,6 @@ final class LedgerController extends AsyncNotifier<LedgerState> {
     await refreshQuotes();
   }
 
-  Future<void> updateTheme(ThemeSetting theme) async {
-    final repository = await _repository;
-    await _commitSettings(() => repository.updateSettings(
-          expectedRevision: _revision,
-          theme: theme,
-          nowUtc: ref.read(clockProvider).nowUtc(),
-        ));
-  }
-
   Future<void> updateMotion(MotionSetting motion) async {
     final repository = await _repository;
     await _commitSettings(() => repository.updateSettings(

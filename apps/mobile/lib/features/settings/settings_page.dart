@@ -48,20 +48,12 @@ class SettingsPage extends ConsumerWidget {
             ),
           const SectionLabel('外观'),
           const SizedBox(height: 6),
-          SegmentedButton<ThemeSetting>(
-            segments: const [
-              ButtonSegment(value: ThemeSetting.system, label: Text('随系统')),
-              ButtonSegment(value: ThemeSetting.light, label: Text('浅色')),
-              ButtonSegment(value: ThemeSetting.dark, label: Text('深色')),
-            ],
-            selected: {settings.theme},
-            onSelectionChanged: sample
-                ? null
-                : (values) => ref
-                    .read(ledgerControllerProvider.notifier)
-                    .updateTheme(values.first),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('纸感浅色'),
+            subtitle: const Text('固定使用奶油纸面与深灰绿轮廓，不再跟随系统深色。'),
+            trailing: const Icon(Icons.palette_outlined, size: 20),
           ),
-          const SizedBox(height: 10),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('减少动效'),
