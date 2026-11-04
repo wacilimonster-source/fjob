@@ -64,6 +64,12 @@ jobs:
           flutter-version: 3.47.9
           channel: stable
           cache: true
+      - name: Provide Android SDK paths
+        run: |
+          cat > apps/mobile/android/local.properties <<EOF
+          sdk.dir=$ANDROID_HOME
+          flutter.sdk=$FLUTTER_ROOT
+          EOF
       - name: Widget contract parser tests
         working-directory: apps/mobile/android
         run: ./gradlew testDebugUnitTest --console=plain
