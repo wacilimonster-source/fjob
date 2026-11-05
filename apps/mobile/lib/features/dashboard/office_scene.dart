@@ -1,7 +1,8 @@
 /// 粗线条、扁平奶油色的办公室小剧场。
 ///
-/// 场景只消费展示状态（工作阶段、盈亏心情、金额是否完整），从不读取数据库
-/// 或行情接口。动画时间由本地控制器驱动，不参与任何账本金额计算。
+/// 场景只消费展示状态（工作上下文、盈亏心情、瞬态控制器给出的
+/// [ScenePresentation]），从不读取数据库或行情接口。动画时间由本地 8 秒
+/// 环境控制器与外部瞬态控制器驱动，不参与任何账本金额计算。
 library;
 
 import 'dart:math' as math;
@@ -10,10 +11,13 @@ import 'package:finance_core/finance_core.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
-
-enum SceneMood { gain, loss, unknown }
+import 'scene_interaction_controller.dart';
+import 'worker_painter.dart';
 
 enum DebtArtType { house, car }
+
+/// PAT-04 头肩触控区（场景逻辑坐标 380×238）。
+final Rect headShoulderRect = Rect.fromLTWH(138, 44, 83, 125);
 
 class OfficeScene extends StatefulWidget {
   const OfficeScene({
@@ -22,18 +26,35 @@ class OfficeScene extends StatefulWidget {
     required this.completeness,
     required this.total,
     required this.reduceMotion,
-    this.comfort = false,
-    this.onComfort,
+    this.controller,
+    this.active = true,
+    this.interactive = true,
+    this.onRequestPat,
+    this.showHousing = true,
+    this.showCar = true,
     this.housingLabel = '房贷',
     this.carLabel = '车贷',
   });
 
+  /// 稳态工作阶段；有 [controller] 时以其展示状态为准。
   final DayPhase phase;
   final Completeness completeness;
   final Rational? total;
   final bool reduceMotion;
-  final bool comfort;
-  final VoidCallback? onComfort;
+
+  /// 瞬态控制器；预览与欢迎页传 null，仅绘制稳态。
+  final SceneInteractionController? controller;
+
+  /// 场景是否对用户可见；不可见时停止环境 ticker。
+  final bool active;
+
+  /// 是否启用头肩触控（欢迎页插画模式为 false）。
+  final bool interactive;
+  final VoidCallback? onRequestPat;
+
+  /// 住房/车贷未配置时不画对应元素，硬币也不往那边飞。
+  final bool showHousing;
+  final bool showCar;
   final String housingLabel;
   final String carLabel;
 
@@ -51,16 +72,21 @@ class _OfficeSceneState extends State<OfficeScene>
   @override
   void initState() {
     super.initState();
-    if (!widget.reduceMotion) _controller.repeat();
+    _syncAmbient();
   }
 
   @override
   void didUpdateWidget(covariant OfficeScene oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.reduceMotion && _controller.isAnimating) {
-      _controller.stop();
-    } else if (!widget.reduceMotion && !_controller.isAnimating) {
+    _syncAmbient();
+  }
+
+  void _syncAmbient() {
+    final shouldRun = widget.active && !widget.reduceMotion;
+    if (shouldRun && !_controller.isAnimating) {
       _controller.repeat();
+    } else if (!shouldRun && _controller.isAnimating) {
+      _controller.stop();
     }
   }
 
@@ -70,40 +96,122 @@ class _OfficeSceneState extends State<OfficeScene>
     super.dispose();
   }
 
-  SceneMood get _mood {
-    if (widget.completeness != Completeness.complete) return SceneMood.unknown;
-    final total = widget.total;
-    if (total == null) return SceneMood.unknown;
-    return total.isNegative ? SceneMood.loss : SceneMood.gain;
+  SceneMood get _localMood => sceneMoodOf(widget.completeness, widget.total);
+
+  DayPhase get _phase => widget.controller?.phase ?? widget.phase;
+
+  Presence get _presence =>
+      _phase == DayPhase.working || _phase == DayPhase.breakTime
+          ? Presence.atDesk
+          : Presence.emptyDesk;
+
+  bool get _departing =>
+      widget.controller?.transient == TransientKind.departure;
+
+  String get _semanticsLabel {
+    final destinations = [
+      if (widget.showHousing) widget.housingLabel,
+      if (widget.showCar) widget.carLabel,
+    ];
+    if (widget.controller?.transient == TransientKind.pat) {
+      return '手绘办公室：人物被轻轻拍肩，抬眼回应';
+    }
+    if (_departing) return '手绘办公室：人物正在提包离开工位';
+    return switch (_presence) {
+      Presence.atDesk when _phase == DayPhase.breakTime =>
+        '手绘办公室：人物在午休中',
+      Presence.atDesk => destinations.isEmpty
+          ? '手绘办公室：打工人在工位上'
+          : '手绘办公室：打工人在工位上，硬币流向${destinations.join('和')}',
+      Presence.emptyDesk => switch (_phase) {
+          DayPhase.afterShift => '空工位，人物已下班',
+          DayPhase.beforeShift => '空工位，还没到岗',
+          DayPhase.restDay => '空工位，今天休息',
+          _ => '空工位，排班待确认',
+        },
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    return Semantics(
-      label: '手绘办公室：疲惫的打工人在工位前，硬币流向房子和车',
-      button: widget.onComfort != null,
-      child: AspectRatio(
-        aspectRatio: 380 / 238,
-        child: GestureDetector(
-          onTap: widget.onComfort,
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) => CustomPaint(
-              painter: _OfficePainter(
-                palette: palette,
-                phase: widget.phase,
-                mood: _mood,
-                comfort: widget.comfort,
-                timeMs: _controller.value * 8000,
-                animate: !widget.reduceMotion,
-                housingLabel: widget.housingLabel,
-                carLabel: widget.carLabel,
-              ),
+    final controller = widget.controller;
+    // 瞬态与环境循环都通过同一 Listenable 驱动重建，语义标签随状态更新。
+    return AnimatedBuilder(
+      animation: controller == null
+          ? _controller
+          : Listenable.merge([_controller, controller]),
+      builder: (context, _) {
+        controller?.reportAmbient(
+          timeMs: _controller.value * 8000,
+          animating: _controller.isAnimating,
+        );
+        final presentation =
+            controller?.presentation ?? _steadyPresentation();
+        return Semantics(
+          label: _semanticsLabel,
+          container: true,
+          // 头肩按钮保持独立语义节点，不并入场景描述（A11Y-01）。
+          explicitChildNodes: true,
+          child: AspectRatio(
+            aspectRatio: 380 / 238,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final height = width * 238 / 380;
+                final canPat =
+                    widget.interactive && presentation.canPat;
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: _OfficePainter(
+                          palette: palette,
+                          presentation: presentation,
+                          showHousing: widget.showHousing,
+                          showCar: widget.showCar,
+                          housingLabel: widget.housingLabel,
+                          carLabel: widget.carLabel,
+                        ),
+                      ),
+                    ),
+                    if (canPat)
+                      Positioned(
+                        left: headShoulderRect.left / 380 * width,
+                        top: headShoulderRect.top / 238 * height,
+                        width: headShoulderRect.width / 380 * width,
+                        height: headShoulderRect.height / 238 * height,
+                        child: Semantics(
+                          button: true,
+                          label: '拍拍他，给正在工位上的他一点安慰',
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: widget.onRequestPat,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
-        ),
-      ),
+        );
+      },
+    );
+  }
+
+  ScenePresentation _steadyPresentation() {
+    final animate = widget.active && !widget.reduceMotion;
+    return ScenePresentation(
+      phase: widget.phase,
+      presence: _presence,
+      mood: _localMood,
+      transient: TransientKind.idle,
+      progress: 0,
+      canPat: false,
+      reduceMotion: widget.reduceMotion,
+      ambientMs: animate ? _controller.value * 8000 : 0,
+      animateAmbient: animate,
     );
   }
 }
@@ -111,21 +219,17 @@ class _OfficeSceneState extends State<OfficeScene>
 class _OfficePainter extends CustomPainter {
   _OfficePainter({
     required this.palette,
-    required this.phase,
-    required this.mood,
-    required this.comfort,
-    required this.timeMs,
-    required this.animate,
+    required this.presentation,
+    required this.showHousing,
+    required this.showCar,
     required this.housingLabel,
     required this.carLabel,
   });
 
   final FjobPalette palette;
-  final DayPhase phase;
-  final SceneMood mood;
-  final bool comfort;
-  final double timeMs;
-  final bool animate;
+  final ScenePresentation presentation;
+  final bool showHousing;
+  final bool showCar;
   final String housingLabel;
   final String carLabel;
 
@@ -133,12 +237,23 @@ class _OfficePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.scale(size.width / 380, size.height / 238);
+    // OUT-03：图层外使用场景边界裁剪，出场后不残留。
+    canvas.clipRect(const Rect.fromLTWH(0, 0, 380, 238));
     final ink = palette.ink;
     final paper = palette.panel;
     final soft = palette.soft;
     final yellow = palette.yellow;
     final rose = palette.rose;
     final muted = palette.muted;
+    final mood = presentation.mood;
+    final phase = presentation.phase;
+    final frame = WorkerFrame.resolve(
+      presentation: presentation,
+      ambientMs: presentation.ambientMs,
+      animate: presentation.animateAmbient,
+    );
+    final timeMs = presentation.ambientMs;
+    final animate = presentation.animateAmbient;
 
     final paint = Paint()..style = PaintingStyle.fill;
     void line(List<Offset> points, Color color, double width) {
@@ -169,18 +284,8 @@ class _OfficePainter extends CustomPainter {
 
     void ellipse(double x, double y, double rx, double ry, Color fill,
         {bool outline = true}) {
-      paint.color = fill;
-      canvas.drawOval(Rect.fromCenter(center: Offset(x, y), width: rx * 2, height: ry * 2), paint);
-      if (outline) {
-        final stroke = Paint()
-          ..color = ink
-          ..strokeWidth = 1.8
-          ..style = PaintingStyle.stroke;
-        canvas.drawOval(
-          Rect.fromCenter(center: Offset(x, y), width: rx * 2, height: ry * 2),
-          stroke,
-        );
-      }
+      DebtArtPainter.paintOval(canvas, x, y, rx, ry, fill,
+          outline ? ink : null, 1.8);
     }
 
     void text(String value, double x, double y, double size,
@@ -198,6 +303,11 @@ class _OfficePainter extends CustomPainter {
       )..layout();
       painter.paint(canvas, Offset(x, y));
     }
+
+    final empty = !frame.present;
+    final monitorAsleep = empty ||
+        (presentation.transient == TransientKind.departure &&
+            presentation.progress * 2200 >= 560);
 
     // Room.
     paint.color = soft;
@@ -238,149 +348,168 @@ class _OfficePainter extends CustomPainter {
         text('?', 288, 34, 14, color: muted);
     }
 
-    // Sticky note and calendar.
+    // Sticky note: working copy, or the empty-desk status per phase.
     box(const Rect.fromLTWH(30, 21, 81, 66), yellow, 2);
     line(const [Offset(48, 22), Offset(89, 22)], rose, 5);
-    text('上班致富', 41, 38, 14);
-    text('暂无进展', 41, 60, 12, color: muted);
+    if (empty) {
+      final note = switch (phase) {
+        DayPhase.afterShift => '已下班',
+        DayPhase.beforeShift => '还没到岗',
+        DayPhase.restDay => '今日休息',
+        _ => '排班待确认',
+      };
+      text(note, 40, 46, note.length > 4 ? 11 : 14);
+      text('工位暂停营业', 40, 68, 11, color: muted);
+    } else {
+      text('上班致富', 41, 38, 14);
+      text('暂无进展', 41, 60, 12, color: muted);
+    }
     box(const Rect.fromLTWH(124, 19, 36, 32), paper, 3);
     text('0001', 130, 34, 10);
 
     // House and car, using the shared bill illustrations.
-    canvas.save();
-    canvas.translate(-12, 109);
-    canvas.scale(0.34, 0.58);
-    DebtArtPainter(type: DebtArtType.house, palette: palette).paint(
-      canvas,
-      const Size(320, 165),
-    );
-    canvas.restore();
-    canvas.save();
-    canvas.translate(283, 158);
-    canvas.scale(0.33, 0.33);
-    DebtArtPainter(type: DebtArtType.car, palette: palette).paint(
-      canvas,
-      const Size(320, 165),
-    );
-    canvas.restore();
-    text(housingLabel, 22, 214, 11);
-    text(carLabel, 320, 214, 11);
-
-    final resting = phase == DayPhase.restDay;
-    final working = phase == DayPhase.working;
-    final onBreak = phase == DayPhase.breakTime;
+    if (showHousing) {
+      canvas.save();
+      canvas.translate(-12, 109);
+      canvas.scale(0.34, 0.58);
+      DebtArtPainter(type: DebtArtType.house, palette: palette).paint(
+        canvas,
+        const Size(320, 165),
+      );
+      canvas.restore();
+      text(housingLabel, 22, 214, 11);
+    }
+    if (showCar) {
+      canvas.save();
+      canvas.translate(283, 158);
+      canvas.scale(0.33, 0.33);
+      DebtArtPainter(type: DebtArtType.car, palette: palette).paint(
+        canvas,
+        const Size(320, 165),
+      );
+      canvas.restore();
+      text(carLabel, 320, 214, 11);
+    }
 
     ellipse(186, 206, 75, 8, soft, outline: false);
 
-    if (resting) {
-      box(const Rect.fromLTWH(162, 146, 43, 47), rose, 8);
-      line(const [Offset(182, 190), Offset(182, 212)], ink, 4);
-      line(const [Offset(162, 213), Offset(205, 213)], ink, 3);
-      text('人呢？', 157, 112, 17, color: muted);
-      text('今天轮到工位休息', 133, 132, 11, color: muted);
-    } else {
-      // Chair.
-      box(const Rect.fromLTWH(162, 146, 43, 47), rose, 8);
-      final bob = working && animate ? math.sin(timeMs * 0.004) * 1.6 : 3.0;
-      canvas.save();
-      canvas.translate(0, bob);
-      // Body.
-      ellipse(181, 143, 25, 35, paper);
-      line(const [Offset(170, 169), Offset(160, 198), Offset(148, 199)], ink, 5);
-      line(const [Offset(187, 171), Offset(202, 196), Offset(217, 196)], ink, 5);
-      // Head.
-      ellipse(178, 96, 30, 35, paper);
-      final hair = Path()
-        ..moveTo(149, 85)
-        ..cubicTo(147, 56, 199, 48, 208, 85)
-        ..lineTo(194, 75)
-        ..lineTo(192, 86)
-        ..lineTo(180, 76)
-        ..lineTo(170, 85)
-        ..lineTo(162, 78)
-        ..close();
-      paint.color = ink;
-      canvas.drawPath(hair, paint);
-      line(const [Offset(155, 69), Offset(152, 58), Offset(166, 65)], ink, 2);
-      line(const [Offset(173, 61), Offset(182, 51), Offset(186, 61)], ink, 2);
+    // Chair; it leans back on the empty desk and settles after the walk-out.
+    final chairTilted = empty ||
+        (presentation.transient == TransientKind.departure &&
+            presentation.progress * 2200 > 1900);
+    canvas.save();
+    canvas.translate(182, 190);
+    if (chairTilted) canvas.rotate(0.105);
+    box(const Rect.fromLTWH(-20, -44, 43, 47), rose, 8);
+    line(const [Offset(0, 0), Offset(0, 22)], ink, 4);
+    line(const [Offset(-20, 23), Offset(23, 23)], ink, 3);
+    canvas.restore();
 
-      final happy = comfort || mood == SceneMood.gain;
-      if (happy) {
-        line(const [Offset(159, 98), Offset(164, 95), Offset(169, 98)], ink, 2);
-        line(const [Offset(182, 98), Offset(187, 95), Offset(192, 98)], ink, 2);
-      } else {
-        line(const [Offset(157, 95), Offset(169, 96)], ink, 2);
-        line(const [Offset(183, 96), Offset(195, 95)], ink, 2);
-        ellipse(165, 101, 2, 3, ink, outline: false);
-        ellipse(187, 101, 2, 3, ink, outline: false);
-        line(const [Offset(158, 107), Offset(169, 108)], muted, 1);
-        line(const [Offset(183, 108), Offset(194, 107)], muted, 1);
-      }
-      line(const [Offset(171, 117), Offset(182, 117)], ink, 1.5);
-      line(const [Offset(171, 130), Offset(179, 138), Offset(186, 129)], muted, 1);
-      line(
-        const [Offset(179, 138), Offset(176, 157), Offset(183, 154), Offset(179, 138)],
-        ink,
-        2,
-      );
-      final tap = working && animate ? math.sin(timeMs * 0.025) * 2 : 0.0;
-      if (working) {
-        line([const Offset(158, 137), const Offset(146, 151), Offset(169, 157 + tap)], ink, 4);
-        line([const Offset(199, 136), const Offset(214, 150), Offset(201, 157 - tap)], ink, 4);
-      } else if (onBreak) {
-        line(const [Offset(158, 137), Offset(146, 155), Offset(160, 166)], ink, 4);
-        line(const [Offset(199, 136), Offset(214, 155), Offset(200, 166)], ink, 4);
-      } else {
-        line(const [Offset(158, 137), Offset(147, 165), Offset(160, 171)], ink, 4);
-        line(const [Offset(199, 136), Offset(213, 165), Offset(200, 171)], ink, 4);
-      }
-      canvas.restore();
-    }
+    final worker = WorkerPainter(palette: palette);
+    // Seated (and mid-stand) stay behind the desk; the walk-out is foreground.
+    final behindDesk = frame.present && (frame.seated || frame.walk <= 0);
+    if (behindDesk) worker.paint(canvas, frame);
 
     // Desk and monitor.
     box(const Rect.fromLTWH(91, 163, 209, 10), yellow, 2);
     line(const [Offset(102, 174), Offset(99, 215)], ink, 4);
     line(const [Offset(287, 174), Offset(291, 215)], ink, 4);
-    box(const Rect.fromLTWH(220, 113, 63, 43), paper, 4);
+    box(const Rect.fromLTWH(220, 113, 63, 43), monitorAsleep ? soft : paper, 4);
     line(const [Offset(250, 157), Offset(250, 162)], ink, 3);
     line(const [Offset(232, 163), Offset(269, 163)], ink, 2);
-    final rising = mood == SceneMood.gain;
-    final trace = rising
-        ? const [Offset(227, 144), Offset(237, 143), Offset(244, 135), Offset(253, 138), Offset(263, 125), Offset(277, 121)]
-        : const [Offset(227, 123), Offset(238, 125), Offset(246, 132), Offset(254, 130), Offset(264, 144), Offset(277, 148)];
-    line(trace, rising ? palette.positive : palette.negative, 2);
+    if (monitorAsleep) {
+      // 待机：一条短线。
+      line(const [Offset(243, 137), Offset(258, 137)], muted, 2);
+    } else {
+      final rising = mood == SceneMood.gain;
+      final trace = rising
+          ? const [Offset(227, 144), Offset(237, 143), Offset(244, 135), Offset(253, 138), Offset(263, 125), Offset(277, 121)]
+          : const [Offset(227, 123), Offset(238, 125), Offset(246, 132), Offset(254, 130), Offset(264, 144), Offset(277, 148)];
+      line(trace, rising ? palette.positive : palette.negative, 2);
+    }
 
-    // Mug with steam on breaks.
+    // Mug, with steam while the worker is around.
     box(const Rect.fromLTWH(120, 147, 15, 15), paper, 3);
     line(const [Offset(136, 149), Offset(141, 150), Offset(141, 157), Offset(136, 158)], ink, 1.5);
-    if (!resting && (onBreak || !working)) {
+    if (frame.present && presentation.transient != TransientKind.departure) {
       final drift = animate ? (timeMs * 0.02) % 6 : 0.0;
       line([Offset(124, 140 - drift), const Offset(122, 134), const Offset(125, 128)], muted, 1);
       line([Offset(131, 140 - drift), const Offset(133, 135), const Offset(131, 130)], muted, 1);
     }
 
-    // Salary coins travelling to the house and the car.
-    if (working && animate) {
-      for (var index = 0; index < 5; index++) {
-        final phaseValue = (timeMs * 0.00014 + index / 5) % 1;
-        final fromLeft = index.isEven;
-        final x = fromLeft ? 210 - phaseValue * 165 : 210 + phaseValue * 132;
-        final y = 153 -
-            math.sin(phaseValue * math.pi) * 38 +
-            phaseValue * (fromLeft ? -4 : 39);
-        ellipse(x, y, 6, 7, yellow);
-        text('¥', x - 3, y - 5, 9);
+    // Salary coins travelling to the visible destinations.
+    final departureMs = presentation.transient == TransientKind.departure
+        ? presentation.progress * 2200
+        : null;
+    final coinsActive = departureMs != null
+        ? departureMs < 180
+        : phase == DayPhase.working && frame.present;
+    if (coinsActive && (showHousing || showCar)) {
+      final destinations = <List<double>>[
+        if (showHousing) const [45, 149],
+        if (showCar) const [342, 192],
+      ];
+      for (var index = 0; index < 4; index++) {
+        final a = ((animate ? timeMs * 0.00014 : 0) + index / 4) % 1;
+        final target = destinations[index % destinations.length];
+        final x = 210 + (target[0] - 210) * a;
+        final y = 153 +
+            (target[1] - 153) * a -
+            math.sin(a * math.pi) * 38;
+        final alpha = departureMs == null ? 1.0 : (1 - departureMs / 180).clamp(0.0, 1.0);
+        canvas.save();
+        canvas.scale(1);
+        DebtArtPainter.paintOval(
+          canvas,
+          x,
+          y,
+          6,
+          7,
+          yellow,
+          alpha < 1 ? ink.withValues(alpha: alpha) : ink,
+          1.8,
+        );
+        text('¥', x - 3, y - 5, 9, color: ink.withValues(alpha: alpha));
+        canvas.restore();
       }
     }
 
+    // Walk-out in front of desk, house, car and coins.
+    if (frame.present && !behindDesk) {
+      worker.paint(canvas, frame);
+      if (frame.walking) {
+        // 离场速度线，最多两笔。
+        final speedAlpha = (1 - frame.walk).clamp(0.0, 1.0);
+        final speed = Paint()
+          ..color = muted.withValues(alpha: speedAlpha * 0.8)
+          ..strokeWidth = 1.5
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(
+          Offset(frame.actorX - 30, 186),
+          Offset(frame.actorX - 16, 186),
+          speed,
+        );
+        canvas.drawLine(
+          Offset(frame.actorX - 36, 198),
+          Offset(frame.actorX - 19, 198),
+          speed,
+        );
+      }
+    }
+
+    final hasDebt = showHousing || showCar;
     text(
-      resting
-          ? '贷款全勤奖'
-          : working
-              ? '收入运输中…'
-              : onBreak
-                  ? '午休暂停计薪'
-                  : '月供夜班中',
+      switch (presentation.transient) {
+        TransientKind.departure => '工位正在交还给空气',
+        _ => switch (phase) {
+            DayPhase.working => hasDebt ? '收入运输中…' : '计薪中',
+            DayPhase.breakTime => '午休暂停计薪',
+            DayPhase.afterShift => '今日工位，暂停营业。',
+            DayPhase.beforeShift => '工位就绪，等人来',
+            DayPhase.restDay => '今天工位休息',
+            DayPhase.unknown => '排班待确认',
+          },
+      },
       143,
       226,
       11,
@@ -392,11 +521,10 @@ class _OfficePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _OfficePainter oldDelegate) =>
-      oldDelegate.timeMs != timeMs ||
-      oldDelegate.phase != phase ||
-      oldDelegate.mood != mood ||
-      oldDelegate.comfort != comfort ||
+      oldDelegate.presentation != presentation ||
       oldDelegate.palette != palette ||
+      oldDelegate.showHousing != showHousing ||
+      oldDelegate.showCar != showCar ||
       oldDelegate.housingLabel != housingLabel ||
       oldDelegate.carLabel != carLabel;
 }

@@ -1,7 +1,7 @@
 name: todayagain
 description: 今日又白干 — 工资、行情与月供在同一间办公室相遇。
 publish_to: none
-version: 0.1.8+9
+version: 0.1.9+10
 
 environment:
   sdk: ^3.6.0

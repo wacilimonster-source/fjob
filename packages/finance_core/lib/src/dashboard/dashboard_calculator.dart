@@ -6,6 +6,7 @@ import '../expense/expense_calculator.dart';
 import '../money/rational.dart';
 import '../schedule/schedule_expander.dart';
 import '../schedule/schedule_model.dart';
+import '../schedule/work_session.dart';
 import '../time/business_calendar.dart';
 import '../time/local_date.dart';
 import '../wage/wage_calculator.dart';
@@ -95,6 +96,7 @@ final class DashboardSnapshot {
     required this.notes,
     required this.dayLengthSeconds,
     required this.monthDays,
+    this.workSession = WorkSessionContext.empty,
   });
 
   final DateTime computedAtUtc;
@@ -132,6 +134,11 @@ final class DashboardSnapshot {
 
   final int dayLengthSeconds;
   final int monthDays;
+
+  /// SCN-01 complete-shift presence context. Runtime-only: never persisted,
+  /// never part of holdings or amounts. The calculator always fills it; hand
+  /// built snapshots default to the unknown context.
+  final WorkSessionContext workSession;
 
   bool get isPartial => completeness == Completeness.partial;
   bool get isUnavailable => completeness == Completeness.unavailable;
@@ -231,7 +238,8 @@ final class DashboardCalculator {
     final breakdownComplete = housing.breakdownKnown && car.breakdownKnown;
     if (!breakdownComplete) notes.add(DashboardNote.principalUnknown);
 
-    final phase = _phaseFor(input, date, now);
+    final workSession = _workSessionFor(input, now);
+    final phase = workSession.phase;
 
     Rational? totalRational;
     Completeness completeness;
@@ -295,6 +303,7 @@ final class DashboardCalculator {
       estimate: housing.estimate || car.estimate,
       phase: phase,
       timeline: _timelineFor(input, date),
+      workSession: workSession,
       monthStats: wage.monthStats,
       wageDetail: wage,
       assets: assets,
@@ -331,26 +340,14 @@ final class DashboardCalculator {
     );
   }
 
-  DayPhase _phaseFor(
-    CalculationInput input,
-    LocalDate date,
-    DateTime now,
-  ) {
-    final timeline = _timelineFor(input, date);
-    if (timeline == null) return DayPhase.unknown;
-    if (timeline.isRestDay) return DayPhase.restDay;
-    for (final segment in timeline.paidSegments) {
-      if (!now.isBefore(segment.startUtc) && now.isBefore(segment.endUtc)) {
-        return DayPhase.working;
-      }
-    }
-    for (final window in timeline.unpaidWindows) {
-      if (window.contains(now)) return DayPhase.breakTime;
-    }
-    final start = timeline.shiftStartUtc;
-    final end = timeline.shiftEndUtc;
-    if (start != null && now.isBefore(start)) return DayPhase.beforeShift;
-    if (end != null && !now.isBefore(end)) return DayPhase.afterShift;
-    return DayPhase.unknown;
+  /// SCN-01 presence context; empty (unknown) when no schedule applies.
+  WorkSessionContext _workSessionFor(CalculationInput input, DateTime now) {
+    final version = scheduleVersionAt(input, now);
+    if (version == null) return WorkSessionContext.empty;
+    return wageCalculator.expander.workSessionContext(
+      version: version,
+      overrides: input.overrides,
+      nowUtc: now,
+    );
   }
 }

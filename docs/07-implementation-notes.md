@@ -173,3 +173,34 @@ tools/                     契约校验与会话交付脚本
 - 启动时重新拉取并覆盖旧 fixture 日历；设置页显示日历版本与覆盖范围。
 - 新增休市日历测试。
 
+
+### v0.1.9
+
+（原「未发版改动」，随 v0.1.9 一并发布）
+
+- 应用内更新检查与 APK 下载改为「国内中转优先、直连兜底」：先走 `gh-proxy.com`、`ghfast.top` 前缀中转（2026-11-05 实测可用，gh-proxy 返回与 GitHub 逐字节一致），失败自动回退 `api.github.com` / `github.com` 直连。非 GitHub 域名不重写；SHA-256 校验保持不变，覆盖安装另有 Android 签名校验兜底。中转为社区服务，发版前需复核可用性。
+- 求生现场：住房/车贷未配置时场景不画对应房子/车与标签，工资硬币只飞向已配置一侧，场景文案与下方收据卡、合计行同步按配置显隐。
+- 桌面分身页移除 Android/iOS 平台切换，固定按 Android 展示。
+
+### v0.1.9 · 拍拍他与下班离场（docs/09 SCN-01 至 SCN-05）
+
+- finance_core 新增 `WorkSessionInfo`/`WorkSessionContext` 与 `ScheduleExpander.workSessionContext`（±48h 完整班次解析，不按午夜裁断）；`DashboardSnapshot.workSession` 由生产计算入口填充，`phase` 改按完整班次判定。自然日 `DayTimeline` 与工资/分摊算法保持不变。
+- 新增 `scene_interaction_controller.dart`：统一拥有 3.2 秒拍肩与 2.2 秒离场两个一次性 AnimationController，互斥运行；requestPat 门控（在场+空闲+可见）、reconcile 处理可见性/身份/时钟跳变/班次终点跨越（2000ms 容错窗口、lastDepartureSessionKey 去重）、减少动效静态回应 2400ms、文案池按接受次序循环且语气在句中锁定。
+- `office_scene.dart` 重写为消费 ScenePresentation；新增 `worker_painter.dart` 分部件绘制（头部下沉/旋转/回弹、抬眼腮红、手掌、小包、行走腿摆、前景遮挡、场景边界裁剪）。补齐 beforeShift/restDay/unknown 空工位（便签、待机屏、椅子偏转）与场景语义描述。删除页面旧 5 秒 comfort Timer 与 phase 强制 working 路径；安慰文案移入固定预留反馈区（对话气泡带尖角、live region）。
+- 页面接入选中 Tab、ModalRoute.isCurrent、appVisible 与滚动可见性（>50% 面积）四重可见性；隐藏取消瞬态并停 ticker，返回只取稳态不补播。
+- 小部件：快照新增可选 `showHousing`/`showCar`（JSON Schema、Kotlin 解析缺省 true 同步），`FjobWidgetProvider` 每次渲染显式 setImageViewResource，按 scene×房车可见性选择 12 张预生成静态图（`tool/generate_office_art_test.dart` 输出 working/break/empty × 00/01/10/11），XML 默认图改为 `office_empty_11`，删除 `office_static.png`。
+- 关键帧截图工具 `tool/capture_scene_frames_test.dart` 输出 build/scene-frames 共 20 张（PAT 8 帧、离场 6 帧、附加 6 帧）。
+
+#### 本轮验证记录（2026-11-06）
+
+| 命令 | 结果 |
+| --- | --- |
+| `cd packages/finance_core && flutter test` | 89 项全部通过（含新增 work_session_test 12 项：跨夜、夜班间隔、跨月、大小周、休息覆盖） |
+| `cd apps/mobile && flutter analyze` | No issues found |
+| `cd apps/mobile && flutter test` | 89 项通过、1 跳过（新增 scene_interaction_controller_test 15 项、office_scene_test 6 项、dashboard_scene_test 10 项） |
+| `cd apps/mobile && flutter test tool/generate_office_art_test.dart` | 生成 12 张小部件静态图 |
+| `cd apps/mobile && flutter test tool/capture_scene_frames_test.dart` | 生成 build/scene-frames 关键帧 20 张 |
+| `cd apps/mobile/android && gradlew testDebugUnitTest --tests "*widget*"` | 见交付报告 |
+| `flutter build apk --debug` | 见交付报告 |
+
+离场淡入到岗（OUT-05 的 200ms 轻淡入）未实现，直接切换基础姿态；拍肩关键帧截图中的回应文案随接受次序循环，与设计文案池一致。

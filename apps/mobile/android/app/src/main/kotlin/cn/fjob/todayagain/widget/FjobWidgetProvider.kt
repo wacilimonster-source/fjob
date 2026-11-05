@@ -148,6 +148,17 @@ class FjobWidgetProvider : AppWidgetProvider() {
                     else -> "住房"
                 }
                 views.setTextViewText(R.id.widget_housing_label, housingLabel)
+                // WSC-01/WSC-02: every render picks the scene image explicitly so
+                // stale RemoteViews never keep a person after clock-out.
+                views.setImageViewResource(R.id.widget_art, artFor(snapshot))
+                views.setContentDescription(
+                    R.id.widget_art,
+                    if (snapshot == null || artShowsWorker(snapshot)) {
+                        "手绘办公室静态图"
+                    } else {
+                        "手绘办公室静态图，空工位"
+                    },
+                )
             }
 
             val description = when {
@@ -183,6 +194,40 @@ class FjobWidgetProvider : AppWidgetProvider() {
             snapshot.isNegative -> "(－_－)"
             else -> "( ˘ᴗ˘ )"
         }
+
+        /**
+         * Scene × housing/car visibility → one of the 12 pre-rendered office
+         * bitmaps. `visibilityKey = (showHousing?1:0) or (showCar?2:0)`, so
+         * 00 = none, 01 = house, 10 = car, 11 = both.
+         */
+        private fun artFor(snapshot: WidgetSnapshot?): Int {
+            val scene = snapshot?.scene
+            val showHousing = snapshot?.showHousing ?: true
+            val showCar = snapshot?.showCar ?: true
+            return when (scene) {
+                "working" -> when {
+                    showHousing && showCar -> R.drawable.office_working_11
+                    showHousing -> R.drawable.office_working_01
+                    showCar -> R.drawable.office_working_10
+                    else -> R.drawable.office_working_00
+                }
+                "break" -> when {
+                    showHousing && showCar -> R.drawable.office_break_11
+                    showHousing -> R.drawable.office_break_01
+                    showCar -> R.drawable.office_break_10
+                    else -> R.drawable.office_break_00
+                }
+                else -> when {
+                    showHousing && showCar -> R.drawable.office_empty_11
+                    showHousing -> R.drawable.office_empty_01
+                    showCar -> R.drawable.office_empty_10
+                    else -> R.drawable.office_empty_00
+                }
+            }
+        }
+
+        private fun artShowsWorker(snapshot: WidgetSnapshot): Boolean =
+            snapshot.scene == "working" || snapshot.scene == "break"
 
         private fun totalText(snapshot: WidgetSnapshot?): String {
             if (snapshot == null) return "—"

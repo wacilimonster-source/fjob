@@ -148,9 +148,9 @@
         android:layout_height="86dp"
         android:layout_marginTop="6dp"
         android:background="@color/fjob_soft"
-        android:contentDescription="手绘办公室，疲惫的打工人在工位前"
+        android:contentDescription="手绘办公室场景"
         android:scaleType="centerInside"
-        android:src="@drawable/office_static" />
+        android:src="@drawable/office_empty_11" />
 
     <LinearLayout
         android:layout_width="match_parent"

@@ -21,6 +21,8 @@ data class WidgetSnapshot(
     val amounts: Map<String, String?>,
     val housingMode: String,
     val scene: String,
+    val showHousing: Boolean,
+    val showCar: Boolean,
     val caption: String,
     val deepLink: String,
 ) {
@@ -75,6 +77,14 @@ data class WidgetSnapshot(
             if (housingMode !in HOUSING) return null
             val scene = map["scene"] as? String ?: return null
             if (scene !in SCENES) return null
+            // Optional since schema v1 extension: old snapshots default to visible,
+            // but a present value must be a real boolean.
+            val rawShowHousing = map["showHousing"]
+            val rawShowCar = map["showCar"]
+            if (rawShowHousing != null && rawShowHousing !is Boolean) return null
+            if (rawShowCar != null && rawShowCar !is Boolean) return null
+            val showHousing = rawShowHousing as? Boolean ?: true
+            val showCar = rawShowCar as? Boolean ?: true
             val caption = map["caption"] as? String ?: return null
             if (caption.length > 100) return null
             val deepLink = map["deepLink"] as? String ?: return null
@@ -113,6 +123,8 @@ data class WidgetSnapshot(
                 amounts = amounts,
                 housingMode = housingMode,
                 scene = scene,
+                showHousing = showHousing,
+                showCar = showCar,
                 caption = caption,
                 deepLink = deepLink,
             )

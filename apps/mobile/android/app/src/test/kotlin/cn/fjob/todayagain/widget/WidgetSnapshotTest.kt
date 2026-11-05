@@ -54,6 +54,33 @@ class WidgetSnapshotTest {
         assertEquals("mortgage", snapshot.housingMode)
         assertTrue(snapshot.isNegative)
         assertEquals(1793774160000L, snapshot.computedAt)
+        // Old snapshots without the visibility fields default to visible.
+        assertTrue(snapshot.showHousing)
+        assertTrue(snapshot.showCar)
+    }
+
+    @Test
+    fun parsesHousingAndCarVisibility() {
+        val withBooleans = entry()
+            .replace("\"scene\": \"working\"", "\"scene\": \"offDuty\"")
+            .replace(
+                "\"caption\"",
+                "\"showHousing\": true, \"showCar\": false, \"caption\"",
+            )
+        val snapshot = WidgetSnapshot.parse(withBooleans)
+        assertNotNull(snapshot)
+        assertEquals("offDuty", snapshot!!.scene)
+        assertTrue(snapshot.showHousing)
+        assertEquals(false, snapshot.showCar)
+    }
+
+    @Test
+    fun rejectsNonBooleanVisibility() {
+        val bad = entry().replace(
+            "\"caption\"",
+            "\"showHousing\": \"yes\", \"caption\"",
+        )
+        assertNull(WidgetSnapshot.parse(bad))
     }
 
     @Test

@@ -53,6 +53,10 @@ abstract final class WidgetSnapshotBuilder {
       'amounts': amounts,
       'housingMode': snapshot.housingDetail.housingMode?.name ?? 'none',
       'scene': sceneFor(snapshot),
+      // WSC-01：房/车可见性跟随配置状态，原生据此选择静态图；
+      // 金额为0与未配置是两种状态，不通过金额正负推断。
+      'showHousing': snapshot.housingDetail.configured,
+      'showCar': snapshot.carDetail.configured,
       'caption': captionFor(snapshot, privacy: privacy, tone: tone),
       'deepLink': 'fjob://dashboard',
     };

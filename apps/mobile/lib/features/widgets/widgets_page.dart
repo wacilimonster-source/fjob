@@ -282,6 +282,8 @@ class _WidgetPreview extends StatelessWidget {
                   completeness: snapshot.completeness,
                   total: snapshot.total,
                   reduceMotion: true,
+                  showHousing: snapshot.housingDetail.configured,
+                  showCar: snapshot.carDetail.configured,
                   housingLabel: switch (snapshot.housingDetail.housingMode) {
                     HousingMode.rent => '房租',
                     HousingMode.mortgage => '房贷',

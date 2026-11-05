@@ -2,9 +2,11 @@
 library;
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
@@ -15,6 +17,7 @@ import '../ledger/ledger_controller.dart';
 import '../settings/settings_page.dart';
 import '../shell/tabs.dart';
 import 'office_scene.dart';
+import 'scene_interaction_controller.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -23,22 +26,56 @@ class DashboardPage extends ConsumerStatefulWidget {
   ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends ConsumerState<DashboardPage> {
-  bool _comfort = false;
-  Timer? _comfortTimer;
+class _DashboardPageState extends ConsumerState<DashboardPage>
+    with TickerProviderStateMixin {
+  late final SceneInteractionController _sceneController =
+      SceneInteractionController(vsync: this);
+  final GlobalKey _sceneKey = GlobalKey();
+  bool _sceneInViewport = true;
 
-  void _comfortWorker() {
-    setState(() => _comfort = true);
-    _comfortTimer?.cancel();
-    _comfortTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) setState(() => _comfort = false);
-    });
+  /// PAT-01：按钮与头肩触控共用一个入口。
+  void _requestPat() {
+    final snapshot = ref.read(dashboardProvider).value;
+    final now = ref.read(tickProvider).value ??
+        ref.read(clockProvider).nowUtc();
+    final result = _sceneController.requestPat(
+      workSession: snapshot?.workSession,
+      nowUtc: now,
+    );
+    if (result == PatRequestResult.accepted) {
+      // PAT-06：一次接受对应一次轻触觉，遵循系统触觉设置。
+      unawaited(HapticFeedback.selectionClick());
+    }
   }
 
   @override
   void dispose() {
-    _comfortTimer?.cancel();
+    _sceneController.dispose();
     super.dispose();
+  }
+
+  /// §7.4：App 前台、首页被选中、无路由覆盖、场景在视口内。
+  bool _resolveSceneVisibility(BuildContext context) {
+    final appVisible = ref.watch(appVisibleProvider);
+    final tabSelected = ref.watch(selectedTabProvider) == AppTab.dashboard;
+    final route = ModalRoute.of(context);
+    final routeCurrent = route == null || route.isCurrent;
+    return appVisible && tabSelected && routeCurrent && _sceneInViewport;
+  }
+
+  void _measureScene() {
+    final box = _sceneKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached || !box.hasSize) return;
+    final topLeft = box.localToGlobal(Offset.zero);
+    final screen = Offset.zero & MediaQuery.sizeOf(context);
+    final visibleRect = topLeft & box.size;
+    final intersection = visibleRect.intersect(screen);
+    final fraction =
+        box.size.height <= 0 ? 0.0 : intersection.height / box.size.height;
+    final visible = fraction > 0.5;
+    if (visible != _sceneInViewport) {
+      setState(() => _sceneInViewport = visible);
+    }
   }
 
   @override
@@ -52,55 +89,87 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         MediaQuery.of(context).disableAnimations;
     final now = ref.watch(tickProvider).value ??
         ref.read(clockProvider).nowUtc();
+    final sceneVisible = _resolveSceneVisibility(context);
+    final snapshot = snapshotAsync.value;
 
-    return RefreshIndicator(
-      color: palette.ink,
-      onRefresh: () => ref.read(ledgerControllerProvider.notifier).refreshQuotes(),
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _Header(
-                        date: snapshotAsync.value?.statisticsDate ??
-                            calendar.dateOf(now),
-                        phase: snapshotAsync.value?.phase ?? DayPhase.unknown,
-                        clock: formatClock(now, calendar),
-                      ),
-                      const SizedBox(height: 14),
-                      snapshotAsync.when(
-                        data: (snapshot) => _Body(
-                          snapshot: snapshot,
-                          ledger: ledger,
-                          comfort: _comfort,
-                          reduceMotion: reduceMotion,
-                          onComfort: _comfortWorker,
+    // §7.3 reconcile：post-frame 调用，避免在 build 内 notifyListeners。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _measureScene();
+      _sceneController.reconcile(
+        workSession: snapshot?.workSession,
+        nowUtc: now,
+        visible: _resolveSceneVisibility(context),
+        namespace: ref.read(sampleModeProvider)
+            ? 'sample'
+            : 'real-${settings?.ledgerRevision ?? 0}',
+        scheduleStamp: settings?.ledgerRevision ?? 0,
+        mood: snapshot == null
+            ? SceneMood.unknown
+            : sceneMoodOf(snapshot.completeness, snapshot.total),
+        tone: settings?.tone ?? AppTone.gentle,
+        reduceMotion: reduceMotion,
+      );
+    });
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (_) {
+        scheduleMicrotask(_measureScene);
+        return false;
+      },
+      child: RefreshIndicator(
+        color: palette.ink,
+        onRefresh: () =>
+            ref.read(ledgerControllerProvider.notifier).refreshQuotes(),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _Header(
+                          date: snapshot?.statisticsDate ??
+                              calendar.dateOf(now),
+                          phase: snapshot?.phase ?? DayPhase.unknown,
+                          clock: formatClock(now, calendar),
                         ),
-                        loading: () => const _LoadingCard(),
-                        error: (error, _) => PaperCard(
-                          child: Text('首页算不动了：$error'),
+                        const SizedBox(height: 14),
+                        snapshotAsync.when(
+                          data: (snapshot) => _Body(
+                            snapshot: snapshot,
+                            ledger: ledger,
+                            calendar: calendar,
+                            reduceMotion: reduceMotion,
+                            controller: _sceneController,
+                            sceneKey: _sceneKey,
+                            sceneVisible: sceneVisible,
+                            onRequestPat: _requestPat,
+                          ),
+                          loading: () => const _LoadingCard(),
+                          error: (error, _) => PaperCard(
+                            child: Text('首页算不动了：$error'),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      _SourceNote(
-                        fixture: ref.read(marketClientProvider).isFixture,
-                        quotesAsOf: snapshotAsync.value?.quotesAsOf,
-                        calendar: calendar,
-                      ),
-                    ],
+                        const SizedBox(height: 18),
+                        _SourceNote(
+                          fixture: ref.read(marketClientProvider).isFixture,
+                          quotesAsOf: snapshotAsync.value?.quotesAsOf,
+                          calendar: calendar,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -185,37 +254,43 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _Body extends ConsumerWidget {
+class _Body extends StatelessWidget {
   const _Body({
     required this.snapshot,
     required this.ledger,
-    required this.comfort,
+    required this.calendar,
     required this.reduceMotion,
-    required this.onComfort,
+    required this.controller,
+    required this.sceneKey,
+    required this.sceneVisible,
+    required this.onRequestPat,
   });
 
   final DashboardSnapshot snapshot;
   final LedgerState? ledger;
-  final bool comfort;
+  final BusinessCalendar calendar;
   final bool reduceMotion;
-  final VoidCallback onComfort;
+  final SceneInteractionController controller;
+  final Key sceneKey;
+  final bool sceneVisible;
+  final VoidCallback onRequestPat;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final palette = context.palette;
-    final calendar = ref.watch(calendarProvider);
     final settings = ledger?.settings;
     final total = snapshot.total;
     final known = total != null;
     final positive = known && !total.isNegative;
     final tone = settings?.tone ?? AppTone.gentle;
-    final restDay = snapshot.phase == DayPhase.restDay;
+    final housingConfigured = snapshot.housingDetail.configured;
+    final carConfigured = snapshot.carDetail.configured;
 
-    final quote = _quoteLine(
+    final quote = _quoteLine(snapshot: snapshot, tone: tone);
+    final steadyFeedback = _steadyFeedbackLine(
       snapshot: snapshot,
-      tone: tone,
-      comfort: comfort,
-      restDay: restDay,
+      housingConfigured: housingConfigured,
+      carConfigured: carConfigured,
     );
 
     return Column(
@@ -228,8 +303,7 @@ class _Body extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Text('今日生存结余'),
-                  const Spacer(),
+                  const Expanded(child: Text('今日生存结余')),
                   _Tag(
                     snapshot.completeness == Completeness.unavailable
                         ? '待配置'
@@ -279,12 +353,16 @@ class _Body extends ConsumerWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: OfficeScene(
-            phase: comfort ? DayPhase.working : snapshot.phase,
+            key: sceneKey,
+            phase: snapshot.phase,
             completeness: snapshot.completeness,
             total: snapshot.total,
             reduceMotion: reduceMotion,
-            comfort: comfort,
-            onComfort: onComfort,
+            controller: controller,
+            active: sceneVisible,
+            onRequestPat: onRequestPat,
+            showHousing: housingConfigured,
+            showCar: carConfigured,
             housingLabel: switch (snapshot.housingDetail.housingMode) {
               HousingMode.rent => '房租',
               HousingMode.mortgage => '房贷',
@@ -294,27 +372,24 @@ class _Body extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 6),
-        Text(
-          switch (snapshot.phase) {
-            DayPhase.working => '工位 0001 · 赚来的钱，流向房子和车',
-            DayPhase.breakTime => '午休暂停计薪 · 固定支出继续分摊',
-            DayPhase.restDay => '工位空了 · 房子和车的账单还在',
-            DayPhase.beforeShift => '人还没到 · 账单先到',
-            DayPhase.afterShift => '人下班了 · 生活还在全勤',
-            DayPhase.unknown => '排班还没准备好',
-          },
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall,
+        // PAT-02：固定预留的反馈区，平常显示状态说明，拍肩时升级为对话气泡。
+        _FeedbackArea(
+          controller: controller,
+          steadyText: steadyFeedback,
         ),
         const SizedBox(height: 10),
         _ClockRow(
           snapshot: snapshot,
-          onComfort: onComfort,
+          calendar: calendar,
+          controller: controller,
+          onRequestPat: onRequestPat,
         ),
         const SizedBox(height: 8),
         _ProgressBar(snapshot: snapshot),
-        const SizedBox(height: 16),
-        _ReceiptsRow(snapshot: snapshot),
+        if (housingConfigured || carConfigured) ...[
+          const SizedBox(height: 16),
+          _ReceiptsRow(snapshot: snapshot),
+        ],
         const SizedBox(height: 16),
         _Entries(snapshot: snapshot, calendar: calendar),
         const SizedBox(height: 8),
@@ -323,18 +398,52 @@ class _Body extends ConsumerWidget {
     );
   }
 
+  /// OUT-04 空工位与各阶段的稳态说明。
+  static String _steadyFeedbackLine({
+    required DashboardSnapshot snapshot,
+    required bool housingConfigured,
+    required bool carConfigured,
+  }) {
+    if (snapshot.phase == DayPhase.afterShift) {
+      final known =
+          snapshot.housing != null && snapshot.car != null;
+      final spend = (snapshot.housing ?? Rational.zero) +
+          (snapshot.car ?? Rational.zero);
+      if (known && spend.isPositive) {
+        return '人下班了，固定支出还在全勤。';
+      }
+      if (known) return '人已下班，今天到此为止。';
+      return '人下班了，账单明细待更新。';
+    }
+    return switch (snapshot.phase) {
+      DayPhase.working => switch ((housingConfigured, carConfigured)) {
+          (true, true) => '工位 0001 · 赚来的钱，流向房子和车',
+          (true, false) => '工位 0001 · 赚来的钱，流向房子',
+          (false, true) => '工位 0001 · 赚来的钱，流向车',
+          _ => '工位 0001 · 赚来的钱都是自己的',
+        },
+      DayPhase.breakTime => '午休暂停计薪 · 固定支出继续分摊',
+      DayPhase.restDay => switch ((housingConfigured, carConfigured)) {
+          (true, true) => '工位空了 · 房子和车的账单还在',
+          (true, false) => '工位空了 · 房子的账单还在',
+          (false, true) => '工位空了 · 车的账单还在',
+          _ => '工位空了 · 账单也放假了',
+        },
+      DayPhase.beforeShift => '人还没到 · 账单先到',
+      DayPhase.afterShift => '人下班了 · 生活还在全勤',
+      DayPhase.unknown => '排班还没准备好',
+    };
+  }
+
   static String _quoteLine({
     required DashboardSnapshot snapshot,
     required AppTone tone,
-    required bool comfort,
-    required bool restDay,
   }) {
-    if (comfort) return '辛苦了。先喘口气，硬币会自己走。';
     final harsh = tone == AppTone.harsh;
     if (snapshot.completeness == Completeness.unavailable) {
       return '配置还差一点，工资与账单暂时无法开工。';
     }
-    if (restDay) {
+    if (snapshot.phase == DayPhase.restDay) {
       return harsh ? '你休息了，账单觉得你想多了。' : '今天不上班，生活照常扣费。';
     }
     if (snapshot.phase == DayPhase.breakTime) {
@@ -403,18 +512,134 @@ class _CompletenessNote extends StatelessWidget {
   }
 }
 
+/// PAT-02 反馈区：预留最小高度，交互开始时不推动布局跳动。
+class _FeedbackArea extends StatelessWidget {
+  const _FeedbackArea({
+    required this.controller,
+    required this.steadyText,
+  });
+
+  final SceneInteractionController controller;
+  final String steadyText;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final speaking = controller.transient != TransientKind.idle;
+        final line = controller.feedbackLine ?? steadyText;
+        final textScale = MediaQuery.textScalerOf(context).scale(13);
+        final minHeight = math.max(56.0, textScale * 1.5 * 2 + 16);
+        final announcement =
+            speaking ? (controller.announcement ?? line) : line;
+        final bubble = Container(
+          constraints: BoxConstraints(minHeight: minHeight),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: palette.panel,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            line,
+            style: const TextStyle(fontSize: 13, height: 1.5),
+          ),
+        );
+        return Semantics(
+          liveRegion: speaking,
+          label: announcement,
+          excludeSemantics: true,
+          child: speaking
+              ? Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: palette.ink, width: 1.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.all(1.5),
+                      child: bubble,
+                    ),
+                    Positioned(
+                      top: -5,
+                      left: 26,
+                      child: Transform.rotate(
+                        angle: math.pi / 4,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: palette.panel,
+                            border: Border(
+                              top: BorderSide(color: palette.ink, width: 1.5),
+                              left: BorderSide(color: palette.ink, width: 1.5),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Container(
+                  constraints: BoxConstraints(minHeight: minHeight),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(color: palette.rose, width: 3),
+                    ),
+                  ),
+                  padding: const EdgeInsets.only(left: 9),
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    line,
+                    style: const TextStyle(fontSize: 13, height: 1.5),
+                  ),
+                ),
+        );
+      },
+    );
+  }
+}
+
 class _ClockRow extends StatelessWidget {
-  const _ClockRow({required this.snapshot, required this.onComfort});
+  const _ClockRow({
+    required this.snapshot,
+    required this.calendar,
+    required this.controller,
+    required this.onRequestPat,
+  });
 
   final DashboardSnapshot snapshot;
-  final VoidCallback onComfort;
+  final BusinessCalendar calendar;
+  final SceneInteractionController controller;
+  final VoidCallback onRequestPat;
 
   @override
   Widget build(BuildContext context) {
     final now = snapshot.computedAtUtc;
     final timeline = snapshot.timeline;
+    final session = snapshot.workSession;
     String text;
-    if (timeline == null || timeline.isRestDay) {
+    if (session.scheduleValid) {
+      text = switch (snapshot.phase) {
+        DayPhase.working => _countdown(
+            '距离下班还有',
+            session.activeSession?.endUtc,
+            now,
+            fallback: '计薪中',
+          ),
+        DayPhase.breakTime => '午休中 · 账单继续分摊',
+        DayPhase.beforeShift => _countdown(
+            '距离上班还有',
+            session.nextSession?.startUtc,
+            now,
+            fallback: '还没上班',
+          ),
+        DayPhase.afterShift => _afterShiftText(session, calendar),
+        _ => '排班还没准备好',
+      };
+    } else if (timeline == null || timeline.isRestDay) {
       text = '工资休息中 · 月供照常营业';
     } else if (snapshot.phase == DayPhase.working) {
       final end = timeline.shiftEndUtc;
@@ -433,18 +658,77 @@ class _ClockRow extends StatelessWidget {
     } else {
       text = '排班还没准备好';
     }
-    return Row(
-      children: [
-        Expanded(
-          child: Text(text, style: Theme.of(context).textTheme.bodySmall),
-        ),
-        TextButton.icon(
-          onPressed: onComfort,
-          icon: const Icon(Icons.back_hand_outlined, size: 16),
-          label: const Text('拍拍他'),
-        ),
-      ],
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final presentation = controller.presentation;
+        final canPat = presentation.canPat;
+        final (label, enabled) = _patButtonState(presentation);
+        return Row(
+          children: [
+            Expanded(
+              child: Text(text, style: Theme.of(context).textTheme.bodySmall),
+            ),
+            Semantics(
+              label: '拍拍他，给正在工位上的他一点安慰',
+              button: true,
+              child: TextButton.icon(
+                onPressed: enabled ? onRequestPat : null,
+                icon: const Icon(Icons.back_hand_outlined, size: 16),
+                label: Text(label),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(44, 44),
+                  foregroundColor:
+                      canPat ? context.palette.ink : context.palette.muted,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  static (String, bool) _patButtonState(ScenePresentation presentation) {
+    if (presentation.transient == TransientKind.pat) {
+      final elapsedMs =
+          presentation.progress * SceneInteractionController.patDuration.inMilliseconds;
+      return (elapsedMs < 520 ? '收到啦' : '他缓过来一点了', false);
+    }
+    if (presentation.transient == TransientKind.departure) {
+      return ('他已下班', false);
+    }
+    return switch (presentation.phase) {
+      DayPhase.working ||
+      DayPhase.breakTime =>
+        presentation.canPat ? ('拍拍他', true) : ('拍拍他', false),
+      DayPhase.afterShift => ('他已下班', false),
+      DayPhase.beforeShift => ('还没到工位', false),
+      DayPhase.restDay => ('今天不在岗', false),
+      DayPhase.unknown => ('排班待确认', false),
+    };
+  }
+
+  static String _countdown(
+    String prefix,
+    DateTime? endUtc,
+    DateTime now, {
+    required String fallback,
+  }) {
+    if (endUtc == null) return fallback;
+    return '$prefix ${formatDuration(endUtc.difference(now).inSeconds)}';
+  }
+
+  static String _afterShiftText(
+    WorkSessionContext session,
+    BusinessCalendar calendar,
+  ) {
+    final next = session.nextSession;
+    final ended = session.lastEndedSession?.endUtc;
+    if (next != null && ended != null && next.startUtc.isAfter(ended)) {
+      return '已下班，下一班 ${formatClock(next.startUtc, calendar)}';
+    }
+    return '今日排班已结束 · 月供继续营业';
   }
 }
 
@@ -496,9 +780,8 @@ class _ReceiptsRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final housing = snapshot.housingDetail;
     final car = snapshot.carDetail;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    final cards = <Widget>[
+      if (housing.configured)
         Expanded(
           child: _ReceiptCard(
             title: switch (housing.housingMode) {
@@ -507,31 +790,31 @@ class _ReceiptsRow extends ConsumerWidget {
               _ => '住房',
             },
             type: DebtArtType.house,
-            configured: housing.configured,
             monthly: housing.monthlyAmount,
             dailyShare: housing.dayShare,
             allocated: housing.dayAmount,
-            note: housing.configured
-                ? (housing.isRent ? '租金按自然日分摊' : '本金与利息分列')
-                : '未配置，不暗示有贷款',
             onTap: () =>
                 ref.read(selectedTabProvider.notifier).state = AppTab.expenses,
           ),
         ),
-        const SizedBox(width: 10),
+      if (car.configured)
         Expanded(
           child: _ReceiptCard(
             title: '车辆贷款',
             type: DebtArtType.car,
-            configured: car.configured,
             monthly: car.monthlyAmount,
             dailyShare: car.dayShare,
             allocated: car.dayAmount,
-            note: car.configured ? '月供全额计入压力' : '未配置，车贷独立开关',
             onTap: () =>
                 ref.read(selectedTabProvider.notifier).state = AppTab.expenses,
           ),
         ),
+    ];
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        cards.first,
+        if (cards.length > 1) ...[const SizedBox(width: 10), cards.last],
       ],
     );
   }
@@ -541,21 +824,17 @@ class _ReceiptCard extends StatelessWidget {
   const _ReceiptCard({
     required this.title,
     required this.type,
-    required this.configured,
     required this.monthly,
     required this.dailyShare,
     required this.allocated,
-    required this.note,
     required this.onTap,
   });
 
   final String title;
   final DebtArtType type;
-  final bool configured;
   final Rational? monthly;
   final Rational dailyShare;
   final Rational? allocated;
-  final String note;
   final VoidCallback onTap;
 
   @override
@@ -578,26 +857,23 @@ class _ReceiptCard extends StatelessWidget {
           Center(child: DebtArt(type: type, height: 62)),
           const SizedBox(height: 6),
           Text(
-            configured ? '本月账单' : '未配置',
+            '本月账单',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           MoneyText(
-            configured ? formatMoney(monthly, placeholder: '待补充') : '—',
+            formatMoney(monthly, placeholder: '待补充'),
             size: 18,
-            color: configured ? palette.ink : palette.muted,
+            color: palette.ink,
           ),
           const SizedBox(height: 2),
           Text(
-            configured
-                ? '每日分摊 ${formatMoney(dailyShare)}'
-                : note,
+            '每日分摊 ${formatMoney(dailyShare)}',
             style: Theme.of(context).textTheme.bodySmall,
           ),
-          if (configured)
-            Text(
-              '今日已分摊 ${formatMoney(allocated)}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+          Text(
+            '今日已分摊 ${formatMoney(allocated)}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ],
       ),
     );
@@ -619,6 +895,10 @@ class _Entries extends StatelessWidget {
     final expenses = snapshot.allocatedExpenses;
     final monthStats = snapshot.monthStats;
     final quotesAsOf = formatClock(snapshot.quotesAsOf, calendar);
+    final debtLabel = [
+      if (snapshot.housingDetail.configured) '住房',
+      if (snapshot.carDetail.configured) '车贷',
+    ].join(' + ');
     return Column(
       children: [
         _EntryRow(
@@ -648,13 +928,14 @@ class _Entries extends StatelessWidget {
               ? '人民币每克参考价估值 · 参考交易日口径'
               : '没有黄金持仓',
         ),
-        _EntryRow(
-          label: '住房 + 车贷 · 已分摊',
-          value: formatMoney(expenses == null ? null : -expenses),
-          color: palette.ink,
-          note: '按自然日全天分摊 · 今日总压力 '
-              '${formatMoney((snapshot.housingDetail.dayShare) + (snapshot.carDetail.dayShare))}',
-        ),
+        if (debtLabel.isNotEmpty)
+          _EntryRow(
+            label: '$debtLabel · 已分摊',
+            value: formatMoney(expenses == null ? null : -expenses),
+            color: palette.ink,
+            note: '按自然日全天分摊 · 今日总压力 '
+                '${formatMoney((snapshot.housingDetail.dayShare) + (snapshot.carDetail.dayShare))}',
+          ),
       ],
     );
   }

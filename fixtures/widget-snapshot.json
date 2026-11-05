@@ -11,11 +11,20 @@
   "completeness": "complete",
   "quoteQuality": "fixture",
   "amounts": {
-    "total": "-55.26", "wage": "328.57", "stockDaily": "-350.00", "goldDaily": "100.00",
-    "housing": "97.33", "car": "36.50", "principal": "87.19", "interest": "46.64", "rent": "0.00"
+    "total": "-55.26",
+    "wage": "328.57",
+    "stockDaily": "-350.00",
+    "goldDaily": "100.00",
+    "housing": "97.33",
+    "car": "36.50",
+    "principal": "87.19",
+    "interest": "46.64",
+    "rent": "0.00"
   },
   "housingMode": "mortgage",
   "scene": "working",
+  "showHousing": true,
+  "showCar": true,
   "caption": "工资正在努力追赶上午的亏损。",
   "deepLink": "fjob://dashboard"
 }
