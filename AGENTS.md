@@ -21,7 +21,7 @@
 
 优先运行当前需求对应测试，再运行必要的回归。finance_core 必须消费 fixtures/calculation-cases.json。修改平台桥接时同步 JSON Schema 和 Kotlin/Swift 解析测试。
 
-首次建项锁定实际构建通过的工具链。Android 在本地优先验证，iOS 使用 macOS CI 构建。签名资料通过 Secrets 配置，凭据不写入仓库。
+当前仅支持 Android，本地验证并产出 APK；iOS 已移出范围。签名资料通过 Secrets 配置，凭据不写入仓库。
 
 ## 每次交付报告
 

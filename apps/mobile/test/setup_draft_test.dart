@@ -154,4 +154,29 @@ void main() {
     expect(restored.holdings.single.instrumentId, 'CN.BJ.430047');
     expect(restored.rentMonthlyText, '3000');
   });
+
+  test('大小周 supports custom core days and an anchor flip', () {
+    final draft = fresh()
+      ..salaryText = '12000'
+      ..scheduleMode = ScheduleMode.bigSmall
+      ..workdays = [true, true, true, true, false, false, false]
+      ..extraSaturday = true
+      ..anchorMonday = '2026-11-02'
+      ..anchorIsBig = true;
+    final schedule = draft.buildSchedule();
+    expect(schedule.alternation, isNotNull);
+    expect(schedule.week.byWeekday[4], isEmpty); // Friday is not core
+    expect(schedule.alternation!.bigWeek.byWeekday[5], isNotEmpty);
+    expect(
+      schedule.alternation!.isBigWeek(LocalDate(2026, 11, 2)),
+      isTrue,
+    );
+
+    draft.anchorIsBig = false;
+    final flipped = draft.buildSchedule();
+    expect(
+      flipped.alternation!.isBigWeek(LocalDate(2026, 11, 2)),
+      isFalse,
+    );
+  });
 }

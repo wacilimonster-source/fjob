@@ -112,7 +112,7 @@ final class ScheduleExpander {
     var date = startDate;
     while (date <= endDate) {
       final intervals = overrideFor(overrides, date) ??
-          version.week.paidIntervalsForWeekday(date.weekday);
+          version.templateFor(date).paidIntervalsForWeekday(date.weekday);
       for (final interval in intervals) {
         if (interval.durationMinutes <= 0) continue;
         var start = calendar.instantAt(date, interval.startMinute);

@@ -52,6 +52,26 @@ abstract final class ScheduleCodec {
     ]);
   }
 
+  static Map<String, dynamic> encodeAlternation(WeekAlternation alternation) => {
+        'small': encodeWeek(alternation.smallWeek),
+        'big': encodeWeek(alternation.bigWeek),
+        'anchorMonday': alternation.anchorMonday.toIsoString(),
+      };
+
+  static WeekAlternation decodeAlternation(Map<String, dynamic> json) {
+    final anchor = LocalDate.tryParse(json['anchorMonday'] as String?);
+    final small = json['small'];
+    final big = json['big'];
+    if (anchor == null || small is! Map || big is! Map) {
+      throw const FormatException('invalid week alternation');
+    }
+    return WeekAlternation(
+      smallWeek: decodeWeek(small.cast<String, dynamic>()),
+      bigWeek: decodeWeek(big.cast<String, dynamic>()),
+      anchorMonday: anchor,
+    );
+  }
+
   static String encodeOverrides(List<LocalInterval> intervals) => jsonEncode([
         for (final interval in intervals)
           {'start': interval.startMinute, 'end': interval.endMinute},

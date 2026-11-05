@@ -94,23 +94,3 @@ jobs:
       - name: Tests
         working-directory: services/market_gateway
         run: python -m pytest -q
-
-  ios-simulator:
-    name: iOS simulator build
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: 3.47.9
-          channel: stable
-          cache: true
-      - name: Resolve
-        working-directory: apps/mobile
-        run: flutter pub get
-      # The WidgetKit extension target must be added in Xcode on the macOS
-      # runner (see ios/WidgetExtension/README.md). Until then this job only
-      # proves the Runner compiles with the widget bridge and URL scheme.
-      - name: Simulator build
-        working-directory: apps/mobile
-        run: flutter build ios --simulator --no-codesign

@@ -201,26 +201,44 @@ void main() {
     expect(updated.instrumentNames['CN.SZ.000001'], '平安银行A');
   });
 
-  test('a v1 database gains the instrument directory on upgrade', () async {
+  test('v1 databases gain the directory and alternation column', () async {
     initSqliteFfi();
     final path = newDatabasePath();
-    final first = await AppDatabase.open(
-      factory: databaseFactoryFfiNoIsolate,
-      path: path,
-      calendar: calendar,
+    final raw = await databaseFactoryFfiNoIsolate.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (db, version) async {
+          await db.execute(
+            'CREATE TABLE schedule_versions ('
+            'id TEXT NOT NULL PRIMARY KEY,'
+            'timezone TEXT NOT NULL,'
+            'weekly_json TEXT NOT NULL,'
+            'effective_from TEXT NOT NULL,'
+            'effective_to TEXT,'
+            'calendar_source_version TEXT NOT NULL,'
+            'created_at TEXT NOT NULL)',
+          );
+        },
+      ),
     );
-    await first.raw.execute('DROP TABLE instrument_directory');
-    await first.raw.execute('PRAGMA user_version = 1');
-    await first.close();
+    await raw.close();
 
-    final second = await AppDatabase.open(
+    final database = await AppDatabase.open(
       factory: databaseFactoryFfiNoIsolate,
       path: path,
       calendar: calendar,
     );
-    addTearDown(second.close);
-    final rows = await second.raw.query('instrument_directory');
-    expect(rows, isEmpty);
+    addTearDown(database.close);
+    final directory = await database.raw.query('instrument_directory');
+    expect(directory, isEmpty);
+    final columns = await database.raw.rawQuery(
+      'PRAGMA table_info(schedule_versions)',
+    );
+    expect(
+      columns.any((column) => column['name'] == 'alternation_json'),
+      isTrue,
+    );
   });
 
   test('legacy flat configuration migrates to versioned rows', () async {

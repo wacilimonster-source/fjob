@@ -109,6 +109,22 @@ class OnboardingController extends AsyncNotifier<SetupDraft> {
     _committing = true;
     final wasConfigured =
         ref.read(ledgerControllerProvider).value?.isConfigured ?? false;
+    if (wasConfigured && !validation.commit!.effectiveDate.isMonday) {
+      final effectiveInstant = ref
+          .read(calendarProvider)
+          .startOfDayUtc(validation.commit!.effectiveDate);
+      final existing = ref
+          .read(ledgerControllerProvider)
+          .value
+          ?.salaryVersions
+          .any((version) =>
+              version.effectiveFromUtc.isAtSameMomentAs(effectiveInstant)) ??
+          false;
+      if (!existing) {
+        _committing = false;
+        return '排班切换需要从周一生效，避免一周被两套配置切开。';
+      }
+    }
     try {
       final ledger = ref.read(ledgerControllerProvider.notifier);
       await ledger.commitSetup(

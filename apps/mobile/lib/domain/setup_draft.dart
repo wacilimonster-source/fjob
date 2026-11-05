@@ -76,6 +76,8 @@ final class HoldingDraft {
       );
 }
 
+enum ScheduleMode { fixed, bigSmall }
+
 final class SetupDraft {
   SetupDraft({
     required this.setupSessionId,
@@ -88,6 +90,10 @@ final class SetupDraft {
     this.breakEnabled = true,
     this.breakStart = '12:00',
     this.breakEnd = '13:00',
+    this.scheduleMode = ScheduleMode.fixed,
+    this.extraSaturday = true,
+    this.anchorIsBig = true,
+    this.anchorMonday = '',
     List<HoldingDraft>? holdings,
     this.goldEnabled = false,
     this.goldQuantityText = '',
@@ -104,12 +110,14 @@ final class SetupDraft {
   })  : workdays = workdays ?? [true, true, true, true, true, false, false],
         holdings = holdings ?? <HoldingDraft>[];
 
-  factory SetupDraft.fresh(String sessionId, {LocalDate? today}) => SetupDraft(
-        setupSessionId: sessionId,
-        salaryEffectiveDate: (today ?? LocalDate(2026, 1, 1))
-            .firstOfMonth
-            .toIsoString(),
-      );
+  factory SetupDraft.fresh(String sessionId, {LocalDate? today}) {
+    final date = today ?? LocalDate(2026, 1, 1);
+    return SetupDraft(
+      setupSessionId: sessionId,
+      salaryEffectiveDate: date.firstOfMonth.toIsoString(),
+      anchorMonday: date.mondayOfWeek.toIsoString(),
+    );
+  }
 
   /// Prefills the redo-onboarding flow from the committed ledger.
   factory SetupDraft.fromLedger(
@@ -135,9 +143,18 @@ final class SetupDraft {
     var breakEnabled = true;
     var breakStart = '12:00';
     var breakEnd = '13:00';
+    var scheduleMode = ScheduleMode.fixed;
+    var extraSaturday = true;
+    var anchorIsBig = true;
     final workdays = List<bool>.filled(7, false);
     ShiftTemplate? firstShift;
     if (schedule != null) {
+      if (schedule.alternation != null) {
+        scheduleMode = ScheduleMode.bigSmall;
+        anchorIsBig = schedule.alternation!.isBigWeek(today);
+        extraSaturday =
+            schedule.alternation!.bigWeek.byWeekday[5].isNotEmpty;
+      }
       for (var index = 0; index < 7; index++) {
         final shifts = schedule.week.byWeekday[index];
         workdays[index] = shifts.isNotEmpty;
@@ -224,8 +241,12 @@ final class SetupDraft {
     return SetupDraft(
       setupSessionId: sessionId,
       salaryText: salary?.monthlyNetCny.toCanonicalString() ?? '',
-      salaryEffectiveDate: month.toIsoString(),
+      salaryEffectiveDate: today.mondayOfWeek.toIsoString(),
       workdays: workdays,
+      scheduleMode: scheduleMode,
+      extraSaturday: extraSaturday,
+      anchorIsBig: anchorIsBig,
+      anchorMonday: today.mondayOfWeek.toIsoString(),
       shiftStart: shiftStart,
       shiftEnd: shiftEnd,
       breakEnabled: breakEnabled,
@@ -266,6 +287,11 @@ final class SetupDraft {
   String breakStart;
   String breakEnd;
 
+  ScheduleMode scheduleMode;
+  bool extraSaturday;
+  bool anchorIsBig;
+  String anchorMonday;
+
   List<HoldingDraft> holdings;
   bool goldEnabled;
   String goldQuantityText;
@@ -296,6 +322,10 @@ final class SetupDraft {
         'breakEnabled': breakEnabled,
         'breakStart': breakStart,
         'breakEnd': breakEnd,
+        'scheduleMode': scheduleMode.name,
+        'extraSaturday': extraSaturday,
+        'anchorIsBig': anchorIsBig,
+        'anchorMonday': anchorMonday,
         'holdings': [for (final holding in holdings) holding.toJson()],
         'goldEnabled': goldEnabled,
         'goldQuantity': goldQuantityText,
@@ -331,6 +361,13 @@ final class SetupDraft {
       breakEnabled: LedgerJson.asBool(json['breakEnabled'], fallback: true),
       breakStart: LedgerJson.asString(json['breakStart'], fallback: '12:00'),
       breakEnd: LedgerJson.asString(json['breakEnd'], fallback: '13:00'),
+      scheduleMode: ScheduleMode.values.firstWhere(
+        (value) => value.name == json['scheduleMode'],
+        orElse: () => ScheduleMode.fixed,
+      ),
+      extraSaturday: LedgerJson.asBool(json['extraSaturday'], fallback: true),
+      anchorIsBig: LedgerJson.asBool(json['anchorIsBig'], fallback: true),
+      anchorMonday: LedgerJson.asString(json['anchorMonday']),
       holdings: rawHoldings is List
           ? [
               for (final item in rawHoldings)
@@ -366,6 +403,10 @@ final class SetupDraft {
     bool? breakEnabled,
     String? breakStart,
     String? breakEnd,
+    ScheduleMode? scheduleMode,
+    bool? extraSaturday,
+    bool? anchorIsBig,
+    String? anchorMonday,
     List<HoldingDraft>? holdings,
     bool? goldEnabled,
     String? goldQuantityText,
@@ -391,6 +432,10 @@ final class SetupDraft {
         breakEnabled: breakEnabled ?? this.breakEnabled,
         breakStart: breakStart ?? this.breakStart,
         breakEnd: breakEnd ?? this.breakEnd,
+        scheduleMode: scheduleMode ?? this.scheduleMode,
+        extraSaturday: extraSaturday ?? this.extraSaturday,
+        anchorIsBig: anchorIsBig ?? this.anchorIsBig,
+        anchorMonday: anchorMonday ?? this.anchorMonday,
         holdings: holdings ?? this.holdings,
         goldEnabled: goldEnabled ?? this.goldEnabled,
         goldQuantityText: goldQuantityText ?? this.goldQuantityText,
@@ -426,16 +471,22 @@ final class SetupDraft {
     }
 
     WeekTemplate? week;
+    WeekAlternation? alternation;
     try {
-      week = buildWeek();
+      final schedule = buildSchedule();
+      week = schedule.week;
+      alternation = schedule.alternation;
+      if (salary != null && salary.isPositive) {
+        if (alternation != null && !week.hasAnyShift) {
+          errors['schedule'] = '小周至少保留一个工作日，工资才有地方分摊。';
+        } else if (!week.hasAnyShift) {
+          errors['schedule'] = '这个月没有计薪时段，先给工资安排一个出场时间。';
+        }
+      }
     } on ScheduleValidationError catch (error) {
       errors['schedule'] = error.message;
-    }
-    if (week != null &&
-        salary != null &&
-        salary.isPositive &&
-        !week.hasAnyShift) {
-      errors['schedule'] = '这个月没有计薪时段，先给工资安排一个出场时间。';
+    } on ArgumentError catch (error) {
+      errors['schedule'] = '大小周配置有冲突：${error.message}';
     }
 
     final holdingCommits = <HoldingCommit>[];
@@ -550,6 +601,7 @@ final class SetupDraft {
         monthlySalary: salary!,
         effectiveDate: effectiveDate!,
         week: week!,
+        alternation: alternation,
         holdings: holdingCommits,
         goldQuantity: goldEnabled ? goldQuantity : null,
         goldCost: goldEnabled ? goldCost : null,
@@ -570,11 +622,8 @@ final class SetupDraft {
             (draft.code.isEmpty || draft.costText.isEmpty),
       );
 
-  /// Builds the weekly template from the raw shift text.
-  ///
-  /// A landing time at or before the start time is treated as the next local
-  /// day, which is how cross-midnight shifts are entered.
-  WeekTemplate buildWeek() {
+  /// Builds the shift template from the raw shift text.
+  ShiftTemplate buildShift() {
     final start = _timeToMinutes(shiftStart);
     if (start == null) {
       throw const ScheduleValidationError('invalidInterval', '上班时间格式应为 HH:mm。');
@@ -611,10 +660,49 @@ final class SetupDraft {
       breaks: breaks,
     );
     shift.validate();
-    return WeekTemplate([
+    return shift;
+  }
+
+  /// Fixed week, or the small week when 大小周 is selected.
+  WeekTemplate buildWeek() => buildSchedule().week;
+
+  /// Expands the draft into a fixed template or an alternating pattern.
+  ({WeekTemplate week, WeekAlternation? alternation}) buildSchedule() {
+    final shift = buildShift();
+    final effectiveWorkdays = scheduleMode == ScheduleMode.fixed
+        ? workdays
+        : <bool>[for (var i = 0; i < 5; i++) workdays[i], false, false];
+    final small = WeekTemplate([
       for (var index = 0; index < 7; index++)
-        if (workdays[index]) <ShiftTemplate>[shift] else const <ShiftTemplate>[],
+        if (effectiveWorkdays[index])
+          <ShiftTemplate>[shift]
+        else
+          const <ShiftTemplate>[],
     ]);
+    if (scheduleMode == ScheduleMode.fixed) {
+      return (week: small, alternation: null);
+    }
+    final anchor = LocalDate.tryParse(anchorMonday);
+    if (anchor == null || !anchor.isMonday) {
+      throw const ScheduleValidationError(
+        'anchor',
+        '大小周需要从周一开始生效，请把生效日期改成周一。',
+      );
+    }
+    final bigAnchor = anchorIsBig ? anchor : anchor.addDays(-7);
+    final bigDays = [
+      for (final day in small.byWeekday) List<ShiftTemplate>.from(day),
+    ];
+    bigDays[extraSaturday ? 5 : 6] = <ShiftTemplate>[shift];
+    final big = WeekTemplate(bigDays);
+    return (
+      week: small,
+      alternation: WeekAlternation(
+        smallWeek: small,
+        bigWeek: big,
+        anchorMonday: bigAnchor,
+      ),
+    );
   }
 }
 
@@ -651,6 +739,7 @@ final class SetupCommit {
     required this.monthlySalary,
     required this.effectiveDate,
     required this.week,
+    required this.alternation,
     required this.holdings,
     required this.goldQuantity,
     required this.goldCost,
@@ -666,6 +755,7 @@ final class SetupCommit {
   final Rational monthlySalary;
   final LocalDate effectiveDate;
   final WeekTemplate week;
+  final WeekAlternation? alternation;
   final List<HoldingCommit> holdings;
   final Rational? goldQuantity;
   final Rational? goldCost;

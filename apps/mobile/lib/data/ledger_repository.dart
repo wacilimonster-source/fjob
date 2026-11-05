@@ -51,10 +51,21 @@ final class LedgerRepository {
       final from = DateTime.parse(row['effective_from']! as String);
       final to = LedgerJson.dateFromIso(row['effective_to']);
       if (to != null && !to.isAfter(from)) continue;
+      final alternationRaw = row['alternation_json'];
+      WeekAlternation? alternation;
+      if (alternationRaw is String && alternationRaw.isNotEmpty) {
+        final decoded = jsonDecode(alternationRaw);
+        if (decoded is Map) {
+          alternation = ScheduleCodec.decodeAlternation(
+            decoded.cast<String, dynamic>(),
+          );
+        }
+      }
       schedules[row['id']! as String] = ScheduleVersion(
         id: row['id']! as String,
         timezone: row['timezone']! as String,
         week: ScheduleCodec.decodeWeek(json.cast<String, dynamic>()),
+        alternation: alternation,
         effectiveFromUtc: from,
         effectiveToUtc: to,
         calendarSourceVersion:
@@ -354,6 +365,11 @@ final class LedgerRepository {
         'effective_from': effectiveFrom.toIso8601String(),
         'effective_to': null,
         'calendar_source_version': 'WORK_CN@builtin',
+        'alternation_json': commit.alternation == null
+            ? null
+            : jsonEncode(
+                ScheduleCodec.encodeAlternation(commit.alternation!),
+              ),
         'created_at': timestamp,
       });
       await txn.insert('salary_versions', {
@@ -510,6 +526,7 @@ final class LedgerRepository {
     required int expectedRevision,
     required Rational monthlySalary,
     required WeekTemplate week,
+    WeekAlternation? alternation,
     required LocalDate effectiveFrom,
     required DateTime nowUtc,
   }) async {
@@ -527,6 +544,9 @@ final class LedgerRepository {
         'effective_from': instant.toIso8601String(),
         'effective_to': null,
         'calendar_source_version': 'WORK_CN@builtin',
+        'alternation_json': alternation == null
+            ? null
+            : jsonEncode(ScheduleCodec.encodeAlternation(alternation)),
         'created_at': timestamp,
       });
       await txn.insert('salary_versions', {

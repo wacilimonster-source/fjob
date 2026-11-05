@@ -1,6 +1,6 @@
 # 今日又白干 · 开发交付包
 
-版本 0.2 · 2026-11-04 · Android 优先，iOS 通过 GitHub Actions 构建发布。
+版本 0.2 · 2026-11-05 · Android 单平台，通过 GitHub Release 分发 APK。
 
 ## 开发入口
 
@@ -31,18 +31,18 @@
 - 住房支出可选房贷、房租或暂无。车贷独立配置，固定支出按自然日全天分摊。
 - 疲惫小人坐在小办公室，硬币流向房子和车。房子、车与人物统一采用粗线条、扁平奶油色手绘。
 - 界面固定浅色纸感，不跟随系统深色，也不提供主题切换。
-- 支持 Android 与 iOS 桌面小部件。
+- 支持 Android 桌面小部件。
 - 设置页可从 GitHub Releases 检查更新、下载并校验 APK，再交给 Android 系统安装器；iOS 提示通过 TestFlight 更新。
 
 ## 本交付采用的工程默认值
 
-工程默认采用 Flutter + Dart，Android 原生 Kotlin 小部件，iOS SwiftUI + WidgetKit。本地保存个人账本，独立行情网关只处理证券标识、公开价格与交易日历。首版免账号使用。这些是为开工补齐的设计决策，可在建项任务中调整后统一更新文档。
+工程默认采用 Flutter + Dart 与 Android 原生 Kotlin 小部件。本地保存个人账本，独立行情网关只处理证券标识、公开价格与交易日历。首版免账号使用。这些是为开工补齐的设计决策，可在建项任务中调整后统一更新文档。
 
 本目录提供需求、设计、契约、原型和开发任务。生产 App、真实行情网关及 GitHub 工作流需按任务实施。原型使用模拟报价和固定演示月份，其简化边界列于验收文档。
 
 ## 当前实现状态
 
-已按开发任务落地 M0–M5 的开发版：`packages/finance_core` 纯 Dart 计算引擎、`apps/mobile` Flutter 应用（六步引导、四个主页面、SQLite 本地账本）、Android Kotlin 小部件与 iOS WidgetKit 源码、`services/market_gateway` FastAPI 网关。真实行情来源、iOS 扩展 target 接线、签名与商店发布仍为外部依赖。
+已按开发任务落地 M0–M5 的开发版：`packages/finance_core` 纯 Dart 计算引擎、`apps/mobile` Flutter 应用（六步引导、四个主页面、SQLite 本地账本）、Android Kotlin 小部件、`services/market_gateway` FastAPI 网关。真实行情来源、签名与商店发布仍为外部依赖；iOS 与 AAB 已移出当前范围。
 
 - 工具链与命令：[docs/07-implementation-notes.md](docs/07-implementation-notes.md)、[toolchain.lock.json](toolchain.lock.json)。
 - 界面截图：[docs/screenshots](docs/screenshots)。

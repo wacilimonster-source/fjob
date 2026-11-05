@@ -124,6 +124,7 @@ final class LedgerController extends AsyncNotifier<LedgerState> {
   Future<void> saveCompensation({
     required Rational monthlySalary,
     required WeekTemplate week,
+    WeekAlternation? alternation,
     required LocalDate effectiveFrom,
   }) async {
     final repository = await _repository;
@@ -132,6 +133,7 @@ final class LedgerController extends AsyncNotifier<LedgerState> {
         expectedRevision: _revision,
         monthlySalary: monthlySalary,
         week: week,
+        alternation: alternation,
         effectiveFrom: effectiveFrom,
         nowUtc: ref.read(clockProvider).nowUtc(),
       );

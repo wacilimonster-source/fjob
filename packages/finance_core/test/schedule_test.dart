@@ -191,4 +191,82 @@ void main() {
       expect(timeline.shiftStartUtc, DateTime.utc(2026, 11, 4, 5));
     });
   });
+
+  group('大小周', () {
+    WeekTemplate bigWeek() {
+      final base = WeekTemplate.standardOffice().byWeekday;
+      return WeekTemplate([
+        for (var index = 0; index < 7; index++)
+          if (index == 5)
+            <ShiftTemplate>[
+              const ShiftTemplate(
+                startMinute: 9 * 60,
+                endMinute: 18 * 60,
+                breaks: [BreakTemplate(startMinute: 12 * 60, endMinute: 13 * 60)],
+              ),
+            ]
+          else
+            List<ShiftTemplate>.from(base[index]),
+      ]);
+    }
+
+    test('alternates big and small weeks and counts a month correctly', () {
+      final pattern = WeekAlternation(
+        smallWeek: WeekTemplate.standardOffice(),
+        bigWeek: bigWeek(),
+        anchorMonday: LocalDate(2026, 11, 2),
+      );
+      expect(pattern.isBigWeek(LocalDate(2026, 11, 2)), isTrue);
+      expect(pattern.isBigWeek(LocalDate(2026, 11, 9)), isFalse);
+      expect(pattern.isBigWeek(LocalDate(2026, 11, 16)), isTrue);
+      expect(pattern.isBigWeek(LocalDate(2026, 11, 7)), isTrue);
+
+      final schedule = ScheduleVersion(
+        id: 'bs',
+        timezone: 'Asia/Shanghai',
+        week: pattern.smallWeek,
+        alternation: pattern,
+        effectiveFromUtc: DateTime.utc(2026, 1, 1),
+      );
+      expect(
+        expander.monthlyPaidDays(
+          version: schedule,
+          overrides: const [],
+          anchor: LocalDate(2026, 11, 1),
+        ),
+        23,
+      );
+      expect(
+        expander.monthlyPaidSeconds(
+          version: schedule,
+          overrides: const [],
+          anchor: LocalDate(2026, 11, 1),
+        ),
+        23 * 8 * 3600,
+      );
+    });
+
+    test('a month can contain three extra Saturdays', () {
+      final pattern = WeekAlternation(
+        smallWeek: WeekTemplate.standardOffice(),
+        bigWeek: bigWeek(),
+        anchorMonday: LocalDate(2026, 4, 27),
+      );
+      final schedule = ScheduleVersion(
+        id: 'bs-may',
+        timezone: 'Asia/Shanghai',
+        week: pattern.smallWeek,
+        alternation: pattern,
+        effectiveFromUtc: DateTime.utc(2026, 1, 1),
+      );
+      expect(
+        expander.monthlyPaidDays(
+          version: schedule,
+          overrides: const [],
+          anchor: LocalDate(2026, 5, 1),
+        ),
+        24,
+      );
+    });
+  });
 }

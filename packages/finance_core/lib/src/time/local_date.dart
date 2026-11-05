@@ -44,6 +44,15 @@ final class LocalDate implements Comparable<LocalDate> {
   /// ISO weekday, Monday = 1 ... Sunday = 7.
   int get weekday => _utc.weekday;
 
+  bool get isMonday => weekday == DateTime.monday;
+
+  /// Monday of the natural week containing this date.
+  LocalDate get mondayOfWeek => addDays(1 - weekday);
+
+  /// Whole-day difference from [other]; positive when this date is later.
+  int differenceInDays(LocalDate other) =>
+      _utc.difference(other._utc).inDays;
+
   bool get isWeekend => weekday >= DateTime.saturday;
 
   int get daysInMonth => DateTime.utc(year, month + 1, 0).day;

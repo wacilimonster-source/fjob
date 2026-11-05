@@ -1,0 +1,14 @@
+Generation mode: built-in image_gen tool
+Date: 2026-11-05
+Status: first logo concept for review
+Reference: prototype office character, screenshot doodle-home-qa.png
+
++Use case: logo-brand.
+Asset type: first app icon/logo concept for the existing Chinese app “今日又白干”, square 1:1 composition.
+Input image 1 is a visual identity reference only. Match the little tired office worker sitting in the middle of that app screenshot. Generate one new icon image, not a screenshot or a presentation board.
+Subject: a large close-up head and tiny shirt shoulders of the SAME character: elongated round cream face, dark forest-green messy angular hair with a few uneven tufts, half-open eyes with small dark pupils, subtle under-eye lines, loose crooked necktie. Keep the character recognizable from the reference.
+Expression: 委屈又有点可爱, tired and a little wronged but endearing. Slightly raised inner eyebrows, soft drooping eyelids, a very small pout, a tiny muted peach blush. Gentle deadpan humor, emotionally readable at app-icon size.
+A single small muted-yellow coin is slipping away just above the head, with two short hand-drawn motion marks. Keep the coin subordinate to the face. A simple embossed yuan sign may appear on that coin.
+Style: same simple hand-drawn cartoon as the app. Confident slightly irregular thick dark-green outlines, flat opaque cream, sage and muted peach fills. Paper-like graphic simplicity, clean silhouette and balanced negative space.
+Composition: front-facing oversized head dominates the central 65–75% of the square, small visible collar and crooked tie below. Keep the hair and coin comfortably inside the canvas. Full-bleed solid warm cream background #F7F2E9. Outline #323A32, pale sage #E9EDDF, muted peach #F0D2C5, muted coin yellow #F2DFAC. Produce one centered standalone icon.
+Constraints: no app name, no lettering outside the coin, no wordmark, no surrounding office scene, no house or car, no extra characters, no mockup device, no multiple variants, no watermark. Flat 2D line art with no 3D bevel, photorealism, metallic shine or gradients. Full square background with no baked-in rounded-corner mask.

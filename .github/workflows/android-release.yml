@@ -41,7 +41,7 @@ jobs:
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           EOF
-      - name: Build signed AAB and APK
+      - name: Build signed APK
         working-directory: apps/mobile
         run: |
           # Keep versionCode monotonic and above the manually built 0.1.2 (3).
@@ -61,7 +61,6 @@ jobs:
         with:
           name: android-release
           path: |
-            apps/mobile/build/app/outputs/bundle/release/app-release.aab
             apps/mobile/build/app/outputs/flutter-apk/app-release.apk
             apps/mobile/SHA256SUMS
       - name: Clean signing files

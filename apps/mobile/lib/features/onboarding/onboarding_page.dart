@@ -380,11 +380,12 @@ class _ScheduleStepState extends ConsumerState<_ScheduleStep> {
   ({int days, int seconds})? _preview() {
     try {
       final calendar = ref.read(calendarProvider);
-      final week = widget.draft.buildWeek();
+      final pattern = widget.draft.buildSchedule();
       final schedule = ScheduleVersion(
         id: 'preview',
         timezone: calendar.timezoneName,
-        week: week,
+        week: pattern.week,
+        alternation: pattern.alternation,
         effectiveFromUtc: DateTime.utc(2020),
       );
       final calculator = WageCalculator(calendar);
@@ -415,11 +416,32 @@ class _ScheduleStepState extends ConsumerState<_ScheduleStep> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        SegmentedButton<ScheduleMode>(
+          segments: const [
+            ButtonSegment(value: ScheduleMode.fixed, label: Text('固定星期')),
+            ButtonSegment(value: ScheduleMode.bigSmall, label: Text('大小周')),
+          ],
+          selected: {draft.scheduleMode},
+          onSelectionChanged: (values) => widget.onChanged(
+            draft.copyWith(scheduleMode: values.first),
+          ),
+        ),
+        if (draft.scheduleMode == ScheduleMode.bigSmall) ...[
+          const SizedBox(height: 8),
+          Text(
+            '小周上 5 天，大周上 6 天，按自然周交替。'
+            '大周在核心工作日之外增加一个额外工作日。',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+        const SizedBox(height: 10),
         Wrap(
           spacing: 6,
           runSpacing: 6,
           children: [
-            for (var index = 0; index < 7; index++)
+            for (var index = 0;
+                index < (draft.scheduleMode == ScheduleMode.fixed ? 7 : 5);
+                index++)
               _DayChip(
                 label: weekdayLabel(index + 1),
                 selected: draft.workdays[index],
@@ -431,6 +453,41 @@ class _ScheduleStepState extends ConsumerState<_ScheduleStep> {
               ),
           ],
         ),
+        if (draft.scheduleMode == ScheduleMode.bigSmall) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('额外工作日', style: TextStyle(fontSize: 13)),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('周六'),
+                selected: draft.extraSaturday,
+                onSelected: (_) =>
+                    widget.onChanged(draft.copyWith(extraSaturday: true)),
+              ),
+              const SizedBox(width: 6),
+              ChoiceChip(
+                label: const Text('周日'),
+                selected: !draft.extraSaturday,
+                onSelected: (_) =>
+                    widget.onChanged(draft.copyWith(extraSaturday: false)),
+              ),
+            ],
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('本周是大周'),
+            subtitle: Text(
+              draft.anchorIsBig
+                  ? '以本周为锚点，每两周交替；关闭表示本周是小周。'
+                  : '本周按小周计算，下周开始大周。',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            value: draft.anchorIsBig,
+            onChanged: (value) =>
+                widget.onChanged(draft.copyWith(anchorIsBig: value)),
+          ),
+        ],
         const SizedBox(height: 14),
         Row(
           children: [
@@ -911,6 +968,14 @@ class _ReviewStep extends StatelessWidget {
           onEdit: () => onJump(1),
         ),
         _SummaryRow(
+          label: '排班方式',
+          value: draft.scheduleMode == ScheduleMode.bigSmall
+              ? '大小周 · ${draft.anchorIsBig ? '本周大周' : '本周小周'} · '
+                  '额外${draft.extraSaturday ? '周六' : '周日'}'
+              : '固定星期',
+          onEdit: () => onJump(2),
+        ),
+        _SummaryRow(
           label: '本月排班',
           value: monthStats == null
               ? '排班待补充'
@@ -971,11 +1036,12 @@ class _ReviewStep extends StatelessWidget {
       final container = ProviderScope.containerOf(context);
       final calendar = container.read(calendarProvider);
       final clock = container.read(clockProvider);
-      final week = draft.buildWeek();
+      final pattern = draft.buildSchedule();
       final schedule = ScheduleVersion(
         id: 'review',
         timezone: calendar.timezoneName,
-        week: week,
+        week: pattern.week,
+        alternation: pattern.alternation,
         effectiveFromUtc: DateTime.utc(2020),
       );
       final calculator = WageCalculator(calendar);

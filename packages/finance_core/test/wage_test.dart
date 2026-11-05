@@ -39,7 +39,6 @@ void main() {
 
   group('CALC-WAGE', () {
     test('AC-CALC-01 full month conserves the configured salary', () {
-      final date = LocalDate(2026, 11, 1);
       final result = calculator.accrual(
         fromUtc: calendar.startOfMonthUtc(LocalDate(2026, 11, 1)),
         toUtc: calendar.endOfMonthUtc(LocalDate(2026, 11, 1)),

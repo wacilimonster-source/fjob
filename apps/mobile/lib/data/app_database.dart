@@ -15,7 +15,7 @@ import 'package:sqflite_common/sqlite_api.dart';
 final class AppDatabase {
   AppDatabase._(this._db, this.schemaVersion);
 
-  static const int currentSchemaVersion = 2;
+  static const int currentSchemaVersion = 3;
 
   static Future<AppDatabase> open({
     required DatabaseFactory factory,
@@ -54,6 +54,11 @@ final class AppDatabase {
           }
           if (oldVersion < 2) {
             await db.execute(_instrumentDirectorySql);
+          }
+          if (oldVersion < 3) {
+            await db.execute(
+              'ALTER TABLE schedule_versions ADD COLUMN alternation_json TEXT',
+            );
           }
         },
       ),
@@ -102,6 +107,7 @@ final class AppDatabase {
       effective_from TEXT NOT NULL,
       effective_to TEXT,
       calendar_source_version TEXT NOT NULL,
+      alternation_json TEXT,
       created_at TEXT NOT NULL
     )
     ''',

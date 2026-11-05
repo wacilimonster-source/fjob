@@ -210,12 +210,52 @@ final class WeekTemplate {
   }
 }
 
+/// Alternating five-day and six-day weeks (大小周).
+///
+/// [anchorMonday] is the Monday of a big week; every other natural week is
+/// small. The small week holds the custom core workdays, the big week adds the
+/// chosen extra weekday with the same shifts and breaks.
+final class WeekAlternation {
+  WeekAlternation({
+    required this.smallWeek,
+    required this.bigWeek,
+    required this.anchorMonday,
+  }) {
+    if (!anchorMonday.isMonday) {
+      throw ArgumentError('anchorMonday must be a Monday');
+    }
+    smallWeek.validate();
+    bigWeek.validate();
+    for (var index = 0; index < 7; index++) {
+      if (smallWeek.byWeekday[index].isNotEmpty &&
+          bigWeek.byWeekday[index].isEmpty) {
+        throw ArgumentError(
+          'bigWeek must include every small-week workday',
+        );
+      }
+    }
+  }
+
+  final WeekTemplate smallWeek;
+  final WeekTemplate bigWeek;
+  final LocalDate anchorMonday;
+
+  bool isBigWeek(LocalDate date) {
+    final weeks = date.mondayOfWeek.differenceInDays(anchorMonday) ~/ 7;
+    return weeks.isEven;
+  }
+
+  WeekTemplate templateFor(LocalDate date) =>
+      isBigWeek(date) ? bigWeek : smallWeek;
+}
+
 /// A versioned schedule template with an effective period.
 final class ScheduleVersion {
   ScheduleVersion({
     required this.id,
     required this.timezone,
     required this.week,
+    this.alternation,
     required this.effectiveFromUtc,
     this.effectiveToUtc,
     this.calendarSourceVersion = 'WORK_CN@builtin',
@@ -224,14 +264,26 @@ final class ScheduleVersion {
       throw ArgumentError('effectiveToUtc must be after effectiveFromUtc');
     }
     week.validate();
+    final pattern = alternation;
+    if (pattern != null && !pattern.anchorMonday.isMonday) {
+      throw ArgumentError('alternation anchor must be a Monday');
+    }
   }
 
   final String id;
   final String timezone;
+
+  /// Fixed weekly template, or the small-week template for 大小周.
   final WeekTemplate week;
+
+  /// Non-null when the version alternates big and small weeks.
+  final WeekAlternation? alternation;
   final DateTime effectiveFromUtc;
   final DateTime? effectiveToUtc;
   final String calendarSourceVersion;
+
+  WeekTemplate templateFor(LocalDate date) =>
+      alternation?.templateFor(date) ?? week;
 
   bool covers(DateTime instantUtc) =>
       !instantUtc.isBefore(effectiveFromUtc) &&
