@@ -15,7 +15,7 @@ import 'package:sqflite_common/sqlite_api.dart';
 final class AppDatabase {
   AppDatabase._(this._db, this.schemaVersion);
 
-  static const int currentSchemaVersion = 1;
+  static const int currentSchemaVersion = 2;
 
   static Future<AppDatabase> open({
     required DatabaseFactory factory,
@@ -52,6 +52,9 @@ final class AppDatabase {
           if (oldVersion < 1) {
             await _migrateLegacyConfig(db, calendar);
           }
+          if (oldVersion < 2) {
+            await db.execute(_instrumentDirectorySql);
+          }
         },
       ),
     );
@@ -67,6 +70,15 @@ final class AppDatabase {
       _db.transaction(action);
 
   Future<void> close() => _db.close();
+
+  static const String _instrumentDirectorySql = '''
+    CREATE TABLE instrument_directory (
+      instrument_id TEXT NOT NULL PRIMARY KEY,
+      name TEXT NOT NULL,
+      market TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+    ''';
 
   static const List<String> _schemaV1 = <String>[
     '''
@@ -206,6 +218,7 @@ final class AppDatabase {
       attempts INTEGER NOT NULL DEFAULT 0
     )
     ''',
+    _instrumentDirectorySql,
     'CREATE INDEX idx_salary_effective ON salary_versions (effective_from)',
     'CREATE INDEX idx_holding_instrument ON holding_versions (instrument_id)',
     'CREATE INDEX idx_bills_month ON monthly_bills (month)',

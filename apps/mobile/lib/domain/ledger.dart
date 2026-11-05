@@ -70,6 +70,7 @@ final class LedgerState {
     required this.bills,
     required this.quotes,
     required this.marketCalendar,
+    this.instrumentNames = const <String, String>{},
     this.goldReferenceSessionActive = false,
   });
 
@@ -96,6 +97,9 @@ final class LedgerState {
   final List<MonthlyBill> bills;
   final Map<String, Quote> quotes;
   final MarketCalendar marketCalendar;
+
+  /// Display names cached from the instrument directory, keyed by id.
+  final Map<String, String> instrumentNames;
   final bool goldReferenceSessionActive;
 
   bool get isConfigured =>
@@ -114,6 +118,7 @@ final class LedgerState {
     List<MonthlyBill>? bills,
     Map<String, Quote>? quotes,
     MarketCalendar? marketCalendar,
+    Map<String, String>? instrumentNames,
     bool? goldReferenceSessionActive,
   }) =>
       LedgerState(
@@ -127,6 +132,7 @@ final class LedgerState {
         bills: bills ?? this.bills,
         quotes: quotes ?? this.quotes,
         marketCalendar: marketCalendar ?? this.marketCalendar,
+        instrumentNames: instrumentNames ?? this.instrumentNames,
         goldReferenceSessionActive:
             goldReferenceSessionActive ?? this.goldReferenceSessionActive,
       );

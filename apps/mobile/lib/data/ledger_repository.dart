@@ -207,6 +207,14 @@ final class LedgerRepository {
     final goldSessionActive = sgeRows.isNotEmpty &&
         sgeRows.first['status'] == MarketDayStatus.open.name;
 
+    final directoryRows = await db.query('instrument_directory');
+    final instrumentNames = <String, String>{
+      for (final row in directoryRows)
+        if ((row['instrument_id'] as String?) != null &&
+            (row['name'] as String?)?.isNotEmpty == true)
+          row['instrument_id']! as String: row['name']! as String,
+    };
+
     final settings = settingsRow == null
         ? const AppSettings()
         : AppSettings(
@@ -247,8 +255,38 @@ final class LedgerRepository {
         version: 'SSE@local',
         source: 'market_gateway',
       ),
+      instrumentNames: instrumentNames,
       goldReferenceSessionActive: goldSessionActive,
     );
+  }
+
+  Future<void> _saveInstrumentNames(
+    Transaction txn,
+    Map<String, String> names,
+    String timestamp,
+  ) async {
+    for (final entry in names.entries) {
+      final name = entry.value.trim();
+      if (name.isEmpty) continue;
+      await txn.insert(
+        'instrument_directory',
+        {
+          'instrument_id': entry.key,
+          'name': name,
+          'market': _marketName(entry.key),
+          'updated_at': timestamp,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+  }
+
+  static String _marketName(String instrumentId) {
+    if (instrumentId.startsWith('CN.SH')) return 'SSE';
+    if (instrumentId.startsWith('CN.SZ')) return 'SZSE';
+    if (instrumentId.startsWith('CN.BJ')) return 'BSE';
+    if (instrumentId.startsWith('GOLD.')) return 'SGE';
+    return 'UNKNOWN';
   }
 
   /// Closes every version older than [instant] and removes versions that start
@@ -351,6 +389,16 @@ final class LedgerRepository {
           'created_at': timestamp,
         });
       }
+
+      await _saveInstrumentNames(
+        txn,
+        {
+          for (final holding in commit.holdings)
+            holding.instrumentId: holding.name,
+          if (commit.hasGold) goldInstrumentId: goldInstrumentName,
+        },
+        timestamp,
+      );
 
       final housingId = _newId('housing');
       await txn.insert('housing_plan_versions', {
@@ -578,6 +626,7 @@ final class LedgerRepository {
     required String instrumentId,
     required Rational quantity,
     required Rational costPerUnit,
+    String? name,
     required DateTime nowUtc,
   }) async {
     final timestamp = nowUtc.toUtc().toIso8601String();
@@ -600,6 +649,9 @@ final class LedgerRepository {
         'pending_quote': 0,
         'created_at': timestamp,
       });
+      if (name != null && name.trim().isNotEmpty) {
+        await _saveInstrumentNames(txn, {instrumentId: name}, timestamp);
+      }
     });
     return read(nowUtc: nowUtc);
   }

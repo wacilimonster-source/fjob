@@ -190,6 +190,7 @@ final class LedgerController extends AsyncNotifier<LedgerState> {
     required String instrumentId,
     required Rational quantity,
     required Rational costPerUnit,
+    String? name,
   }) async {
     final repository = await _repository;
     await _mutate(() async {
@@ -198,6 +199,7 @@ final class LedgerController extends AsyncNotifier<LedgerState> {
         instrumentId: instrumentId,
         quantity: quantity,
         costPerUnit: costPerUnit,
+        name: name,
         nowUtc: ref.read(clockProvider).nowUtc(),
       );
       state = AsyncData(next);

@@ -6,6 +6,9 @@ import 'dart:convert';
 import 'package:finance_core/finance_core.dart';
 import 'package:http/http.dart' as http;
 
+import '../domain/instrument.dart';
+import '../domain/setup_draft.dart';
+
 abstract final class AppConfig {
   static const String appName = '今日又白干';
   static const String channelName = 'cn.fjob.todayagain/widgets';
@@ -38,6 +41,9 @@ abstract interface class MarketClient {
 
   bool get isFixture;
 
+  /// Looks up instruments by code fragment or name for the holding editor.
+  Future<List<InstrumentInfo>> searchInstruments(String query);
+
   Future<QuoteBatch> fetchQuotes(List<String> instrumentIds, {DateTime? nowUtc});
 
   Future<MarketCalendar> fetchCalendar({
@@ -66,11 +72,72 @@ final class FixtureMarketClient implements MarketClient {
     'CN.BJ.430047': (18.60, 18.45),
   };
 
+  static const Map<String, (String, StockMarket)> _instrumentCatalog = {
+    '000001': ('平安银行', StockMarket.szse),
+    '000333': ('美的集团', StockMarket.szse),
+    '000651': ('格力电器', StockMarket.szse),
+    '000858': ('五粮液', StockMarket.szse),
+    '002415': ('海康威视', StockMarket.szse),
+    '002594': ('比亚迪', StockMarket.szse),
+    '300059': ('东方财富', StockMarket.szse),
+    '300750': ('宁德时代', StockMarket.szse),
+    '600000': ('浦发银行', StockMarket.sse),
+    '600036': ('招商银行', StockMarket.sse),
+    '600276': ('恒瑞医药', StockMarket.sse),
+    '600519': ('贵州茅台', StockMarket.sse),
+    '601012': ('隆基绿能', StockMarket.sse),
+    '601318': ('中国平安', StockMarket.sse),
+    '601888': ('中国中免', StockMarket.sse),
+    '601899': ('紫金矿业', StockMarket.sse),
+    '688981': ('中芯国际', StockMarket.sse),
+    '430047': ('诺思兰德', StockMarket.bse),
+    '920002': ('万达轴承', StockMarket.bse),
+  };
+
   @override
   String get sourceLabel => '模拟行情';
 
   @override
   bool get isFixture => true;
+
+  @override
+  Future<List<InstrumentInfo>> searchInstruments(String query) async {
+    final text = query.trim();
+    if (text.isEmpty) return const <InstrumentInfo>[];
+    final inferred = marketForCode(text);
+    final known = _instrumentCatalog[text];
+    if (known != null && inferred != null) {
+      return <InstrumentInfo>[
+        InstrumentInfo(
+          instrumentId: instrumentIdFor(text, inferred),
+          code: text,
+          name: known.$1,
+          market: inferred,
+        ),
+      ];
+    }
+    if (text.length == 6 && inferred != null) {
+      return <InstrumentInfo>[
+        InstrumentInfo(
+          instrumentId: instrumentIdFor(text, inferred),
+          code: text,
+          name: '',
+          market: inferred,
+          supported: false,
+        ),
+      ];
+    }
+    return <InstrumentInfo>[
+      for (final entry in _instrumentCatalog.entries)
+        if (entry.value.$1.contains(text))
+          InstrumentInfo(
+            instrumentId: instrumentIdFor(entry.key, entry.value.$2),
+            code: entry.key,
+            name: entry.value.$1,
+            market: entry.value.$2,
+          ),
+    ];
+  }
 
   @override
   Future<QuoteBatch> fetchQuotes(
@@ -188,6 +255,52 @@ final class GatewayMarketClient implements MarketClient {
 
   @override
   bool get isFixture => false;
+
+  @override
+  Future<List<InstrumentInfo>> searchInstruments(String query) async {
+    final httpClient = client ?? http.Client();
+    final uri = Uri.parse('$baseUrl/v1/instruments/search').replace(
+      queryParameters: {'q': query.trim(), 'limit': '10'},
+    );
+    final response = await httpClient
+        .get(uri)
+        .timeout(const Duration(seconds: 8));
+    if (response.statusCode >= 400) {
+      throw MarketUnavailableException(
+        '证券目录暂时不可用（${response.statusCode}）。',
+        retryable: response.statusCode >= 500,
+      );
+    }
+    final body = jsonDecode(response.body);
+    if (body is! Map) throw const FormatException('search body is not an object');
+    final items = body['items'];
+    if (items is! List) return const <InstrumentInfo>[];
+    final result = <InstrumentInfo>[];
+    for (final item in items) {
+      if (item is! Map) continue;
+      final code = item['code'];
+      final name = item['name'];
+      if (code is! String || name is! String) continue;
+      final market = switch (item['market']) {
+        'SSE' => StockMarket.sse,
+        'SZSE' => StockMarket.szse,
+        'BSE' => StockMarket.bse,
+        _ => null,
+      };
+      if (market == null) continue;
+      result.add(
+        InstrumentInfo(
+          instrumentId: (item['instrumentId'] as String?) ??
+              instrumentIdFor(code, market),
+          code: code,
+          name: name,
+          market: market,
+          supported: item['supported'] != false,
+        ),
+      );
+    }
+    return result;
+  }
 
   @override
   Future<QuoteBatch> fetchQuotes(

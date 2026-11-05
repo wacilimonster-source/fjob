@@ -214,7 +214,7 @@ final class SetupDraft {
         HoldingDraft(
           market: market,
           code: parts[2],
-          name: '',
+          name: ledger.instrumentNames[id] ?? '',
           quantityText: entry.quantity.toCanonicalString(maxScale: 0),
           costText: entry.costPerUnit.toCanonicalString(maxScale: 3),
         ),
@@ -464,7 +464,7 @@ final class SetupDraft {
       holdingCommits.add(
         HoldingCommit(
           instrumentId: draft.instrumentId,
-          name: draft.name.isEmpty ? draft.instrumentId : draft.name,
+          name: draft.name.trim(),
           quantity: quantity,
           costPerUnit: cost,
         ),

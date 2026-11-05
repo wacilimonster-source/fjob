@@ -10,7 +10,7 @@ import '../../app/theme.dart';
 import '../../domain/format.dart';
 import '../../domain/setup_draft.dart';
 import '../ledger/ledger_controller.dart';
-import '../onboarding/onboarding_page.dart';
+import 'holding_editor.dart';
 
 class AssetsPage extends ConsumerStatefulWidget {
   const AssetsPage({super.key});
@@ -30,7 +30,9 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
     final initial = HoldingDraft(
       market: _marketOf(position.instrumentId),
       code: position.instrumentId.split('.').last,
-      name: '',
+      name: ref.read(effectiveLedgerProvider).value?.instrumentNames[
+              position.instrumentId] ??
+          '',
       quantityText: position.holding.quantity.toCanonicalString(maxScale: 0),
       costText: position.holding.costPerUnit.toCanonicalString(maxScale: 3),
     );
@@ -45,6 +47,7 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
         instrumentId: edited.instrumentId,
         quantity: Rational.parse(edited.quantityText),
         costPerUnit: Rational.parse(edited.costText),
+        name: edited.name,
       );
       await controller.refreshQuotes();
       _setStatus('持仓已更新，今日估算按当前持仓重估。');
@@ -77,6 +80,7 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
         instrumentId: created.instrumentId,
         quantity: Rational.parse(created.quantityText),
         costPerUnit: Rational.parse(created.costText),
+        name: created.name,
       );
       await controller.refreshQuotes();
       _setStatus('已添加 ${created.code}，报价待刷新。');
@@ -217,6 +221,8 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
                       for (final position in positions) ...[
                         _PositionCard(
                           position: position,
+                          displayName:
+                              ledger?.instrumentNames[position.instrumentId],
                           calendar: calendar,
                           onEdit: sample ? null : () => _edit(position),
                           onDelete: sample ? null : () => _delete(position),
@@ -277,12 +283,14 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
 class _PositionCard extends StatelessWidget {
   const _PositionCard({
     required this.position,
+    required this.displayName,
     required this.calendar,
     this.onEdit,
     this.onDelete,
   });
 
   final AssetPosition position;
+  final String? displayName;
   final BusinessCalendar calendar;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
@@ -307,7 +315,13 @@ class _PositionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      gold ? '黄金 · Au99.99' : position.instrumentId,
+                      (displayName?.isNotEmpty ?? false)
+                          ? (gold
+                              ? displayName!
+                              : '$displayName · ${position.instrumentId}')
+                          : (gold ? '黄金 · Au99.99' : position.instrumentId),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     Text(

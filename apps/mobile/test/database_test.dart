@@ -6,6 +6,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:todayagain/data/app_database.dart';
 import 'package:todayagain/data/ledger_repository.dart';
 import 'package:todayagain/domain/ledger.dart';
+import 'package:todayagain/domain/setup_draft.dart';
 
 import 'support/test_env.dart';
 
@@ -166,6 +167,60 @@ void main() {
     expect(loaded, isNotNull);
     expect(loaded!.step, 2);
     expect(loaded.payload['salary'], '12a');
+  });
+
+  test('instrument names are persisted and updated', () async {
+    final repository = await openMemory();
+    final draft = validDraft('names')
+      ..holdings = [
+        const HoldingDraft(
+          market: StockMarket.szse,
+          code: '000001',
+          name: '平安银行',
+          quantityText: '100',
+          costText: '12',
+        ),
+      ];
+    final validation = draft.validate();
+    expect(validation.isValid, isTrue);
+    final state = await repository.commitSetup(
+      commit: validation.commit!,
+      setupSessionId: 'names',
+      nowUtc: fixedNow,
+    );
+    expect(state.instrumentNames['CN.SZ.000001'], '平安银行');
+
+    final updated = await repository.upsertHolding(
+      expectedRevision: state.settings.ledgerRevision,
+      instrumentId: 'CN.SZ.000001',
+      quantity: Rational.parse('200'),
+      costPerUnit: Rational.parse('12.5'),
+      name: '平安银行A',
+      nowUtc: fixedNow,
+    );
+    expect(updated.instrumentNames['CN.SZ.000001'], '平安银行A');
+  });
+
+  test('a v1 database gains the instrument directory on upgrade', () async {
+    initSqliteFfi();
+    final path = newDatabasePath();
+    final first = await AppDatabase.open(
+      factory: databaseFactoryFfiNoIsolate,
+      path: path,
+      calendar: calendar,
+    );
+    await first.raw.execute('DROP TABLE instrument_directory');
+    await first.raw.execute('PRAGMA user_version = 1');
+    await first.close();
+
+    final second = await AppDatabase.open(
+      factory: databaseFactoryFfiNoIsolate,
+      path: path,
+      calendar: calendar,
+    );
+    addTearDown(second.close);
+    final rows = await second.raw.query('instrument_directory');
+    expect(rows, isEmpty);
   });
 
   test('legacy flat configuration migrates to versioned rows', () async {
