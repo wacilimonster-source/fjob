@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 
 import '../domain/instrument.dart';
 import '../domain/setup_draft.dart';
+import 'cn_market_calendar_2026.dart';
 import 'market_client.dart';
 
 final class EastmoneyMarketClient implements MarketClient {
@@ -217,10 +218,6 @@ final class EastmoneyMarketClient implements MarketClient {
     required String market,
     required LocalDate from,
     required LocalDate to,
-  }) =>
-      FixtureMarketClient(calendar).fetchCalendar(
-        market: market,
-        from: from,
-        to: to,
-      );
+  }) async =>
+      buildCnMarketCalendar(from: from, to: to);
 }

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../app/theme.dart';
+import '../../data/cn_market_calendar_2026.dart';
 import '../../data/eastmoney_client.dart';
 import '../../data/market_client.dart';
 import '../../domain/ledger.dart';
@@ -162,6 +163,7 @@ class SettingsPage extends ConsumerWidget {
                     : '行情网关 · ${AppConfig.gatewayBaseUrl}',
           ),
           _AboutRow('账本修订', '${settings.ledgerRevision}'),
+          _AboutRow('交易日历', '$cnMarketCalendarVersion · $cnMarketCalendarCoverage'),
           _AboutRow('版本', ref.watch(appVersionProvider).value ?? appVersion),
           const SizedBox(height: 14),
           Text(

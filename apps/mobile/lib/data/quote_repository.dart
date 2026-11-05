@@ -50,12 +50,8 @@ final class QuoteRepository {
   Future<void> ensureCalendar({required DateTime nowUtc}) async {
     if (_calendarChecked) return;
     final today = calendar.dateOf(nowUtc);
-    final covered = await ledger.hasCalendarDay(market: 'SSE', date: today) &&
-        await ledger.hasCalendarDay(market: 'SGE', date: today);
-    if (covered) {
-      _calendarChecked = true;
-      return;
-    }
+    // Always refresh once per session so an older fixture calendar is replaced
+    // by the versioned statutory-holiday calendar.
     try {
       final from = today.addDays(-7);
       final to = today.addDays(45);

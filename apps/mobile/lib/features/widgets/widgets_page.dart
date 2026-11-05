@@ -22,7 +22,6 @@ class WidgetsPage extends ConsumerStatefulWidget {
 
 class _WidgetsPageState extends ConsumerState<WidgetsPage> {
   WidgetPreviewSize _size = WidgetPreviewSize.medium;
-  bool _ios = false;
   bool _publishing = false;
 
   Future<void> _publish() async {
@@ -70,22 +69,6 @@ class _WidgetsPageState extends ConsumerState<WidgetsPage> {
                       spacing: 6,
                       children: [
                         ChoiceChip(
-                          label: const Text('Android'),
-                          selected: !_ios,
-                          onSelected: (_) => setState(() => _ios = false),
-                        ),
-                        ChoiceChip(
-                          label: const Text('iOS'),
-                          selected: _ios,
-                          onSelected: (_) => setState(() => _ios = true),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      children: [
-                        ChoiceChip(
                           label: const Text('小号 · 一眼破防'),
                           selected: _size == WidgetPreviewSize.small,
                           onSelected: (_) =>
@@ -122,7 +105,6 @@ class _WidgetsPageState extends ConsumerState<WidgetsPage> {
                                 snapshot: snapshot,
                                 privacy: privacy,
                                 size: _size,
-                                ios: _ios,
                                 calendar: calendar,
                               ),
                       ),
@@ -159,16 +141,13 @@ class _WidgetsPageState extends ConsumerState<WidgetsPage> {
                           Text(
                             '小部件显示“截至 ${formatClock(snapshot?.computedAtUtc, calendar)}”'
                             '的快照。App 前台每 250ms 重算一次；桌面由系统调度，'
-                            'Android 目标 30 分钟，iOS 依据系统预算。',
+                            'Android 目标 30 分钟。',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            _ios
-                                ? 'iOS 使用 WidgetKit 时间线与 App Group 共享快照，'
-                                    '扩展只读取预计算条目。'
-                                : 'Android 使用 RemoteViews 与 WorkManager，'
-                                    '原生层只选择当前时点之前最近的预计算条目。',
+                            'Android 使用 RemoteViews 与 WorkManager，'
+                            '原生层只选择当前时点之前最近的预计算条目。',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           const SizedBox(height: 6),
@@ -202,14 +181,12 @@ class _WidgetPreview extends StatelessWidget {
     required this.snapshot,
     required this.privacy,
     required this.size,
-    required this.ios,
     required this.calendar,
   });
 
   final DashboardSnapshot snapshot;
   final bool privacy;
   final WidgetPreviewSize size;
-  final bool ios;
   final BusinessCalendar calendar;
 
   @override
@@ -232,7 +209,7 @@ class _WidgetPreview extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette.panel,
-        borderRadius: BorderRadius.circular(ios ? 28 : 22),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: palette.ink, width: 1.5),
         boxShadow: [
           BoxShadow(
