@@ -247,7 +247,9 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
                               client.isFixture
                                   ? '当前报价来自模拟适配器，价格由标的与交易日确定，'
                                       '不会逐帧随机变化；正式发布前需接入已验证的行情网关。'
-                                  : '报价来自网关；个人工资、持仓数量与成本不会上传。',
+                                  : '报价来自${client.sourceLabel}，属于公开接口参考数据，'
+                                      '非交易所官方授权，仅供开发/个人验证；'
+                                      '个人工资、持仓数量与成本不会上传。',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const SizedBox(height: 6),

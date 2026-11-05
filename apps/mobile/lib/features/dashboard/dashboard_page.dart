@@ -768,7 +768,9 @@ class _SourceNote extends StatelessWidget {
         fixture
             ? '当前为模拟行情与模拟交易日历，仅用于界面与计算验收；真实行情接入前不会伪装成实时报价。'
                 '报价时间 ${formatClock(quotesAsOf, calendar)}。'
-            : '行情来自网关，报价截至 ${formatClock(quotesAsOf, calendar)}；个人账本不会离开本机。',
+            : '行情来自 ${fixture ? '网关' : '东方财富公开接口'}，'
+                '报价截至 ${formatClock(quotesAsOf, calendar)}；'
+                '公开参考数据非官方授权，个人账本不会离开本机。',
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.bodySmall,
       );

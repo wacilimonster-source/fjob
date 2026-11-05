@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../app/theme.dart';
+import '../../data/eastmoney_client.dart';
 import '../../data/market_client.dart';
 import '../../domain/ledger.dart';
 import '../ledger/ledger_controller.dart';
@@ -156,7 +157,9 @@ class SettingsPage extends ConsumerWidget {
             '行情来源',
             client is FixtureMarketClient
                 ? '模拟适配器（fixture）· 未接入真实报价'
-                : '行情网关 · ${AppConfig.gatewayBaseUrl}',
+                : client is EastmoneyMarketClient
+                    ? '东方财富公开接口 · developmentOnly（非官方授权）'
+                    : '行情网关 · ${AppConfig.gatewayBaseUrl}',
           ),
           _AboutRow('账本修订', '${settings.ledgerRevision}'),
           _AboutRow('版本', ref.watch(appVersionProvider).value ?? appVersion),

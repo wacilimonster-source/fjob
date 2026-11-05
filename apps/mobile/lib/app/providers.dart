@@ -10,6 +10,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../data/app_database.dart';
 import '../data/ledger_repository.dart';
+import '../data/eastmoney_client.dart';
 import '../data/market_client.dart';
 import '../data/quote_repository.dart';
 import '../data/widget_bridge.dart';
@@ -77,7 +78,9 @@ final ledgerRepositoryProvider = FutureProvider<LedgerRepository>((ref) async {
 final marketClientProvider = Provider<MarketClient>((ref) {
   final calendar = ref.watch(calendarProvider);
   if (AppConfig.gatewayBaseUrl.isEmpty) {
-    return FixtureMarketClient(calendar);
+    // Real public quotes in the development build; a production build should
+    // point FJOB_MARKET_GATEWAY at a licensed gateway instead.
+    return EastmoneyMarketClient(calendar: calendar);
   }
   return GatewayMarketClient(
     baseUrl: AppConfig.gatewayBaseUrl,
