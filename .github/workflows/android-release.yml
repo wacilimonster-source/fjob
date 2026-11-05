@@ -44,12 +44,14 @@ jobs:
       - name: Build signed AAB and APK
         working-directory: apps/mobile
         run: |
+          # Keep versionCode monotonic and above the manually built 0.1.2 (3).
+          BUILD_NUMBER=$((1000 + GITHUB_RUN_NUMBER))
           flutter build appbundle --release \
             --build-name="${GITHUB_REF_NAME#v}" \
-            --build-number="${GITHUB_RUN_NUMBER}"
+            --build-number="${BUILD_NUMBER}"
           flutter build apk --release \
             --build-name="${GITHUB_REF_NAME#v}" \
-            --build-number="${GITHUB_RUN_NUMBER}"
+            --build-number="${BUILD_NUMBER}"
       - name: Checksums
         working-directory: apps/mobile
         run: |
