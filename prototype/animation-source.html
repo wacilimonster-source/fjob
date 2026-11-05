@@ -1,0 +1,1894 @@
+<div id="fjob-motion-study" class="viz-dotted-background">
+  <style>
+    #fjob-motion-study {
+      --paper: #f7f2e9;
+      --panel: #fffdf7;
+      --ink: #323a32;
+      --muted: #686e61;
+      --line: #d5d6c8;
+      --soft: #e9eddf;
+      --yellow: #f2dfac;
+      --rose: #f0d2c5;
+      --negative: #ad4736;
+      --positive: #46644e;
+      color-scheme: light;
+      font:
+        14px/1.5 "Microsoft YaHei",
+        system-ui,
+        sans-serif;
+      color: var(--ink);
+      padding: 12px 0;
+    }
+    #fjob-motion-study * {
+      box-sizing: border-box;
+    }
+    #fjob-motion-study button,
+    #fjob-motion-study select,
+    #fjob-motion-study input {
+      font: inherit;
+      color: inherit;
+    }
+    #fjob-motion-study button {
+      cursor: pointer;
+      touch-action: manipulation;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+      padding: 8px 12px;
+    }
+    #fjob-motion-study button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    #fjob-motion-study button:focus-visible,
+    #fjob-motion-study select:focus-visible,
+    #fjob-motion-study input:focus-visible {
+      outline: 3px solid var(--positive);
+      outline-offset: 3px;
+    }
+    #fjob-motion-study .study {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(230px, 1fr);
+      gap: 18px;
+      align-items: start;
+      max-width: 736px;
+      margin: auto;
+    }
+    #fjob-motion-study .phone {
+      background: var(--paper);
+      border: 1.5px solid var(--ink);
+      border-radius: 25px 22px 24px 23px;
+      overflow: hidden;
+      box-shadow: 4px 5px 0 #323a3215;
+      min-width: 0;
+    }
+    #fjob-motion-study .banner {
+      padding: 8px 12px;
+      text-align: center;
+      font-size: 11px;
+      background: var(--soft);
+    }
+    #fjob-motion-study .phone-body {
+      padding: 20px 17px 18px;
+    }
+    #fjob-motion-study .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    #fjob-motion-study h1 {
+      font-size: 23px;
+      margin: 0 0 4px;
+      font-weight: 700;
+      letter-spacing: -0.6px;
+    }
+    #fjob-motion-study h2 {
+      font-size: 16px;
+      margin: 0 0 10px;
+      font-weight: 650;
+    }
+    #fjob-motion-study p {
+      margin: 0;
+    }
+    #fjob-motion-study .muted {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    #fjob-motion-study .stamp {
+      font-size: 11px;
+      border: 1.5px solid var(--negative);
+      color: var(--negative);
+      padding: 5px 7px;
+      transform: rotate(6deg);
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    #fjob-motion-study .money {
+      padding: 13px 15px;
+      background: var(--panel);
+      border: 1.5px solid var(--ink);
+      border-radius: 17px 21px 18px 16px;
+    }
+    #fjob-motion-study .amount {
+      font:
+        650 37px/1.4 ui-monospace,
+        monospace;
+      color: var(--negative);
+      letter-spacing: -1.5px;
+      font-variant-numeric: tabular-nums;
+    }
+    #fjob-motion-study .quote {
+      font-size: 12px;
+      padding-left: 8px;
+      border-left: 3px solid var(--rose);
+    }
+    #fjob-motion-study .scene {
+      position: relative;
+      margin-top: 15px;
+      overflow: hidden;
+      border-radius: 13px;
+    }
+    #fjob-motion-study canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 380/238;
+    }
+    #fjob-motion-study .head-hit {
+      position: absolute;
+      left: 36.3158%;
+      top: 18.4874%;
+      width: 21.8421%;
+      height: 52.521%;
+      background: transparent;
+      border: 0;
+      border-radius: 32%;
+      padding: 0;
+      min-height: 0;
+    }
+    #fjob-motion-study .head-hit:disabled {
+      opacity: 1;
+    }
+    #fjob-motion-study .feedback-slot {
+      min-height: 60px;
+      margin: 8px 0 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #fjob-motion-study .feedback {
+      position: relative;
+      padding: 9px 10px;
+      font-size: 13px;
+      text-align: center;
+      max-width: 100%;
+      color: var(--muted);
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #fjob-motion-study .feedback.speaking {
+      background: var(--panel);
+      border: 1.5px solid var(--ink);
+      border-radius: 12px;
+      color: var(--ink);
+    }
+    #fjob-motion-study .feedback.speaking:before {
+      content: "";
+      position: absolute;
+      top: -5px;
+      left: 48%;
+      width: 8px;
+      height: 8px;
+      background: var(--panel);
+      border-left: 1.5px solid var(--ink);
+      border-top: 1.5px solid var(--ink);
+      transform: rotate(45deg);
+    }
+    #fjob-motion-study .clock-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 48px;
+    }
+    #fjob-motion-study #fm-pat {
+      font-size: 12px;
+      background: var(--soft);
+      max-width: 55%;
+      padding: 8px;
+      white-space: normal;
+    }
+    #fjob-motion-study .progress-track {
+      height: 5px;
+      background: var(--line);
+      border-radius: 4px;
+      margin: 8px 0 15px;
+      overflow: hidden;
+    }
+    #fjob-motion-study .progress-fill {
+      height: 100%;
+      background: var(--positive);
+      width: 58%;
+    }
+    #fjob-motion-study .entry {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      border-top: 1px dashed var(--line);
+      padding: 10px 0;
+      font-size: 12px;
+    }
+    #fjob-motion-study .entry strong {
+      font:
+        500 12px ui-monospace,
+        monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    #fjob-motion-study .lab {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      padding: 16px;
+      min-width: 0;
+    }
+    #fjob-motion-study .lab label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+    #fjob-motion-study .lab select {
+      width: 100%;
+      min-width: 0;
+      padding: 9px 8px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--paper);
+      min-height: 44px;
+    }
+    #fjob-motion-study .lab .checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px 15px;
+    }
+    #fjob-motion-study .lab .check {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 7px;
+      min-height: 35px;
+      margin-top: 5px;
+    }
+    #fjob-motion-study .check input {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--positive);
+    }
+    #fjob-motion-study .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 12px;
+    }
+    #fjob-motion-study .actions button {
+      flex: 1;
+      min-width: 90px;
+      font-size: 12px;
+    }
+    #fjob-motion-study .actions .primary {
+      background: var(--soft);
+      border-color: var(--ink);
+    }
+    #fjob-motion-study .separator {
+      border: 0;
+      border-top: 1px dashed var(--line);
+      margin: 16px 0;
+    }
+    #fjob-motion-study .timeline-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    #fjob-motion-study .time {
+      font:
+        500 12px ui-monospace,
+        monospace;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    #fjob-motion-study input[type="range"] {
+      width: 100%;
+      accent-color: var(--positive);
+      margin: 4px 0 0;
+      min-height: 32px;
+    }
+    #fjob-motion-study .frame-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+    #fjob-motion-study .frame-buttons button {
+      font:
+        11px ui-monospace,
+        monospace;
+      min-height: 32px;
+      padding: 5px 7px;
+      border-radius: 6px;
+    }
+    #fjob-motion-study .frame-buttons button[aria-pressed="true"] {
+      background: var(--soft);
+      border-color: var(--ink);
+    }
+    #fjob-motion-study .phase-label {
+      padding: 10px 0;
+      color: var(--muted);
+      font-size: 12px;
+      min-height: 40px;
+    }
+    #fjob-motion-study .status {
+      font-size: 12px;
+      color: var(--positive);
+      min-height: 38px;
+      margin-top: 12px;
+    }
+    #fjob-motion-study .inspect {
+      border-top: 1px dashed var(--line);
+      padding-top: 10px;
+      font:
+        11px/1.8 ui-monospace,
+        monospace;
+      overflow-wrap: anywhere;
+      color: var(--muted);
+    }
+    #fjob-motion-study .small-selects {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+    @media (max-width: 650px) {
+      #fjob-motion-study .study {
+        grid-template-columns: minmax(0, 1fr);
+        max-width: 430px;
+      }
+      #fjob-motion-study .lab {
+        padding: 16px;
+      }
+      #fjob-motion-study .phone-body {
+        padding: 18px 15px;
+      }
+      #fjob-motion-study .frame-buttons button {
+        min-height: 38px;
+      }
+    }
+    @media (pointer: coarse) {
+      #fjob-motion-study .frame-buttons button {
+        min-height: 44px;
+      }
+      #fjob-motion-study .lab .check {
+        min-height: 44px;
+      }
+    }
+  </style>
+  <div class="study">
+    <section class="phone" aria-label="拍拍他与下班离场手机画面">
+      <div class="banner">交互动效稿 · 固定示例金额</div>
+      <div class="phone-body">
+        <div class="top">
+          <div>
+            <h1>今日又白干</h1>
+            <p class="muted" id="fm-clock">星期三 · 14:36</p>
+          </div>
+          <span class="stamp" id="fm-stamp">在岗求生中</span>
+        </div>
+        <div class="money">
+          <p>今日生存结余</p>
+          <div class="amount">−¥55.26</div>
+          <p class="quote">工资正在努力追赶上午的亏损。</p>
+        </div>
+        <div class="scene">
+          <canvas
+            id="fm-canvas"
+            width="760"
+            height="476"
+            role="img"
+            aria-label="手绘办公室，人物正在工位上"
+          ></canvas
+          ><button
+            type="button"
+            class="head-hit"
+            id="fm-head"
+            aria-label="拍拍他的头肩，给他一点安慰"
+          ></button>
+        </div>
+        <div class="feedback-slot">
+          <div id="fm-feedback" class="feedback">
+            工位 0001 · 钱路过了你一下
+          </div>
+        </div>
+        <div class="clock-row">
+          <span class="muted" id="fm-countdown">距离下班还有 03:24:00</span
+          ><button type="button" id="fm-pat">拍拍他</button>
+        </div>
+        <div class="progress-track">
+          <div id="fm-work-progress" class="progress-fill"></div>
+        </div>
+        <div class="entry">
+          <span>打工 · 今日已挣</span><strong>+¥328.57</strong>
+        </div>
+        <div class="entry">
+          <span>投资 · 今日浮动</span
+          ><strong id="fm-investment">−¥250.00</strong>
+        </div>
+        <div class="entry">
+          <span>固定支出 · 已分摊</span><strong>−¥133.83</strong>
+        </div>
+      </div>
+    </section>
+    <section class="lab" aria-label="动画播放与关键帧对照">
+      <h2>工位小剧场 · 动画演示台</h2>
+      <p class="muted">PAT 3200ms · OUT 2200ms</p>
+      <div class="actions">
+        <button type="button" class="primary" id="fm-play-pat">拍肩片段</button
+        ><button type="button" class="primary" id="fm-play-exit">
+          下班离场</button
+        ><button type="button" id="fm-race">拍拍中下班</button>
+      </div>
+      <label
+        >直接查看稳态<select id="fm-phase">
+          <option value="working">工作中 · 人在工位</option>
+          <option value="breakTime">午休 · 人在休息</option>
+          <option value="afterShift">下班后打开 · 空工位</option>
+          <option value="beforeShift">上班前 · 空工位</option>
+          <option value="restDay">休息日 · 空工位</option>
+          <option value="unknown">排班未知 · 空工位</option>
+        </select></label
+      >
+      <div class="small-selects">
+        <label
+          >盈亏表情<select id="fm-mood">
+            <option value="loss">亏损</option>
+            <option value="gain">盈利</option>
+            <option value="unknown">报价未知</option>
+          </select></label
+        ><label
+          >吐槽语气<select id="fm-tone">
+            <option value="gentle">温柔地丧</option>
+            <option value="harsh">再狠一点</option>
+          </select></label
+        >
+      </div>
+      <div class="checks">
+        <label class="check"
+          ><input type="checkbox" id="fm-reduced" />减少动效</label
+        ><label class="check"
+          ><input type="checkbox" id="fm-house" checked />显示住房</label
+        ><label class="check"
+          ><input type="checkbox" id="fm-car" checked />显示车贷</label
+        >
+      </div>
+      <hr class="separator" />
+      <div class="timeline-head">
+        <h2 style="margin: 0" id="fm-clip-title">拍肩时间轴</h2>
+        <span class="time" id="fm-time">0 / 3200ms</span>
+      </div>
+      <label for="fm-seek" class="muted" style="margin: 0">拖动查看关键帧</label
+      ><input
+        id="fm-seek"
+        type="range"
+        min="0"
+        max="3200"
+        value="0"
+        step="10"
+        aria-label="动画进度，毫秒"
+      />
+      <div class="actions">
+        <button type="button" id="fm-toggle">播放</button
+        ><button type="button" id="fm-prev">−100ms</button
+        ><button type="button" id="fm-next">+100ms</button>
+      </div>
+      <div class="small-selects">
+        <label
+          >播放速度<select id="fm-speed">
+            <option value="1">1× 实际时长</option>
+            <option value="0.5">0.5× 慢放</option>
+          </select></label
+        ><label
+          >片段<select id="fm-clip">
+            <option value="pat">拍肩回应</option>
+            <option value="departure">下班离场</option>
+            <option value="race">拍拍中下班</option>
+          </select></label
+        >
+      </div>
+      <div
+        class="frame-buttons"
+        id="fm-markers"
+        aria-label="关键帧时间点"
+      ></div>
+      <p class="phase-label" id="fm-stage-label">等待点击拍拍他</p>
+      <div class="actions">
+        <button type="button" id="fm-midnight">跨午夜仍在岗</button
+        ><button type="button" id="fm-night-exit">夜班02:00下班</button>
+      </div>
+      <p class="status" id="fm-status" role="status" aria-live="polite">
+        点击人物头肩或“拍拍他”。
+      </p>
+      <p class="inspect" id="fm-inspect">presence=atDesk · transient=idle</p>
+    </section>
+  </div>
+  <script type="application/json" id="fm-timing-data">
+    {
+      "version": "1.0",
+      "logicalSize": { "width": 380, "height": 238 },
+      "pat": {
+        "durationMs": 3200,
+        "reducedDurationMs": 2400,
+        "contactsMs": [210, 410],
+        "keyframesMs": [0, 120, 210, 410, 720, 1200, 2600, 3200],
+        "responseAtMs": 420,
+        "reliefStartMs": 520,
+        "reliefFullMs": 900,
+        "reliefEndMs": 2400,
+        "handEndMs": 720
+      },
+      "departure": {
+        "durationMs": 2200,
+        "keyframesMs": [0, 220, 560, 860, 1400, 1900, 2200],
+        "stopCoinsMs": 180,
+        "standStartMs": 560,
+        "walkStartMs": 860,
+        "walkEndMs": 1900,
+        "exitX": 420
+      },
+      "race": {
+        "boundaryMs": 1500,
+        "durationMs": 3700,
+        "keyframesMs": [0, 210, 720, 1490, 1500, 2060, 2360, 2900, 3400, 3700]
+      },
+      "headHitRect": { "x": 138, "y": 44, "width": 83, "height": 125 }
+    }
+  </script>
+  <script>
+    (() => {
+      const root = document.getElementById("fjob-motion-study");
+      const el = (name) => root.querySelector("#fm-" + name);
+      const spec = JSON.parse(el("timing-data").textContent);
+      const colors = {
+        ink: "#323a32",
+        paper: "#fffdf7",
+        soft: "#e9eddf",
+        yellow: "#f2dfac",
+        rose: "#f0d2c5",
+        muted: "#686e61",
+        negative: "#ad4736",
+        positive: "#46644e",
+      };
+      const osMotion = matchMedia("(prefers-reduced-motion: reduce)");
+      const state = {
+        phase: "working",
+        mood: "loss",
+        tone: "gentle",
+        responseTone: "gentle",
+        showHousing: true,
+        showCar: true,
+        reduced: false,
+        clip: "pat",
+        elapsed: 0,
+        hasTimeline: false,
+        playing: false,
+        speed: 1,
+        accepted: 0,
+        responseIndex: 0,
+        night: false,
+      };
+      let frameId = 0,
+        previousTime = 0,
+        drawnWidth = 0,
+        drawnHeight = 0;
+      const reduced = () => state.reduced || osMotion.matches;
+      const clamp = (n, min = 0, max = 1) => Math.max(min, Math.min(max, n));
+      const mix = (a, b, t) => a + (b - a) * t;
+      const smooth = (t) => {
+        const x = clamp(t);
+        return x * x * (3 - 2 * x);
+      };
+      const segment = (t, a, b) => smooth((t - a) / (b - a));
+      const duration = () =>
+        state.clip === "pat"
+          ? reduced()
+            ? 2400
+            : 3200
+          : state.clip === "departure"
+            ? reduced()
+              ? 0
+              : 2200
+            : reduced()
+              ? 1500
+              : 3700;
+      const atDesk = (phase) => phase === "working" || phase === "breakTime";
+      const durationText = {
+        pat: "拍肩时间轴",
+        departure: "离场时间轴",
+        race: "中断与离场时间轴",
+      };
+      function view() {
+        let phase = state.phase,
+          kind = "idle",
+          local = 0;
+        if (state.hasTimeline) {
+          if (state.clip === "race") {
+            if (state.elapsed < 1500) {
+              kind = "pat";
+              phase = "working";
+              local = state.elapsed;
+            } else {
+              kind = "departure";
+              phase = "afterShift";
+              local = reduced() ? 2200 : state.elapsed - 1500;
+            }
+          } else {
+            kind = state.clip;
+            local = state.elapsed;
+            if (kind === "departure") {
+              phase = "afterShift";
+              if (reduced()) local = 2200;
+            }
+          }
+        }
+        const pat = kind === "pat" && local < (reduced() ? 2400 : 3200);
+        const departure = kind === "departure" && local < 2200;
+        const presence = atDesk(phase) ? "atDesk" : "emptyDesk";
+        let relief = 0,
+          compression = 0,
+          handAlpha = 0;
+        if (pat) {
+          if (reduced()) relief = 1;
+          else {
+            relief =
+              segment(local, 520, 900) * (1 - segment(local, 2400, 3200));
+            compression =
+              2.5 * Math.exp(-Math.pow((local - 210) / 53, 2)) +
+              1.7 * Math.exp(-Math.pow((local - 410) / 53, 2));
+            handAlpha = segment(local, 0, 120) * (1 - segment(local, 520, 720));
+          }
+        }
+        const stand = kind === "departure" ? segment(local, 560, 860) : 0;
+        const walk = kind === "departure" ? segment(local, 860, 1900) : 0;
+        const actorVisible =
+          presence === "atDesk" || (departure && local < 1900);
+        return {
+          phase,
+          kind,
+          local,
+          pat,
+          departure,
+          presence,
+          relief,
+          compression,
+          handAlpha,
+          stand,
+          walk,
+          actorVisible,
+          actorX: 181 + 239 * walk,
+          canPat: presence === "atDesk" && !pat && !departure,
+          complete: state.hasTimeline && state.elapsed >= duration(),
+        };
+      }
+      function baseCaption(phase) {
+        return {
+          working: "工位 0001 · 钱路过了你一下",
+          breakTime: "午休暂停计薪 · 肩膀也歇一歇",
+          afterShift:
+            state.showHousing || state.showCar
+              ? "人下班了，固定支出还在全勤。"
+              : "人已下班，今天到此为止。",
+          beforeShift: "工位已就绪 · 人还没到岗",
+          restDay: "今日工位休息 · 人类模式已启动",
+          unknown: "排班待确认 · 先留一个空位",
+        }[phase];
+      }
+      function response() {
+        const work = state.phase !== "breakTime";
+        const gentle = work
+          ? [
+              "辛苦了。你又不是打印机。",
+              "收到，肩膀先放下来一点。",
+              "谢谢，刚才差点卡成工位配件。",
+            ]
+          : [
+              "先歇会儿，下午再慢慢来。",
+              "这口气，总算顺下来了。",
+              "有人在意，午休都松一点。",
+            ];
+        const harsh = work
+          ? [
+              "工资没加，倒是被当人看了一眼。",
+              "老板没看见，先松口气。",
+              "牛马收到一点人类关怀。",
+            ]
+          : [
+              "午休被记得，也算公司福利之外了。",
+              "人在充电，账单也在充电。",
+              "打工暂停，做人继续。",
+            ];
+        return (state.responseTone === "gentle" ? gentle : harsh)[
+          state.responseIndex % 3
+        ];
+      }
+      function phaseLabel(v) {
+        if (v.pat)
+          return reduced()
+            ? "低动效 · 静态抬眼回应"
+            : v.local < 120
+              ? "响应 · 停手"
+              : v.local < 300
+                ? "第一拍拍肩"
+                : v.local < 520
+                  ? "第二拍拍肩"
+                  : v.local < 900
+                    ? "抬眼 · 腮红 · 肩膀放松"
+                    : v.local < 2400
+                      ? "保持回应"
+                      : "恢复基础姿态";
+        if (v.departure)
+          return v.local < 220
+            ? "停手 · 硬币收尾"
+            : v.local < 560
+              ? "关掉显示器"
+              : v.local < 860
+                ? "起身 · 提包"
+                : v.local < 1900
+                  ? "前景行走 · 离开工位"
+                  : "空椅子回正";
+        if (v.kind === "departure") return "离场完成 · 空工位";
+        return state.hasTimeline ? "回应结束 · 基础姿态" : "等待播放";
+      }
+      function save() {
+        if (window.openai?.setWidgetState)
+          window.openai
+            .setWidgetState({
+              modelContent: {
+                phase: state.phase,
+                clip: state.clip,
+                mood: state.mood,
+                reducedMotion: reduced(),
+              },
+              privateContent: {
+                phase: state.phase,
+                mood: state.mood,
+                tone: state.tone,
+                showHousing: state.showHousing,
+                showCar: state.showCar,
+                reduced: state.reduced,
+                speed: state.speed,
+              },
+            })
+            .catch(() => {});
+      }
+      function announce(message) {
+        el("status").textContent = message;
+      }
+      function stop() {
+        cancelAnimationFrame(frameId);
+        frameId = 0;
+        previousTime = 0;
+        state.playing = false;
+      }
+      function schedule() {
+        if (state.playing && !frameId) frameId = requestAnimationFrame(tick);
+      }
+      function startClip(clip, auto = true) {
+        stop();
+        state.clip = clip;
+        state.hasTimeline = true;
+        state.elapsed = 0;
+        if (clip === "departure") state.phase = "afterShift";
+        else if (clip === "race" || !atDesk(state.phase))
+          state.phase = "working";
+        if (clip !== "departure") {
+          state.responseTone = state.tone;
+          state.responseIndex = state.accepted % 3;
+          state.accepted++;
+        }
+        state.playing = auto && duration() > 0;
+        if (duration() === 0) state.elapsed = 0;
+        render(true);
+        schedule();
+        save();
+      }
+      function requestPat() {
+        const v = view();
+        if (!v.canPat) return false;
+        startClip("pat");
+        announce(response());
+        return true;
+      }
+      function seek(ms) {
+        stop();
+        state.hasTimeline = true;
+        state.elapsed = clamp(Number(ms) || 0, 0, duration());
+        render();
+      }
+      function setPhase(phase) {
+        stop();
+        state.phase = phase;
+        state.night = false;
+        state.hasTimeline = false;
+        state.elapsed = 0;
+        render(true);
+        save();
+      }
+      function markers() {
+        const total = duration();
+        return [
+          ...new Set(
+            spec[state.clip].keyframesMs
+              .filter((n) => n <= total)
+              .concat(total),
+          ),
+        ];
+      }
+      function syncMarkers() {
+        el("markers").replaceChildren(
+          ...markers().map((ms) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.textContent = ms + "ms";
+            button.dataset.ms = ms;
+            button.addEventListener("click", () => seek(ms));
+            return button;
+          }),
+        );
+      }
+      function render(rebuild = false) {
+        const v = view();
+        const amount = root.querySelector(".amount");
+        amount.textContent =
+          state.mood === "gain"
+            ? "+¥245.23"
+            : state.mood === "unknown"
+              ? "¥194.74"
+              : "−¥55.26";
+        amount.style.color =
+          state.mood === "gain"
+            ? colors.positive
+            : state.mood === "unknown"
+              ? colors.muted
+              : colors.negative;
+        root.querySelector(".quote").textContent =
+          state.mood === "gain"
+            ? "今天暂时领先，先小声开心一下。"
+            : state.mood === "unknown"
+              ? "投资待更新，当前合计不完整。"
+              : "工资正在努力追赶上午的亏损。";
+        el("investment").textContent =
+          state.mood === "gain"
+            ? "+¥50.49"
+            : state.mood === "unknown"
+              ? "待更新"
+              : "−¥250.00";
+        el("phase").value = state.phase;
+        el("mood").value = state.mood;
+        el("tone").value = state.tone;
+        el("clip").value = state.clip;
+        el("speed").value = String(state.speed);
+        el("house").checked = state.showHousing;
+        el("car").checked = state.showCar;
+        el("reduced").checked = reduced();
+        el("reduced").disabled = osMotion.matches;
+        const disabledLabel = {
+          afterShift: "他已下班",
+          beforeShift: "还没到工位",
+          restDay: "今天不在岗",
+          unknown: "排班待确认",
+        }[v.phase];
+        el("pat").disabled = !v.canPat;
+        el("head").disabled = !v.canPat;
+        el("pat").textContent = v.pat
+          ? v.local < 520
+            ? "收到啦"
+            : "他缓过来一点了"
+          : disabledLabel || "拍拍他";
+        el("stamp").textContent = {
+          working: "在岗求生中",
+          breakTime: "午休歇一歇",
+          afterShift: "他已下班",
+          beforeShift: "还没到岗",
+          restDay: "今日休息",
+          unknown: "排班待确认",
+        }[v.phase];
+        el("clock").textContent =
+          "星期三 · " +
+          (state.night
+            ? v.phase === "afterShift"
+              ? "02:00"
+              : "00:00"
+            : v.phase === "afterShift"
+              ? "18:00"
+              : v.phase === "breakTime"
+                ? "12:30"
+                : "14:36");
+        el("countdown").textContent =
+          v.phase === "working"
+            ? state.night
+              ? "距离下班还有 02:00:00"
+              : "距离下班还有 03:24:00"
+            : v.phase === "breakTime"
+              ? "午休中 · 账单继续分摊"
+              : v.phase === "afterShift"
+                ? "今日班次已结束"
+                : "工位暂时无人";
+        el("work-progress").style.width =
+          v.phase === "afterShift"
+            ? "100%"
+            : v.phase === "restDay" ||
+                v.phase === "beforeShift" ||
+                v.phase === "unknown"
+              ? "0%"
+              : "58%";
+        const message = v.pat
+          ? reduced() || v.local >= 420
+            ? response()
+            : "他抬头看了你一眼。"
+          : v.departure
+            ? v.local >= 560
+              ? "今日工位，暂停营业。"
+              : "他把手从键盘上拿开了。"
+            : baseCaption(v.phase);
+        el("feedback").textContent = message;
+        el("feedback").className = "feedback" + (v.pat ? " speaking" : "");
+        el("canvas").setAttribute(
+          "aria-label",
+          v.departure
+            ? "人物正在提包离开工位"
+            : v.actorVisible
+              ? v.pat
+                ? "人物被轻轻拍肩，抬眼回应"
+                : "手绘办公室，人物在工位上"
+              : "空工位，人物" +
+                (v.phase === "afterShift" ? "已经下班" : "当前不在岗"),
+        );
+        el("clip-title").textContent = durationText[state.clip];
+        el("time").textContent =
+          Math.round(state.elapsed) + " / " + duration() + "ms";
+        el("seek").max = String(Math.max(1, duration()));
+        el("seek").value = String(Math.round(state.elapsed));
+        el("seek").disabled = duration() === 0;
+        el("toggle").textContent = state.playing
+          ? "暂停"
+          : state.hasTimeline && state.elapsed < duration()
+            ? "继续"
+            : "播放";
+        el("toggle").disabled = duration() === 0;
+        el("stage-label").textContent = phaseLabel(v);
+        el("inspect").textContent =
+          `presence=${v.presence} · transient=${v.pat ? "pat" : v.departure ? "departure" : "idle"} · accepted=${state.accepted}`;
+        if (rebuild) syncMarkers();
+        el("markers")
+          .querySelectorAll("button")
+          .forEach((button) =>
+            button.setAttribute(
+              "aria-pressed",
+              String(Math.abs(Number(button.dataset.ms) - state.elapsed) < 10),
+            ),
+          );
+        draw(v);
+      }
+      function tick(now) {
+        frameId = 0;
+        if (!root.isConnected) return;
+        if (previousTime)
+          state.elapsed = Math.min(
+            duration(),
+            state.elapsed + (now - previousTime) * state.speed,
+          );
+        previousTime = now;
+        if (state.elapsed >= duration()) {
+          state.playing = false;
+          if (state.clip !== "pat") announce("他已下班，工位已空。");
+        }
+        render();
+        schedule();
+      }
+      function draw(v) {
+        const canvas = el("canvas"),
+          width = canvas.clientWidth,
+          height = (width * 238) / 380,
+          dpr = Math.min(devicePixelRatio || 1, 2);
+        if (!width) return;
+        if (drawnWidth !== width || drawnHeight !== dpr) {
+          canvas.width = Math.round(width * dpr);
+          canvas.height = Math.round(height * dpr);
+          drawnWidth = width;
+          drawnHeight = dpr;
+        }
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(canvas.width / 380, 0, 0, canvas.height / 238, 0, 0);
+        ctx.clearRect(0, 0, 380, 238);
+        const p = colors;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        function line(points, color = p.ink, weight = 2) {
+          ctx.beginPath();
+          points.forEach(([x, y], i) =>
+            i ? ctx.lineTo(x, y) : ctx.moveTo(x, y),
+          );
+          ctx.strokeStyle = color;
+          ctx.lineWidth = weight;
+          ctx.stroke();
+        }
+        function box(x, y, w, h, fill, r = 3, stroke = true) {
+          ctx.beginPath();
+          ctx.roundRect(x, y, w, h, r);
+          ctx.fillStyle = fill;
+          ctx.fill();
+          if (stroke) {
+            ctx.strokeStyle = p.ink;
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+          }
+        }
+        function oval(x, y, rx, ry, fill, stroke = true) {
+          ctx.beginPath();
+          ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+          ctx.fillStyle = fill;
+          ctx.fill();
+          if (stroke) {
+            ctx.strokeStyle = p.ink;
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+          }
+        }
+        function poly(points, fill, weight = 2) {
+          ctx.beginPath();
+          points.forEach(([x, y], i) =>
+            i ? ctx.lineTo(x, y) : ctx.moveTo(x, y),
+          );
+          ctx.closePath();
+          ctx.fillStyle = fill;
+          ctx.fill();
+          ctx.strokeStyle = p.ink;
+          ctx.lineWidth = weight;
+          ctx.stroke();
+        }
+        function text(str, x, y, size = 12, color = p.ink) {
+          ctx.fillStyle = color;
+          ctx.font = `${size}px "Microsoft YaHei",sans-serif`;
+          ctx.fillText(str, x, y);
+        }
+        ctx.fillStyle = p.soft;
+        ctx.fillRect(0, 0, 380, 238);
+        ctx.fillStyle = p.paper;
+        ctx.fillRect(0, 187, 380, 51);
+        line(
+          [
+            [0, 187],
+            [380, 187],
+          ],
+          p.muted,
+          1,
+        );
+        box(250, 17, 108, 91, p.paper, 7);
+        line(
+          [
+            [304, 18],
+            [304, 108],
+          ],
+          p.muted,
+          1,
+        );
+        line(
+          [
+            [250, 64],
+            [358, 64],
+          ],
+          p.muted,
+          1,
+        );
+        if (state.mood === "gain") {
+          oval(329, 40, 13, 13, p.yellow);
+          for (let i = 0; i < 8; i++) {
+            const a = (i * Math.PI) / 4;
+            line(
+              [
+                [329 + Math.cos(a) * 18, 40 + Math.sin(a) * 18],
+                [329 + Math.cos(a) * 22, 40 + Math.sin(a) * 22],
+              ],
+              p.muted,
+              1,
+            );
+          }
+        } else {
+          oval(280, 42, 17, 10, p.soft);
+          oval(294, 37, 16, 13, p.soft);
+          oval(307, 44, 18, 9, p.soft);
+          if (state.mood === "unknown") text("?", 289, 47, 14, p.muted);
+          else
+            for (let i = 0; i < 6; i++) {
+              const drop =
+                state.playing && !reduced()
+                  ? (state.elapsed * 0.025 + i * 8) % 38
+                  : i * 5;
+              line(
+                [
+                  [264 + i * 13, 57 + drop],
+                  [260 + i * 13, 64 + drop],
+                ],
+                p.muted,
+                1,
+              );
+            }
+        }
+        box(30, 21, 81, 66, p.yellow, 2);
+        line(
+          [
+            [48, 22],
+            [89, 22],
+          ],
+          p.rose,
+          5,
+        );
+        const empty = !v.actorVisible;
+        const note = empty
+          ? {
+              afterShift: "已下班",
+              beforeShift: "还没到岗",
+              restDay: "今日休息",
+              unknown: "排班待确认",
+            }[v.phase]
+          : "上班致富";
+        text(note || "已下班", 40, 46, note && note.length > 4 ? 11 : 14);
+        text(empty ? "工位暂停营业" : "暂无进展", 40, 68, 11, p.muted);
+        box(124, 19, 36, 32, p.paper, 3);
+        text("0001", 129, 40, 10);
+        if (state.showHousing) {
+          ctx.save();
+          ctx.translate(7, 121);
+          poly(
+            [
+              [13, 39],
+              [49, 10],
+              [82, 39],
+            ],
+            p.rose,
+            1.8,
+          );
+          poly(
+            [
+              [20, 39],
+              [75, 39],
+              [74, 83],
+              [21, 84],
+            ],
+            p.paper,
+            1.8,
+          );
+          box(29, 48, 13, 13, p.soft, 1);
+          box(53, 48, 13, 13, p.yellow, 1);
+          line(
+            [
+              [35, 48],
+              [35, 61],
+            ],
+            p.ink,
+            1,
+          );
+          line(
+            [
+              [29, 54],
+              [42, 54],
+            ],
+            p.ink,
+            1,
+          );
+          box(43, 65, 13, 19, p.yellow, 1);
+          ctx.restore();
+          text("房租", 34, 221, 11);
+        }
+        if (state.showCar) {
+          ctx.save();
+          ctx.translate(300, 181);
+          poly(
+            [
+              [3, 14],
+              [15, 12],
+              [25, 1],
+              [49, 2],
+              [60, 14],
+              [72, 17],
+              [75, 29],
+              [3, 29],
+            ],
+            p.rose,
+            1.7,
+          );
+          poly(
+            [
+              [20, 12],
+              [28, 5],
+              [36, 5],
+              [36, 13],
+            ],
+            p.paper,
+            1,
+          );
+          poly(
+            [
+              [40, 5],
+              [48, 5],
+              [56, 14],
+              [40, 13],
+            ],
+            p.soft,
+            1,
+          );
+          oval(20, 29, 7, 7, p.ink, false);
+          oval(20, 29, 3, 3, p.paper, false);
+          oval(62, 29, 7, 7, p.ink, false);
+          oval(62, 29, 3, 3, p.paper, false);
+          ctx.restore();
+          text("车贷", 325, 225, 11);
+        }
+        oval(186, 206, 63, 7, p.soft, false);
+        function chair() {
+          ctx.save();
+          ctx.translate(182, 190);
+          ctx.rotate((empty || v.local > 1900) && v.kind !== "pat" ? 0.105 : 0);
+          box(-20, -44, 43, 47, p.rose, 8);
+          line(
+            [
+              [0, 0],
+              [0, 22],
+            ],
+            p.ink,
+            4,
+          );
+          line(
+            [
+              [-20, 23],
+              [23, 23],
+            ],
+            p.ink,
+            3,
+          );
+          ctx.restore();
+        }
+        chair();
+        const walking = v.departure && v.local >= 860;
+        const standY = -16 * v.stand;
+        function person() {
+          if (!v.actorVisible) return;
+          ctx.save();
+          ctx.translate(
+            v.actorX - 181,
+            standY + (walking ? Math.sin(v.local * 0.016) * 1.1 : 0),
+          );
+          // The seated body and standing/walking roots share the same head and facial geometry.
+          oval(181, 143, 25, 35, p.paper);
+          const step = walking
+            ? Math.sin(((v.local - 860) * Math.PI * 2 * 2.5) / 1000) * 11
+            : 0;
+          const footY = walking ? 228 : mix(199, 228, v.stand);
+          line(
+            [
+              [170, 169],
+              [165 + step * 0.6, 197],
+              [151 + step, footY],
+            ],
+            p.ink,
+            5,
+          );
+          line(
+            [
+              [187, 171],
+              [194 - step * 0.6, 198],
+              [211 - step, footY],
+            ],
+            p.ink,
+            5,
+          );
+          const headDy = v.compression;
+          ctx.save();
+          ctx.translate(178, 129);
+          ctx.rotate((v.compression / 2.5) * 0.0436);
+          ctx.scale(1, 1 - (v.compression / 2.5) * 0.035);
+          ctx.translate(-178, -129 + headDy);
+          oval(178, 96, 30, 35, p.paper);
+          ctx.beginPath();
+          ctx.moveTo(149, 85);
+          ctx.bezierCurveTo(147, 56, 199, 48, 208, 85);
+          ctx.lineTo(194, 75);
+          ctx.lineTo(192, 86);
+          ctx.lineTo(180, 76);
+          ctx.lineTo(170, 85);
+          ctx.lineTo(162, 78);
+          ctx.closePath();
+          ctx.fillStyle = p.ink;
+          ctx.fill();
+          line(
+            [
+              [155, 69],
+              [152, 58],
+              [166, 65],
+            ],
+            p.ink,
+            2,
+          );
+          line(
+            [
+              [173, 61],
+              [182, 51],
+              [186, 61],
+            ],
+            p.ink,
+            2,
+          );
+          const relieved = v.relief;
+          if (relieved > 0.15) {
+            line(
+              [
+                [157, 91],
+                [164, 89],
+                [170, 91],
+              ],
+              p.ink,
+              1.8,
+            );
+            line(
+              [
+                [182, 91],
+                [188, 89],
+                [195, 91],
+              ],
+              p.ink,
+              1.8,
+            );
+            line(
+              [
+                [158, 99],
+                [164, 96],
+                [170, 99],
+              ],
+              p.ink,
+              2,
+            );
+            line(
+              [
+                [182, 99],
+                [188, 96],
+                [194, 99],
+              ],
+              p.ink,
+              2,
+            );
+            ctx.globalAlpha = relieved;
+            line(
+              [
+                [153, 110],
+                [156, 107],
+              ],
+              p.rose,
+              2.7,
+            );
+            line(
+              [
+                [158, 111],
+                [161, 108],
+              ],
+              p.rose,
+              2.7,
+            );
+            line(
+              [
+                [195, 110],
+                [198, 107],
+              ],
+              p.rose,
+              2.7,
+            );
+            line(
+              [
+                [190, 111],
+                [193, 108],
+              ],
+              p.rose,
+              2.7,
+            );
+            ctx.globalAlpha = 1;
+            ctx.beginPath();
+            ctx.moveTo(172, 116);
+            ctx.quadraticCurveTo(178, 121, 184, 115);
+            ctx.strokeStyle = p.ink;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          } else if (state.mood === "gain") {
+            line([
+              [158, 98],
+              [164, 95],
+              [170, 98],
+            ]);
+            line([
+              [182, 98],
+              [188, 95],
+              [194, 98],
+            ]);
+            line(
+              [
+                [172, 117],
+                [182, 117],
+              ],
+              p.ink,
+              1.5,
+            );
+          } else {
+            line([
+              [157, 95],
+              [169, 96],
+            ]);
+            line([
+              [183, 96],
+              [195, 95],
+            ]);
+            oval(165, 101, 2, 3, p.ink, false);
+            oval(187, 101, 2, 3, p.ink, false);
+            line(
+              [
+                [158, 107],
+                [169, 108],
+              ],
+              p.muted,
+              1,
+            );
+            line(
+              [
+                [183, 108],
+                [194, 107],
+              ],
+              p.muted,
+              1,
+            );
+            line(
+              [
+                [171, 117],
+                [182, 117],
+              ],
+              p.ink,
+              1.5,
+            );
+          }
+          ctx.restore();
+          line(
+            [
+              [171, 130],
+              [179, 138],
+              [186, 129],
+            ],
+            p.muted,
+            1,
+          );
+          poly(
+            [
+              [179, 138],
+              [176, 157],
+              [183, 154],
+            ],
+            p.ink,
+            1,
+          );
+          const typing =
+            v.phase === "working" &&
+            (!v.pat || v.local >= 2400) &&
+            !v.departure;
+          const tap =
+            typing && state.playing && !reduced()
+              ? Math.sin(state.elapsed * 0.025) * 2
+              : 0;
+          if (typing) {
+            line(
+              [
+                [158, 137],
+                [146, 151],
+                [169, 157 + tap],
+              ],
+              p.ink,
+              4,
+            );
+            line(
+              [
+                [199, 136],
+                [214, 150],
+                [201, 157 - tap],
+              ],
+              p.ink,
+              4,
+            );
+          } else {
+            const relax = 2 * v.relief;
+            line(
+              [
+                [158, 137 + relax],
+                [147, 157 + relax],
+                [160, 167 + relax],
+              ],
+              p.ink,
+              4,
+            );
+            line(
+              [
+                [199, 136 + relax],
+                [213, 157 + relax],
+                [200, 167 + relax],
+              ],
+              p.ink,
+              4,
+            );
+          }
+          if (v.departure && v.local >= 560) {
+            line(
+              [
+                [184, 132],
+                [202, 147],
+                [205, 162],
+              ],
+              p.ink,
+              1.5,
+            );
+            box(198, 147, 14, 18, p.rose, 3);
+          }
+          ctx.restore();
+        }
+        if (!walking) person();
+        box(91, 163, 209, 10, p.yellow, 2);
+        line(
+          [
+            [102, 174],
+            [99, 215],
+          ],
+          p.ink,
+          4,
+        );
+        line(
+          [
+            [287, 174],
+            [291, 215],
+          ],
+          p.ink,
+          4,
+        );
+        const sleep = empty || (v.kind === "departure" && v.local >= 560);
+        box(220, 113, 63, 43, sleep ? p.soft : p.paper, 4);
+        line(
+          [
+            [250, 157],
+            [250, 162],
+          ],
+          p.ink,
+          3,
+        );
+        line(
+          [
+            [232, 163],
+            [269, 163],
+          ],
+          p.ink,
+          2,
+        );
+        if (sleep)
+          line(
+            [
+              [243, 137],
+              [258, 137],
+            ],
+            p.muted,
+            2,
+          );
+        else
+          line(
+            state.mood === "gain"
+              ? [
+                  [227, 144],
+                  [237, 143],
+                  [244, 135],
+                  [253, 138],
+                  [263, 125],
+                  [277, 121],
+                ]
+              : [
+                  [227, 123],
+                  [238, 125],
+                  [246, 132],
+                  [254, 130],
+                  [264, 144],
+                  [277, 148],
+                ],
+            state.mood === "gain" ? p.positive : p.negative,
+            2,
+          );
+        box(120, 147, 15, 15, p.paper, 3);
+        line(
+          [
+            [136, 149],
+            [141, 150],
+            [141, 157],
+            [136, 158],
+          ],
+          p.ink,
+          1.5,
+        );
+        if (v.actorVisible && !v.departure) {
+          line(
+            [
+              [124, 140],
+              [122, 134],
+              [125, 128],
+            ],
+            p.muted,
+            1,
+          );
+          line(
+            [
+              [131, 140],
+              [133, 135],
+              [131, 130],
+            ],
+            p.muted,
+            1,
+          );
+        }
+        if (walking) person();
+        const coins =
+          (v.phase === "working" || (v.departure && v.local < 180)) &&
+          (state.showHousing || state.showCar);
+        if (coins) {
+          const destinations = [];
+          if (state.showHousing) destinations.push([45, 149]);
+          if (state.showCar) destinations.push([342, 192]);
+          for (let i = 0; i < 4; i++) {
+            const a =
+              ((state.playing && !reduced() ? state.elapsed * 0.00014 : 0) +
+                i / 4) %
+              1;
+            const target = destinations[i % destinations.length];
+            const x = mix(210, target[0], a),
+              y = mix(153, target[1], a) - Math.sin(a * Math.PI) * 38;
+            ctx.globalAlpha = v.departure ? 1 - v.local / 180 : 1;
+            oval(x, y, 6, 7, p.yellow);
+            text("¥", x - 3, y + 3, 9);
+            ctx.globalAlpha = 1;
+          }
+        }
+        if (v.handAlpha > 0) {
+          ctx.save();
+          ctx.globalAlpha = v.handAlpha;
+          const enter = segment(v.local, 0, 160),
+            leave = segment(v.local, 520, 720);
+          const x = mix(235, 210, enter) + 25 * leave,
+            y = mix(106, 132, enter) - 26 * leave + v.compression;
+          ctx.translate(x, y);
+          ctx.rotate(-0.35);
+          ctx.beginPath();
+          ctx.moveTo(-9, 10);
+          ctx.lineTo(-11, -1);
+          ctx.quadraticCurveTo(-12, -5, -8, -5);
+          ctx.lineTo(-4, 0);
+          ctx.lineTo(-5, -13);
+          ctx.quadraticCurveTo(-5, -17, -1, -16);
+          ctx.lineTo(1, -4);
+          ctx.lineTo(2, -16);
+          ctx.quadraticCurveTo(3, -20, 6, -17);
+          ctx.lineTo(8, -5);
+          ctx.lineTo(9, -13);
+          ctx.quadraticCurveTo(11, -16, 13, -12);
+          ctx.lineTo(15, 4);
+          ctx.quadraticCurveTo(13, 13, 5, 15);
+          ctx.lineTo(-1, 17);
+          ctx.closePath();
+          ctx.fillStyle = p.paper;
+          ctx.fill();
+          ctx.lineWidth = 1.8;
+          ctx.strokeStyle = p.ink;
+          ctx.stroke();
+          ctx.restore();
+          if (v.compression > 1) {
+            line(
+              [
+                [210, 132],
+                [215, 128],
+              ],
+              p.muted,
+              1.5,
+            );
+            line(
+              [
+                [211, 140],
+                [217, 140],
+              ],
+              p.muted,
+              1.5,
+            );
+          }
+        }
+        const footer = v.departure
+          ? "工位正在交还给空气"
+          : v.phase === "working"
+            ? "收入运输中…"
+            : v.phase === "breakTime"
+              ? "午休暂停计薪"
+              : v.phase === "afterShift"
+                ? "今日工位，暂停营业。"
+                : "今天工位休息";
+        text(footer, 132, 235, 11, p.muted);
+      }
+      el("pat").addEventListener("click", requestPat);
+      el("head").addEventListener("click", requestPat);
+      el("play-pat").addEventListener("click", () => {
+        startClip("pat");
+        announce("拍肩片段开始。");
+      });
+      el("play-exit").addEventListener("click", () => {
+        startClip("departure");
+        announce("下班了，他开始收拾东西。");
+      });
+      el("race").addEventListener("click", () => {
+        state.phase = "working";
+        startClip("race");
+        announce("演示拍肩进行到1500ms时下班。");
+      });
+      el("phase").addEventListener("change", (event) =>
+        setPhase(event.target.value),
+      );
+      for (const name of ["mood", "tone"])
+        el(name).addEventListener("change", (event) => {
+          state[name] = event.target.value;
+          render();
+          save();
+        });
+      for (const [id, key] of [
+        ["house", "showHousing"],
+        ["car", "showCar"],
+      ])
+        el(id).addEventListener("change", (event) => {
+          state[key] = event.target.checked;
+          render();
+          save();
+        });
+      function motionChanged() {
+        const wasComplete = state.hasTimeline && state.elapsed >= duration();
+        state.reduced = el("reduced").checked;
+        if (wasComplete || (state.hasTimeline && state.elapsed >= duration())) {
+          stop();
+          state.elapsed = duration();
+        }
+        render(true);
+        save();
+      }
+      el("reduced").addEventListener("change", motionChanged);
+      osMotion.addEventListener("change", () => {
+        if (state.hasTimeline && state.elapsed >= duration()) {
+          stop();
+          state.elapsed = duration();
+        }
+        render(true);
+      });
+      el("clip").addEventListener("change", (event) =>
+        startClip(event.target.value, false),
+      );
+      el("speed").addEventListener("change", (event) => {
+        state.speed = Number(event.target.value);
+        save();
+      });
+      el("seek").addEventListener("input", (event) => seek(event.target.value));
+      el("prev").addEventListener("click", () => seek(state.elapsed - 100));
+      el("next").addEventListener("click", () => seek(state.elapsed + 100));
+      el("toggle").addEventListener("click", () => {
+        if (state.playing) {
+          stop();
+          render();
+          return;
+        }
+        if (!state.hasTimeline || state.elapsed >= duration()) {
+          startClip(state.clip);
+          return;
+        }
+        state.playing = true;
+        previousTime = 0;
+        render();
+        schedule();
+      });
+      el("midnight").addEventListener("click", () => {
+        setPhase("working");
+        state.night = true;
+        render();
+        announce("夜班22:00—02:00，午夜仍然在岗。");
+      });
+      el("night-exit").addEventListener("click", () => {
+        state.night = true;
+        startClip("departure");
+        announce("夜班在02:00结束，开始离场。");
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          const phase = view().phase;
+          stop();
+          state.phase = phase;
+          state.hasTimeline = false;
+          state.elapsed = 0;
+          render();
+        }
+      });
+      const resize = new ResizeObserver(() => render());
+      resize.observe(root);
+      function restore(saved) {
+        const data = saved?.privateContent;
+        if (!data) return;
+        const options = {
+          phase: [
+            "working",
+            "breakTime",
+            "afterShift",
+            "beforeShift",
+            "restDay",
+            "unknown",
+          ],
+          mood: ["gain", "loss", "unknown"],
+          tone: ["gentle", "harsh"],
+        };
+        for (const [key, allowed] of Object.entries(options))
+          if (allowed.includes(data[key])) state[key] = data[key];
+        for (const key of ["showHousing", "showCar", "reduced"])
+          if (typeof data[key] === "boolean") state[key] = data[key];
+        if ([0.5, 1].includes(data.speed)) state.speed = data.speed;
+      }
+      restore(window.openai?.widgetState);
+      window.addEventListener("openai:set_globals", (event) => {
+        if (event.detail?.globals?.widgetState) {
+          restore(event.detail.globals.widgetState);
+          render(true);
+        }
+      });
+      window.fjobAnimationPrototype = {
+        playPat: requestPat,
+        playDeparture: () => startClip("departure"),
+        playRace: () => startClip("race"),
+        pause: () => {
+          stop();
+          render();
+        },
+        seek,
+        selectClip: (clip) => {
+          if (["pat", "departure", "race"].includes(clip))
+            startClip(clip, false);
+        },
+        setPhase: (phase) => {
+          if (
+            [
+              "working",
+              "breakTime",
+              "afterShift",
+              "beforeShift",
+              "restDay",
+              "unknown",
+            ].includes(phase)
+          )
+            setPhase(phase);
+        },
+        inspect: () => ({
+          ...state,
+          ...view(),
+          duration: duration(),
+          specVersion: spec.version,
+        }),
+      };
+      render(true);
+    })();
+  </script>
+</div>

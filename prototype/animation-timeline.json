@@ -1,0 +1,69 @@
+{
+  "version": "1.0",
+  "logicalSize": {
+    "width": 380,
+    "height": 238
+  },
+  "pat": {
+    "durationMs": 3200,
+    "reducedDurationMs": 2400,
+    "contactsMs": [
+      210,
+      410
+    ],
+    "keyframesMs": [
+      0,
+      120,
+      210,
+      410,
+      720,
+      1200,
+      2600,
+      3200
+    ],
+    "responseAtMs": 420,
+    "reliefStartMs": 520,
+    "reliefFullMs": 900,
+    "reliefEndMs": 2400,
+    "handEndMs": 720
+  },
+  "departure": {
+    "durationMs": 2200,
+    "keyframesMs": [
+      0,
+      220,
+      560,
+      860,
+      1400,
+      1900,
+      2200
+    ],
+    "stopCoinsMs": 180,
+    "standStartMs": 560,
+    "walkStartMs": 860,
+    "walkEndMs": 1900,
+    "exitX": 420
+  },
+  "race": {
+    "boundaryMs": 1500,
+    "durationMs": 3700,
+    "keyframesMs": [
+      0,
+      210,
+      720,
+      1490,
+      1500,
+      2060,
+      2360,
+      2900,
+      3400,
+      3700
+    ]
+  },
+  "headHitRect": {
+    "x": 138,
+    "y": 44,
+    "width": 83,
+    "height": 125
+  }
+}

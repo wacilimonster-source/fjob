@@ -13,8 +13,11 @@
 5. [开发任务与模型交接](docs/05-development-plan.md)。按依赖安排可独立验收的开发任务及提示词。
 6. [验收与验证记录](docs/06-acceptance.md)。定义完成标准及原型实测结果。
 7. [实现说明与交付验证](docs/07-implementation-notes.md)。记录本轮 M0–M5 实际落地的结构、命令结果、偏差与未验证项。
+8. [拍拍他与下班离场设计](docs/09-design-comfort-and-clock-out.md)。定义3.2秒拍肩回应、2.2秒离场、空工位、跨夜班、关键帧和可执行开发任务，状态为待实施。
 
 [打开交互原型](prototype/index.html)。可直接用浏览器打开，首次进入体验引导，进入后底部可重新走流程。`prototype/source.html` 为可编辑源片段，`index.html` 为独立浏览器版本。
+
+[打开动画原型](prototype/animation.html)，可播放拍肩、下班离场和中途下班，暂停并定位关键帧。源文件、时间轴JSON和13张关键帧的使用方法见[动画交接说明](prototype/ANIMATION-README.md)。
 
 ## 机器可读材料
 
