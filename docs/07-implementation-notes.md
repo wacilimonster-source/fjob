@@ -200,7 +200,9 @@ tools/                     契约校验与会话交付脚本
 | `cd apps/mobile && flutter test` | 89 项通过、1 跳过（新增 scene_interaction_controller_test 15 项、office_scene_test 6 项、dashboard_scene_test 10 项） |
 | `cd apps/mobile && flutter test tool/generate_office_art_test.dart` | 生成 12 张小部件静态图 |
 | `cd apps/mobile && flutter test tool/capture_scene_frames_test.dart` | 生成 build/scene-frames 关键帧 20 张 |
-| `cd apps/mobile/android && gradlew testDebugUnitTest --tests "*widget*"` | 见交付报告 |
-| `flutter build apk --debug` | 见交付报告 |
+| `cd apps/mobile/android && gradlew testDebugUnitTest` | BUILD SUCCESSFUL（14 项，含房车可见性解析 3 项） |
+| `flutter build apk --debug` | 成功（本地验证用，debug 签名） |
+
+**v0.1.9 发布（2026-11-06）**：tag `v0.1.9` 触发 android-release run #12，versionCode `1012`，CI 签名产物 `fjob-0.1.9-universal.apk`（58,119,646 B，SHA-256 `93dee855edd9f59376d2f3b697320a7e957be9b80be955d19c12f79ce3610cd6`）已随 GitHub Release v0.1.9 发布，GitHub 服务端 digest 与本地一致。模拟器（Android 14）验证 v0.1.8→v0.1.9 覆盖升级成功且签名连续（cert SHA-256 `4ccda311…`，与 v0.1.8 产物一致）；中转下载 v0.1.8 产物校验和与发布页一致。注意：本地 `.release` keystore 与 CI Secrets 密钥不同，本地 release 包无法覆盖 CI 签名安装，正式产物一律以 CI 构建为准。
 
 离场淡入到岗（OUT-05 的 200ms 轻淡入）未实现，直接切换基础姿态；拍肩关键帧截图中的回应文案随接受次序循环，与设计文案池一致。
