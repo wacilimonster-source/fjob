@@ -211,8 +211,11 @@ class _UpdateSection extends ConsumerWidget {
         state.currentVersion ?? versionAsync.value ?? appVersion;
     final isAndroid = defaultTargetPlatform == TargetPlatform.android;
     final canDownload = release != null &&
-        state.phase != UpdatePhase.checking &&
-        state.phase != UpdatePhase.unsupported;
+        (state.phase == UpdatePhase.available ||
+            state.phase == UpdatePhase.downloading ||
+            state.phase == UpdatePhase.installing ||
+            state.phase == UpdatePhase.installed ||
+            state.phase == UpdatePhase.error);
 
     return PaperCard(
       child: Column(
