@@ -152,6 +152,66 @@ void main() {
         ),
       );
     });
+
+    test('asks the domestic relay first and rewrites the feed URL', () async {
+      final requested = <Uri>[];
+      final service = UpdateService(
+        client: MockClient((request) async {
+          requested.add(request.url);
+          return http.Response(
+            jsonEncode([
+              _release(
+                tag: 'v0.1.3',
+                url: 'https://example.com/fjob-0.1.3-universal.apk',
+                size: 10,
+                digest: 'a' * 64,
+              ),
+            ]),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+        temporaryDirectory: () async => directory,
+      );
+      final result = await service.checkForUpdate('0.1.2');
+      expect(result.hasUpdate, isTrue);
+      expect(requested, hasLength(1));
+      expect(requested.single.host, 'gh-proxy.com');
+      expect(
+        requested.single.toString(),
+        startsWith('https://gh-proxy.com/https://api.github.com/'),
+      );
+    });
+
+    test('falls back to the direct feed when relays misbehave', () async {
+      final requested = <Uri>[];
+      final service = UpdateService(
+        client: MockClient((request) async {
+          requested.add(request.url);
+          if (request.url.host == 'api.github.com') {
+            return http.Response(
+              jsonEncode([
+                _release(
+                  tag: 'v0.1.3',
+                  url: 'https://example.com/fjob-0.1.3-universal.apk',
+                  size: 10,
+                  digest: 'a' * 64,
+                ),
+              ]),
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }
+          // Both relays answer with an unparseable page.
+          return http.Response('<html>blocked</html>', 200);
+        }),
+        temporaryDirectory: () async => directory,
+      );
+      final result = await service.checkForUpdate('0.1.2');
+      expect(result.hasUpdate, isTrue);
+      expect(requested.map((uri) => uri.host).toList(),
+          ['gh-proxy.com', 'ghfast.top', 'api.github.com']);
+    });
   });
 
   group('downloadApk', () {
@@ -167,14 +227,20 @@ void main() {
 
     final payload = List<int>.generate(2048, (index) => index % 251);
 
-    AppRelease releaseFor(List<int> bytes, {String? digest, int? size}) =>
+    AppRelease releaseFor(
+      List<int> bytes, {
+      String? digest,
+      int? size,
+      Uri? apkUrl,
+    }) =>
         AppRelease(
           version: '0.1.3',
           tag: 'v0.1.3',
           title: 'v0.1.3',
           notes: '',
           pageUrl: Uri.parse('https://example.com/release'),
-          apkUrl: Uri.parse('https://example.com/fjob-0.1.3-universal.apk'),
+          apkUrl: apkUrl ??
+              Uri.parse('https://example.com/fjob-0.1.3-universal.apk'),
           apkSize: size ?? bytes.length,
           apkSha256: digest ?? _digestOf(bytes),
         );
@@ -245,5 +311,91 @@ void main() {
         throwsA(isA<UpdateException>()),
       );
     });
+
+    test('downloads a GitHub asset through the domestic relay first',
+        () async {
+      final requested = <Uri>[];
+      final service = UpdateService(
+        client: MockClient((request) async {
+          requested.add(request.url);
+          return http.Response.bytes(
+            payload,
+            200,
+            headers: {'content-length': '${payload.length}'},
+          );
+        }),
+        temporaryDirectory: () async => directory,
+      );
+      final file = await service.downloadApk(
+        releaseFor(
+          payload,
+          apkUrl: Uri.parse(
+            'https://github.com/wacilimonster-source/fjob/releases/download/'
+            'v0.1.3/fjob-0.1.3-universal.apk',
+          ),
+        ),
+        onProgress: (_) {},
+      );
+      expect(await file.readAsBytes(), payload);
+      expect(requested, hasLength(1));
+      expect(requested.single.host, 'gh-proxy.com');
+      expect(
+        requested.single.toString(),
+        startsWith('https://gh-proxy.com/https://github.com/'),
+      );
+    });
+
+    test('falls back to the direct URL when the relays fail', () async {
+      final requested = <Uri>[];
+      final service = UpdateService(
+        client: MockClient((request) async {
+          requested.add(request.url);
+          if (request.url.host == 'github.com') {
+            return http.Response.bytes(
+              payload,
+              200,
+              headers: {'content-length': '${payload.length}'},
+            );
+          }
+          return http.Response('forbidden', 403);
+        }),
+        temporaryDirectory: () async => directory,
+      );
+      final file = await service.downloadApk(
+        releaseFor(
+          payload,
+          apkUrl: Uri.parse(
+            'https://github.com/wacilimonster-source/fjob/releases/download/'
+            'v0.1.3/fjob-0.1.3-universal.apk',
+          ),
+        ),
+        onProgress: (_) {},
+      );
+      expect(await file.readAsBytes(), payload);
+      expect(requested.map((uri) => uri.host).toList(),
+          ['gh-proxy.com', 'ghfast.top', 'github.com']);
+    });
+
+    test('never rewrites non-GitHub asset hosts', () async {
+      final requested = <Uri>[];
+      final service = UpdateService(
+        client: MockClient((request) async {
+          requested.add(request.url);
+          return http.Response.bytes(
+            payload,
+            200,
+            headers: {'content-length': '${payload.length}'},
+          );
+        }),
+        temporaryDirectory: () async => directory,
+      );
+      await service.downloadApk(
+        releaseFor(payload),
+        onProgress: (_) {},
+      );
+      expect(requested.single.toString(),
+          'https://example.com/fjob-0.1.3-universal.apk');
+    });
   });
+
 }

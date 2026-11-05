@@ -256,7 +256,7 @@ class _UpdateSection extends ConsumerWidget {
           Text(
             state.message ??
                 (isAndroid
-                    ? '从 GitHub Releases 检查更新，下载后校验 SHA-256 再交给系统安装。'
+                    ? '优先经国内中转检查 GitHub 更新，失败自动回退直连；下载后校验 SHA-256 再交给系统安装。'
                     : '从 GitHub Releases 检查版本；iOS 通过 TestFlight 更新。'),
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -360,7 +360,7 @@ class _UpdateSection extends ConsumerWidget {
             ),
           const SizedBox(height: 6),
           Text(
-            '更新检查只访问 GitHub Releases，不发送工资、持仓或账单数据。'
+            '更新检查只访问 GitHub Releases（优先经国内中转），不发送工资、持仓或账单数据。'
             '安装包必须与发布页提供的 SHA-256 一致才会打开安装器。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
           ),

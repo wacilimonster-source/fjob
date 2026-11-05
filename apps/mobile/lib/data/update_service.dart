@@ -1,10 +1,13 @@
 /// In-app update check and APK download.
 ///
 /// The checker talks to the public GitHub Releases API for
-/// `wacilimonster-source/fjob`, compares semantic versions with the installed
-/// build, downloads the universal APK over HTTPS, verifies the server-provided
-/// SHA-256 digest and hands the file to the Android installer. No ledger value
-/// or account data leaves the device.
+/// `wacilimonster-source/fjob` — domestic relays first, then the direct
+/// endpoint — compares semantic versions with the installed build, downloads
+/// the APK over HTTPS through the same relay order, verifies the
+/// server-provided SHA-256 digest and hands the file to the Android installer.
+/// On upgrades Android additionally rejects any APK not signed with the
+/// existing release key, so a tampering relay cannot land a modified build.
+/// No ledger value or account data leaves the device.
 library;
 
 import 'dart:async';
@@ -106,6 +109,7 @@ final class UpdateService {
     required this.client,
     required this.temporaryDirectory,
     Uri? releasesUri,
+    this.mirrorPrefixes = defaultMirrorPrefixes,
   }) : releasesUri = releasesUri ??
             Uri.https(
               'api.github.com',
@@ -117,18 +121,90 @@ final class UpdateService {
   final Future<Directory> Function() temporaryDirectory;
   final Uri releasesUri;
 
+  /// Domestic relays tried before the direct GitHub endpoints, in order.
+  ///
+  /// Community services that come and go — re-verify the list when a release
+  /// stops updating. Only the URL prefix is rewritten; responses must still
+  /// parse as the GitHub Releases JSON, and the APK SHA-256 digest plus
+  /// Android's upgrade signature check anchor integrity.
+  static const List<String> defaultMirrorPrefixes = <String>[
+    'https://gh-proxy.com/',
+    'https://ghfast.top/',
+  ];
+
+  final List<String> mirrorPrefixes;
+
   static const String _userAgent = 'FJOB-Android-UpdateChecker';
 
+  /// Release-feed candidates: relays first, direct endpoint last.
+  Iterable<Uri> get _metadataCandidates sync* {
+    final feed = releasesUri.toString();
+    for (final prefix in mirrorPrefixes) {
+      yield Uri.parse('$prefix$feed');
+    }
+    yield releasesUri;
+  }
+
+  /// Download candidates for a GitHub release asset: relays first, the
+  /// original URL last. Non-GitHub hosts are never rewritten.
+  List<Uri> downloadCandidates(Uri apkUrl) {
+    final candidates = <Uri>[];
+    if (apkUrl.host == 'github.com') {
+      final url = apkUrl.toString();
+      for (final prefix in mirrorPrefixes) {
+        candidates.add(Uri.parse('$prefix$url'));
+      }
+    }
+    candidates.add(apkUrl);
+    return candidates;
+  }
+
   Future<UpdateCheckResult> checkForUpdate(String currentVersion) async {
+    UpdateException? failure;
+    var directFeedEmpty = false;
+    for (final candidate in _metadataCandidates) {
+      final direct = candidate == releasesUri;
+      try {
+        final releases = await _fetchReleases(
+          candidate,
+          timeout: direct
+              ? const Duration(seconds: 12)
+              : const Duration(seconds: 6),
+        );
+        if (releases.isEmpty) {
+          if (direct) directFeedEmpty = true;
+          continue;
+        }
+        releases.sort((a, b) => compareVersions(b.version, a.version));
+        final latest = releases.first;
+        return UpdateCheckResult(
+          currentVersion: currentVersion,
+          latest: latest,
+          hasUpdate: compareVersions(latest.version, currentVersion) > 0,
+        );
+      } on UpdateException catch (error) {
+        failure = error;
+      }
+    }
+    if (directFeedEmpty) {
+      throw const UpdateException('暂时没有可用的发布版本。');
+    }
+    throw failure ?? const UpdateException('检查更新失败，请确认网络可用。');
+  }
+
+  Future<List<AppRelease>> _fetchReleases(
+    Uri uri, {
+    required Duration timeout,
+  }) async {
     late final http.Response response;
     try {
       response = await client.get(
-        releasesUri,
+        uri,
         headers: const {
           'Accept': 'application/vnd.github+json',
           'User-Agent': _userAgent,
         },
-      ).timeout(const Duration(seconds: 12));
+      ).timeout(timeout);
     } on TimeoutException {
       throw const UpdateException('检查更新超时，稍后再试。');
     } on Object {
@@ -146,22 +222,12 @@ final class UpdateService {
     if (decoded is! List) {
       throw const UpdateException('更新信息格式无法解析。');
     }
-
     final releases = <AppRelease>[];
     for (final item in decoded) {
       final release = _parseRelease(item);
       if (release != null) releases.add(release);
     }
-    if (releases.isEmpty) {
-      throw const UpdateException('暂时没有可用的发布版本。');
-    }
-    releases.sort((a, b) => compareVersions(b.version, a.version));
-    final latest = releases.first;
-    return UpdateCheckResult(
-      currentVersion: currentVersion,
-      latest: latest,
-      hasUpdate: compareVersions(latest.version, currentVersion) > 0,
-    );
+    return releases;
   }
 
   AppRelease? _parseRelease(Object? raw) {
@@ -245,7 +311,33 @@ final class UpdateService {
     final file = File('${directory.path}/${release.apkName}');
     if (await file.exists()) await file.delete();
 
-    final request = http.Request('GET', release.apkUrl)
+    UpdateException? failure;
+    for (final uri in downloadCandidates(release.apkUrl)) {
+      try {
+        return await _downloadFrom(
+          uri,
+          release,
+          file: file,
+          onProgress: onProgress,
+          cancelToken: cancelToken,
+        );
+      } on UpdateException catch (error) {
+        // A cancelled download must not silently continue on the next route.
+        if (cancelToken?.isCancelled == true) rethrow;
+        failure = error;
+      }
+    }
+    throw failure ?? const UpdateException('下载失败，请检查网络后重试。');
+  }
+
+  Future<File> _downloadFrom(
+    Uri uri,
+    AppRelease release, {
+    required File file,
+    required void Function(double progress) onProgress,
+    DownloadCancelToken? cancelToken,
+  }) async {
+    final request = http.Request('GET', uri)
       ..headers['User-Agent'] = _userAgent;
     final http.StreamedResponse response;
     try {
