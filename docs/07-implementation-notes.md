@@ -145,4 +145,10 @@ tools/                     契约校验与会话交付脚本
 - `flutter test` 38 项通过（含 9 项更新测试）；新增 JSON/下载/摘要/取消边界。
 - 设备端完整“检查→下载→安装”点按流程因共享模拟器第三方悬浮层未完成；已用 9 项单元测试与真实 GitHub API 集成测试替代验证（识别 v0.1.2、universal APK 与摘要）。
 - Release：<https://github.com/wacilimonster-source/fjob/releases/tag/v0.1.2>（prerelease），校验和见 `docs/releases/v0.1.2.md`。
+
+### v0.1.3
+
+- 发布工程变更：将 Android 发布密钥写入 GitHub Actions Secrets，由 tag 触发的 `android-release` 工作流完成签名 APK/AAB 构建；versionCode 使用 `1000 + run_number` 保持单调递增。
+- 应用功能与 v0.1.2 相同（固定浅色 + 应用内检查更新/下载安装），不再改动计算或界面。
+- 产物由 CI 构建后下载校验签名，再附加到 GitHub Release；直链为 `releases/download/v0.1.3/fjob-0.1.3-universal.apk`。
 - 校验和与安装说明见 `docs/releases/v0.1.0.md`。
