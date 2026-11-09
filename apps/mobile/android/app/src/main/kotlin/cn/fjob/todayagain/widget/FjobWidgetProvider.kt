@@ -124,9 +124,14 @@ class FjobWidgetProvider : AppWidgetProvider() {
 
             if (size.hasSplit) {
                 views.setTextViewText(R.id.widget_wage, amountText(snapshot?.wage, privacy))
+                // v1 keeps the A-share cell; v2 shows Dart's stock+fund sum.
+                views.setTextViewText(
+                    R.id.widget_investment_label,
+                    snapshot?.investmentLabel ?: "股票+基金",
+                )
                 views.setTextViewText(
                     R.id.widget_stock,
-                    amountText(snapshot?.stockDaily, privacy),
+                    amountText(snapshot?.investmentDaily, privacy),
                 )
                 views.setTextViewText(
                     R.id.widget_housing,
@@ -259,8 +264,11 @@ class FjobWidgetProvider : AppWidgetProvider() {
                 ZoneId.systemDefault()
             }
             val local = Instant.ofEpochMilli(snapshot.computedAt).atZone(zone)
-            val prefix = if (stale) "上次更新" else "截至"
-            return "$prefix ${TIME_FORMAT.format(local)}"
+            val prefix = if (stale) "上次更新" else "计算截至"
+            val base = "$prefix ${TIME_FORMAT.format(local)}"
+            // The NAV date is a business date, never the fetch or quote time.
+            val navDate = snapshot.fundNavDate
+            return if (navDate == null) base else "$base · 净值 $navDate"
         }
 
         private fun openApp(context: Context, link: String, requestCode: Int): PendingIntent {

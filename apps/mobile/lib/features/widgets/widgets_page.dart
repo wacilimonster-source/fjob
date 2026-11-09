@@ -202,8 +202,8 @@ class _WidgetPreview extends StatelessWidget {
       WidgetPreviewSize.large => 360.0,
     };
     final masked = privacy ? '¥ ••••' : formatMoney(total);
-    final invest = (snapshot.stockDaily ?? Rational.zero) +
-        (snapshot.goldDaily ?? Rational.zero);
+    // Same pre-computed figure the native v2 widget receives.
+    final stockFund = snapshot.stockFundDaily;
     return Container(
       width: width,
       padding: const EdgeInsets.all(16),
@@ -257,9 +257,9 @@ class _WidgetPreview extends StatelessWidget {
                   good: (snapshot.wage?.isNegative ?? false) == false,
                 ),
                 _SplitCell(
-                  label: '投资',
-                  value: privacy ? '••••' : formatSigned(invest),
-                  good: !invest.isNegative,
+                  label: '股票+基金',
+                  value: privacy ? '••••' : formatSigned(stockFund),
+                  good: !(stockFund?.isNegative ?? false),
                 ),
                 _SplitCell(
                   label: '固定支出',

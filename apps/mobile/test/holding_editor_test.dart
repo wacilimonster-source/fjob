@@ -9,7 +9,10 @@ import 'package:todayagain/domain/setup_draft.dart';
 import 'package:todayagain/features/assets/holding_editor.dart';
 
 void main() {
-  Future<HoldingDraft? Function()> pumpEditor(WidgetTester tester) async {
+  Future<HoldingDraft? Function()> pumpEditor(
+    WidgetTester tester, {
+    HoldingKind kind = HoldingKind.stock,
+  }) async {
     HoldingDraft? result;
     await tester.pumpWidget(
       ProviderScope(
@@ -25,7 +28,7 @@ void main() {
               builder: (context) => Center(
                 child: ElevatedButton(
                   onPressed: () async {
-                    result = await showHoldingEditor(context);
+                    result = await showHoldingEditor(context, kind: kind);
                   },
                   child: const Text('open'),
                 ),
@@ -37,6 +40,188 @@ void main() {
     );
     return () => result;
   }
+
+  Future<void> openFundEditor(WidgetTester tester) async {
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text('添加基金持仓'), findsOneWidget);
+  }
+
+  testWidgets('fund lookup fills the name and keeps four-decimal shares',
+      (tester) async {
+    final result = await pumpEditor(tester, kind: HoldingKind.fund);
+    await openFundEditor(tester);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-code')),
+      '000001',
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('已识别：华夏成长混合'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('holding-name')))
+          .controller!
+          .text,
+      '华夏成长混合',
+    );
+
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-quantity')),
+      '1000.2500',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-cost')),
+      '1.2000',
+    );
+    await tester.tap(find.text('保存持仓'));
+    await tester.pumpAndSettle();
+
+    final draft = result();
+    expect(draft, isNotNull);
+    expect(draft!.kind, HoldingKind.fund);
+    expect(draft.instrumentId, 'FUND.CN.000001');
+    expect(draft.quantityText, '1000.2500');
+    expect(draft.costText, '1.2000');
+    expect(draft.pendingQuote, isFalse);
+  });
+
+  testWidgets('a late lookup never overwrites a name typed meanwhile',
+      (tester) async {
+    await pumpEditor(tester, kind: HoldingKind.fund);
+    await openFundEditor(tester);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-code')),
+      '000001',
+    );
+    // Type before the 350ms debounce fires; the lookup must leave it alone.
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-name')),
+      '我的基金',
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('holding-name')))
+          .controller!
+          .text,
+      '我的基金',
+    );
+    expect(find.text('我的基金'), findsOneWidget);
+  });
+
+  testWidgets('changing the code invalidates the previous lookup',
+      (tester) async {
+    await pumpEditor(tester, kind: HoldingKind.fund);
+    await openFundEditor(tester);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-code')),
+      '000001',
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-code')),
+      '000198',
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('不支持按普通场外基金计算'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('holding-name')))
+          .controller!
+          .text,
+      '天弘余额宝货币',
+    );
+  });
+
+  testWidgets('a confirmed unsupported fund blocks saving', (tester) async {
+    final result = await pumpEditor(tester, kind: HoldingKind.fund);
+    await openFundEditor(tester);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-code')),
+      '000198',
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-quantity')),
+      '100',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-cost')),
+      '1',
+    );
+    await tester.tap(find.text('保存持仓'));
+    await tester.pump();
+
+    expect(find.textContaining('该基金暂不支持'), findsOneWidget);
+    expect(result(), isNull);
+  });
+
+  testWidgets('an offline fund still saves with a pending flag', (tester) async {
+    final result = await pumpEditor(tester, kind: HoldingKind.fund);
+    await openFundEditor(tester);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-code')),
+      '999999',
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('待联网确认'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-quantity')),
+      '10.5',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-cost')),
+      '1.25',
+    );
+    await tester.tap(find.text('保存持仓'));
+    await tester.pumpAndSettle();
+
+    final draft = result();
+    expect(draft, isNotNull);
+    expect(draft!.pendingQuote, isTrue);
+    expect(draft.instrumentId, 'FUND.CN.999999');
+  });
+
+  testWidgets('fund shares reject more than four decimals', (tester) async {
+    final result = await pumpEditor(tester, kind: HoldingKind.fund);
+    await openFundEditor(tester);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-code')),
+      '000001',
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-quantity')),
+      '1.23456',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('holding-cost')),
+      '1.2',
+    );
+    await tester.tap(find.text('保存持仓'));
+    await tester.pump();
+
+    expect(
+      find.text('份额需要是 0 到 10,000,000 之间的数字，最多四位小数。'),
+      findsOneWidget,
+    );
+    expect(result(), isNull);
+  });
 
   testWidgets('code lookup fills market and name, and name stays editable',
       (tester) async {

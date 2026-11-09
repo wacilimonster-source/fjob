@@ -10,6 +10,7 @@ import '../../app/providers.dart';
 import '../../data/ledger_repository.dart';
 import '../../domain/ledger.dart';
 import '../../domain/setup_draft.dart';
+import '../dashboard/home_metrics_controller.dart';
 
 final ledgerControllerProvider =
     AsyncNotifierProvider<LedgerController, LedgerState>(LedgerController.new);
@@ -193,6 +194,8 @@ final class LedgerController extends AsyncNotifier<LedgerState> {
     required Rational quantity,
     required Rational costPerUnit,
     String? name,
+    bool pendingQuote = false,
+    String? previousInstrumentId,
   }) async {
     final repository = await _repository;
     await _mutate(() async {
@@ -202,6 +205,8 @@ final class LedgerController extends AsyncNotifier<LedgerState> {
         quantity: quantity,
         costPerUnit: costPerUnit,
         name: name,
+        pendingQuote: pendingQuote,
+        previousInstrumentId: previousInstrumentId,
         nowUtc: ref.read(clockProvider).nowUtc(),
       );
       state = AsyncData(next);
@@ -240,6 +245,9 @@ final class LedgerController extends AsyncNotifier<LedgerState> {
     final now = ref.read(clockProvider).nowUtc();
     final next = await repository.clearAll(nowUtc: now);
     state = AsyncData(next);
+    // The database row is gone with the ledger; drop the in-memory copy so
+    // the next dashboard visit defaults to showing both cards.
+    ref.invalidate(homeMetricsModeProvider);
     final publisher = await ref.read(widgetPublisherProvider.future);
     await publisher.clearWidgets(
       ledgerRevision: next.settings.ledgerRevision,
@@ -247,7 +255,7 @@ final class LedgerController extends AsyncNotifier<LedgerState> {
     );
   }
 
-  Future<void> refreshQuotes() async {
+  Future<void> refreshQuotes({bool manual = false}) async {
     if (_refreshingQuotes) return;
     final current = state.value;
     if (current == null || !current.isConfigured) return;
@@ -261,7 +269,11 @@ final class LedgerController extends AsyncNotifier<LedgerState> {
         for (final holding in current.holdings)
           if (holding.covers(now)) holding.instrumentId,
       }.toList();
-      final outcome = await quoteRepository.refresh(ids, nowUtc: now);
+      final outcome = await quoteRepository.refresh(
+        ids,
+        nowUtc: now,
+        manual: manual,
+      );
       final repository = await _repository;
       final updated = await repository.read(nowUtc: now);
       state = AsyncData(updated);

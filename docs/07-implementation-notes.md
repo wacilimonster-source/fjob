@@ -206,3 +206,15 @@ tools/                     契约校验与会话交付脚本
 **v0.1.9 发布（2026-11-06）**：tag `v0.1.9` 触发 android-release run #12，versionCode `1012`，CI 签名产物 `fjob-0.1.9-universal.apk`（58,119,646 B，SHA-256 `93dee855edd9f59376d2f3b697320a7e957be9b80be955d19c12f79ce3610cd6`）已随 GitHub Release v0.1.9 发布，GitHub 服务端 digest 与本地一致。模拟器（Android 14）验证 v0.1.8→v0.1.9 覆盖升级成功且签名连续（cert SHA-256 `4ccda311…`，与 v0.1.8 产物一致）；中转下载 v0.1.8 产物校验和与发布页一致。注意：本地 `.release` keystore 与 CI Secrets 密钥不同，本地 release 包无法覆盖 CI 签名安装，正式产物一律以 CI 构建为准。
 
 离场淡入到岗（OUT-05 的 200ms 轻淡入）未实现，直接切换基础姿态；拍肩关键帧截图中的回应文案随接受次序循环，与设计文案池一致。
+
+### v0.1.10 · 首页双核心指标（docs/12 M8-HOME）
+
+- finance_core：`ScheduleExpander.workSessionContext` 的结束边界改为左闭右开，恰好 `endUtc` 时归入已结束班次，避免 18:00:00 短暂显示休息日或跳过已下班；新增恰好下班、恰好 06:00 与 17:59:59.900 的领域测试。工资/分摊的自然日 `DayTimeline` 未改。
+- 首页：新增 `home_metrics_model.dart`，把 `DashboardSnapshot` 映射为时间卡（距离下班/上班、已下班、今日休息、排班待确认）与结余卡（完整/部分小计/不可计算/缓存陈旧）；倒计时向上取整秒、`HH:MM:SS` 小时不取模，跨夜显示“次日”，进度分母/分子取统计自然日有效计薪时长。
+- 布局：首屏依次为标题与日期、今日小记与首页显示入口、指标便签卡（双卡时先时间后结余）、办公室与反馈区、拍肩入口、账单、分项与统计口径；时间卡使用暖奶油黄与手绘钟表，结余卡使用纸白与手绘账单，两卡间仅在两卡模式绘制窄纸夹；单卡模式不保留空位或连接件。拍肩入口移到场景下方，不再挤占时间卡。
+- 本地偏好：新增 `homeMetricsMode`（`both`/`time`/`balance`）与 `ui_preferences` 表（schema v5，v4→v5 增量迁移）。独立于 `ledgerRevision`，不请求行情、不发布小部件；清空账本同时清除；示例模式从 `both` 开始并使用内存选择，退出后恢复真实偏好。连续选择串行写入，迟到成功/失败不覆盖新选择，最终失败回滚最近成功模式并提示“显示设置没存上，请重试”。
+- 兼容：保留 M7-FUND 的基金今日浮动、已知小计与缺项说明；首页余额卡的缺项列表包含基金。小部件契约与原生代码未改。
+
+验证：finance_core 110 passed；`flutter analyze` 无问题；`flutter test` 172 passed、1 skipped；`flutter build apk --debug` 成功（163,026,082 B，SHA-256 `26d42142f3bee5d8bf2c6fd44dd0df610887811e47c6dbe8e2e8b5bf40b85b70`，versionName `0.1.10` / versionCode `11`）。Android 14 模拟器走查双卡、显示设置、仅下班、仅结余与 200% 字体，截图见 `docs/screenshots/12-implementation-*.png`。
+
+未验证：物理真机、真实行情来源展示许可、原生小部件桌面实装、release 签名产物（由 tag CI 构建）。

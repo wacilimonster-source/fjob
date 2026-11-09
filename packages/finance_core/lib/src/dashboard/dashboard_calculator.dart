@@ -31,6 +31,10 @@ enum DashboardNote {
   noHoldings,
   housingNotConfigured,
   carNotConfigured,
+  fundNavPending,
+  fundCalendarUnknown,
+  fundActionReview,
+  fundEligibilityUnconfirmed,
 }
 
 final class CalculationInput {
@@ -47,6 +51,8 @@ final class CalculationInput {
     required this.housingVersions,
     required this.carVersions,
     required this.bills,
+    this.fundNavs = const {},
+    this.fundCalendar = const MarketCalendar({}),
     this.goldReferenceSessionActive = false,
   });
 
@@ -59,6 +65,13 @@ final class CalculationInput {
   final List<Holding> holdings;
   final Map<String, Quote> quotes;
   final MarketCalendar marketCalendar;
+
+  /// Date-only fund NAV data, separate from intraday [quotes].
+  final Map<String, FundNavSnapshot> fundNavs;
+
+  /// Mainland fund settlement calendar. Missing coverage is `unknown`, never
+  /// inferred from weekdays.
+  final MarketCalendar fundCalendar;
   final List<HousingVersion> housingVersions;
   final List<CarVersion> carVersions;
   final List<MonthlyBill> bills;
@@ -74,6 +87,7 @@ final class DashboardSnapshot {
     required this.wage,
     required this.stockDaily,
     required this.goldDaily,
+    required this.fundDaily,
     required this.housing,
     required this.car,
     required this.principal,
@@ -107,6 +121,7 @@ final class DashboardSnapshot {
   final Rational? wage;
   final Rational? stockDaily;
   final Rational? goldDaily;
+  final Rational? fundDaily;
   final Rational? housing;
   final Rational? car;
   final Rational? principal;
@@ -152,6 +167,15 @@ final class DashboardSnapshot {
   }
 
   bool get hasNotePinnedQuotes => notes.contains(DashboardNote.missingQuotes);
+
+  /// CALC-TOTAL-FUND widget component. It is a full-precision sum only when
+  /// both classes are complete; otherwise null and the widget shows pending.
+  Rational? get stockFundDaily {
+    final stocks = stockDaily;
+    final funds = fundDaily;
+    if (stocks == null || funds == null) return null;
+    return stocks + funds;
+  }
 }
 
 final class DashboardCalculator {
@@ -192,6 +216,8 @@ final class DashboardCalculator {
       holdings: input.holdings,
       quotes: input.quotes,
       marketCalendar: input.marketCalendar,
+      fundNavs: input.fundNavs,
+      fundCalendar: input.fundCalendar,
       goldReferenceSessionActive: input.goldReferenceSessionActive,
     );
     if (!assets.hasHoldings) {
@@ -206,6 +232,27 @@ final class DashboardCalculator {
         position.status == PositionStatus.awaitingReferenceSession ||
         position.status == PositionStatus.calendarUnknown)) {
       notes.add(DashboardNote.missingBaseline);
+    }
+    if (assets.positions.any((position) =>
+        position.status == PositionStatus.pendingNav ||
+        position.status == PositionStatus.fundNavPending ||
+        position.status == PositionStatus.fundBaselineUnknown ||
+        position.status == PositionStatus.fundNavFuture)) {
+      notes.add(DashboardNote.fundNavPending);
+    }
+    if (assets.positions.any(
+        (position) => position.status == PositionStatus.fundCalendarUnknown)) {
+      notes.add(DashboardNote.fundCalendarUnknown);
+    }
+    if (assets.positions.any((position) =>
+        position.status == PositionStatus.fundActionUnknown ||
+        position.status == PositionStatus.fundActionDetected)) {
+      notes.add(DashboardNote.fundActionReview);
+    }
+    if (assets.positions.any((position) =>
+        position.status == PositionStatus.fundUnsupported ||
+        position.status == PositionStatus.fundEligibilityUnknown)) {
+      notes.add(DashboardNote.fundEligibilityUnconfirmed);
     }
     if (assets.quality == QuoteQuality.stale) {
       notes.add(DashboardNote.staleQuotes);
@@ -252,13 +299,19 @@ final class DashboardCalculator {
       final carValue = car.dayAmount;
       final stockValue = assets.stockDaily;
       final goldValue = assets.goldDaily;
+      final fundValue = assets.fundDaily;
+      // CALC-TOTAL uses the known per-position subtotals, so one waiting fund
+      // cannot erase another fund's known move. Completeness still requires
+      // every class to be complete.
       totalRational = wageValue -
           (housingValue ?? Rational.zero) -
           (carValue ?? Rational.zero) +
-          (stockValue ?? Rational.zero) +
-          (goldValue ?? Rational.zero);
+          assets.knownStockDaily +
+          assets.knownGoldDaily +
+          assets.knownFundDaily;
       completeness = (stockValue == null ||
               goldValue == null ||
+              fundValue == null ||
               housingValue == null ||
               carValue == null)
           ? Completeness.partial
@@ -291,6 +344,7 @@ final class DashboardCalculator {
       wage: wage.amount,
       stockDaily: assets.stockDaily,
       goldDaily: assets.goldDaily,
+      fundDaily: assets.fundDaily,
       housing: housing.dayAmount,
       car: car.dayAmount,
       principal: principal,

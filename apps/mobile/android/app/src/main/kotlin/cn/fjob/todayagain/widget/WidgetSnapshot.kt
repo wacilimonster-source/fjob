@@ -25,6 +25,8 @@ data class WidgetSnapshot(
     val showCar: Boolean,
     val caption: String,
     val deepLink: String,
+    /** v2 optional business date of the fund NAV; never a quote timestamp. */
+    val fundNavDate: String? = null,
 ) {
     val total: String? get() = amounts["total"]
     val wage: String? get() = amounts["wage"]
@@ -33,12 +35,27 @@ data class WidgetSnapshot(
     val housing: String? get() = amounts["housing"]
     val car: String? get() = amounts["car"]
 
+    /** v2 only; null means the UI must show the pending label. */
+    val stockFundDaily: String? get() = amounts["stockFundDaily"]
+
+    /** v1 showed A-shares alone; v2 shows Dart's pre-computed stock+fund sum. */
+    val investmentDaily: String?
+        get() = if (schemaVersion >= 2) amounts["stockFundDaily"] else amounts["stockDaily"]
+
+    val investmentLabel: String
+        get() = if (schemaVersion >= 2) "股票+基金" else "A股"
+
     val isNegative: Boolean = total?.startsWith("-") == true
 
     companion object {
-        const val SCHEMA_VERSION = 1
-        val AMOUNT_KEYS = listOf(
+        const val SCHEMA_VERSION = 2
+        val SUPPORTED_VERSIONS = setOf(1, 2)
+        val AMOUNT_KEYS_V1 = listOf(
             "total", "wage", "stockDaily", "goldDaily",
+            "housing", "car", "principal", "interest", "rent",
+        )
+        val AMOUNT_KEYS_V2 = listOf(
+            "total", "wage", "stockDaily", "goldDaily", "stockFundDaily",
             "housing", "car", "principal", "interest", "rent",
         )
         private val AMOUNT_PATTERN = Regex("""^-?(0|[1-9][0-9]*)\.[0-9]{2}$""")
@@ -61,7 +78,8 @@ data class WidgetSnapshot(
 
         fun parseValue(value: Any?): WidgetSnapshot? {
             val map = value as? Map<*, *> ?: return null
-            if (map.int("schemaVersion") != SCHEMA_VERSION) return null
+            val version = map.int("schemaVersion") ?: return null
+            if (version !in SUPPORTED_VERSIONS) return null
             val revision = map.long("ledgerRevision") ?: return null
             val computedAt = map.instant("computedAt") ?: return null
             val validUntil = map.instant("validUntil") ?: return null
@@ -90,12 +108,13 @@ data class WidgetSnapshot(
             val deepLink = map["deepLink"] as? String ?: return null
             if (deepLink !in DEEP_LINKS) return null
 
+            val amountKeys = if (version >= 2) AMOUNT_KEYS_V2 else AMOUNT_KEYS_V1
             val rawAmounts = map["amounts"] as? Map<*, *> ?: return null
-            if (rawAmounts.keys.map { it.toString() }.toSet() != AMOUNT_KEYS.toSet()) {
+            if (rawAmounts.keys.map { it.toString() }.toSet() != amountKeys.toSet()) {
                 return null
             }
             val amounts = LinkedHashMap<String, String?>()
-            for (key in AMOUNT_KEYS) {
+            for (key in amountKeys) {
                 val amount = rawAmounts[key]
                 if (amount == null) {
                     amounts[key] = null
@@ -109,9 +128,17 @@ data class WidgetSnapshot(
             if (tombstone) {
                 if (completeness != "unavailable" || !privacy) return null
             }
+            val rawFundNavDate = map["fundNavDate"]
+            if (rawFundNavDate != null) {
+                if (rawFundNavDate !is String ||
+                    !Regex("""^\d{4}-\d{2}-\d{2}$""").matches(rawFundNavDate)
+                ) {
+                    return null
+                }
+            }
 
             return WidgetSnapshot(
-                schemaVersion = SCHEMA_VERSION,
+                schemaVersion = version,
                 ledgerRevision = revision,
                 computedAt = computedAt,
                 validUntil = validUntil,
@@ -127,6 +154,7 @@ data class WidgetSnapshot(
                 showCar = showCar,
                 caption = caption,
                 deepLink = deepLink,
+                fundNavDate = rawFundNavDate as? String,
             )
         }
     }
@@ -137,6 +165,9 @@ data class WidgetTimeline(
     val ledgerRevision: Long,
     val entries: List<WidgetSnapshot>,
 ) {
+    /** Highest schema version present; used to reject a late older payload. */
+    val schemaVersion: Int = entries.maxOfOrNull { it.schemaVersion } ?: 1
+
     /** The latest entry at or before [nowMillis], else the first entry. */
     fun entryFor(nowMillis: Long): WidgetSnapshot? {
         var chosen: WidgetSnapshot? = null
@@ -148,6 +179,27 @@ data class WidgetTimeline(
 
     companion object {
         const val MAX_ENTRIES = 289
+
+        /**
+         * Out-of-order guard shared by the store and its unit tests.
+         * A lower ledger revision is always rejected. A queued v1 payload may
+         * not overwrite a stored v2 snapshot at the same or an older revision;
+         * a genuinely newer revision is still accepted.
+         */
+        fun accepts(
+            storedRevision: Long,
+            storedSchemaVersion: Int,
+            incomingRevision: Long,
+            incomingSchemaVersion: Int,
+        ): Boolean {
+            if (incomingRevision < storedRevision) return false
+            if (incomingSchemaVersion < storedSchemaVersion &&
+                incomingRevision <= storedRevision
+            ) {
+                return false
+            }
+            return true
+        }
 
         fun parse(json: String): WidgetTimeline? = try {
             val map = SnapshotJson.parse(json) as? Map<*, *> ?: return null

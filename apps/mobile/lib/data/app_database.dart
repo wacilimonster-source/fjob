@@ -15,7 +15,7 @@ import 'package:sqflite_common/sqlite_api.dart';
 final class AppDatabase {
   AppDatabase._(this._db, this.schemaVersion);
 
-  static const int currentSchemaVersion = 3;
+  static const int currentSchemaVersion = 5;
 
   static Future<AppDatabase> open({
     required DatabaseFactory factory,
@@ -60,6 +60,12 @@ final class AppDatabase {
               'ALTER TABLE schedule_versions ADD COLUMN alternation_json TEXT',
             );
           }
+          if (oldVersion < 4) {
+            await db.execute(_fundNavCacheSql);
+          }
+          if (oldVersion < 5) {
+            await db.execute(_uiPreferencesSql);
+          }
         },
       ),
     );
@@ -81,6 +87,41 @@ final class AppDatabase {
       instrument_id TEXT NOT NULL PRIMARY KEY,
       name TEXT NOT NULL,
       market TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+    ''';
+
+  /// Local UI preferences that are not part of the ledger revision.
+  ///
+  /// HOME-DUAL-10 stores `home_metrics_mode` here so switching the dashboard
+  /// layout never bumps `ledger_revision`, requests quotes or republishes the
+  /// widget. Unknown keys/values are ignored by their readers.
+  static const String _uiPreferencesSql = '''
+    CREATE TABLE ui_preferences (
+      key TEXT NOT NULL PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+    ''';
+
+  /// Fund NAVs are date-only settlement data, so this table deliberately has
+  /// no non-null `quote_at`; a fund must not masquerade as an intraday quote.
+  static const String _fundNavCacheSql = '''
+    CREATE TABLE fund_nav_cache (
+      instrument_id TEXT NOT NULL PRIMARY KEY,
+      nav_cny TEXT,
+      nav_date TEXT,
+      previous_nav_cny TEXT,
+      previous_nav_date TEXT,
+      action_status TEXT NOT NULL,
+      fund_calendar TEXT NOT NULL,
+      eligibility TEXT NOT NULL,
+      fetched_at TEXT NOT NULL,
+      published_at TEXT,
+      source TEXT NOT NULL,
+      source_revision INTEGER,
+      quality TEXT NOT NULL,
+      source_license_status TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )
     ''';
@@ -225,6 +266,9 @@ final class AppDatabase {
     )
     ''',
     _instrumentDirectorySql,
+    _fundNavCacheSql,
+    _uiPreferencesSql,
+    'CREATE INDEX idx_fund_nav_date ON fund_nav_cache (nav_date)',
     'CREATE INDEX idx_salary_effective ON salary_versions (effective_from)',
     'CREATE INDEX idx_holding_instrument ON holding_versions (instrument_id)',
     'CREATE INDEX idx_bills_month ON monthly_bills (month)',

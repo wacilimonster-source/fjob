@@ -1,4 +1,4 @@
-/// ASSET-01 资产风浪。
+/// ASSET-01 资产风浪: A-shares, domestic open-ended funds and gold.
 library;
 
 import 'package:finance_core/finance_core.dart';
@@ -27,41 +27,58 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
       _setStatus('示例模式不写入正式账本。');
       return;
     }
+    final isFund = position.kind == InstrumentKind.fund;
     final initial = HoldingDraft(
+      kind: isFund ? HoldingKind.fund : HoldingKind.stock,
       market: _marketOf(position.instrumentId),
-      code: position.instrumentId.split('.').last,
+      code: fundCodeOf(position.instrumentId) ??
+          position.instrumentId.split('.').last,
       name: ref.read(effectiveLedgerProvider).value?.instrumentNames[
               position.instrumentId] ??
           '',
-      quantityText: position.holding.quantity.toCanonicalString(maxScale: 0),
-      costText: position.holding.costPerUnit.toCanonicalString(maxScale: 3),
+      quantityText: position.holding.quantity
+          .toCanonicalString(maxScale: isFund ? 4 : 0),
+      costText: position.holding.costPerUnit
+          .toCanonicalString(maxScale: isFund ? 4 : 3),
+      pendingQuote: position.holding.pendingQuote,
     );
     final edited = await showHoldingEditor(context, initial: initial);
     if (edited == null) return;
     try {
-      final controller = ref.read(ledgerControllerProvider.notifier);
-      if (edited.instrumentId != position.instrumentId) {
-        await controller.deleteHolding(position.instrumentId);
+      final ledger = ref.read(effectiveLedgerProvider).value;
+      final duplicate = ledger?.holdings.any(
+            (holding) =>
+                holding.instrumentId == edited.instrumentId &&
+                holding.instrumentId != position.instrumentId &&
+                holding.effectiveToUtc == null,
+          ) ??
+          false;
+      if (duplicate) {
+        _setStatus('这个代码已经在账本里，请直接编辑已有持仓。');
+        return;
       }
+      final controller = ref.read(ledgerControllerProvider.notifier);
       await controller.upsertHolding(
         instrumentId: edited.instrumentId,
         quantity: Rational.parse(edited.quantityText),
         costPerUnit: Rational.parse(edited.costText),
         name: edited.name,
+        pendingQuote: edited.pendingQuote,
+        previousInstrumentId: position.instrumentId,
       );
-      await controller.refreshQuotes();
+      await controller.refreshQuotes(manual: true);
       _setStatus('持仓已更新，今日估算按当前持仓重估。');
     } on Object catch (error) {
       _setStatus('$error');
     }
   }
 
-  Future<void> _add() async {
+  Future<void> _add(HoldingKind kind) async {
     if (ref.read(sampleModeProvider)) {
       _setStatus('示例模式不写入正式账本。');
       return;
     }
-    final created = await showHoldingEditor(context);
+    final created = await showHoldingEditor(context, kind: kind);
     if (created == null) return;
     try {
       final controller = ref.read(ledgerControllerProvider.notifier);
@@ -81,9 +98,12 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
         quantity: Rational.parse(created.quantityText),
         costPerUnit: Rational.parse(created.costText),
         name: created.name,
+        pendingQuote: created.pendingQuote,
       );
-      await controller.refreshQuotes();
-      _setStatus('已添加 ${created.code}，报价待刷新。');
+      await controller.refreshQuotes(manual: true);
+      _setStatus(created.isFund
+          ? '已添加基金 ${created.code}，净值待刷新。'
+          : '已添加 ${created.code}，报价待刷新。');
     } on Object catch (error) {
       _setStatus('$error');
     }
@@ -147,7 +167,8 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
 
     return RefreshIndicator(
       color: palette.ink,
-      onRefresh: () => ref.read(ledgerControllerProvider.notifier).refreshQuotes(),
+      onRefresh: () =>
+          ref.read(ledgerControllerProvider.notifier).refreshQuotes(manual: true),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -170,7 +191,7 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
                                     style: Theme.of(context).textTheme.headlineMedium),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'A股 + 按克黄金 · ${client.sourceLabel}'
+                                  'A股 + 场外基金 + 按克黄金 · ${client.sourceLabel}'
                                   '${client.isFixture ? ' · 模拟数据' : ''}',
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
@@ -183,7 +204,7 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
                                 ? null
                                 : () => ref
                                     .read(ledgerControllerProvider.notifier)
-                                    .refreshQuotes(),
+                                    .refreshQuotes(manual: true),
                             icon: quoteStatus.status == QuoteStatus.refreshing
                                 ? const SizedBox(
                                     width: 18,
@@ -212,7 +233,7 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
                               const SizedBox(height: 6),
                               Text(
                                 '没有持仓时，今日浮动与持有盈亏都按已知 0 处理。'
-                                '可以随时添加A股或按克黄金。',
+                                '可以随时添加A股、场外基金或按克黄金。',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
@@ -230,10 +251,27 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
                         const SizedBox(height: 10),
                       ],
                       const SizedBox(height: 4),
-                      OutlinedButton.icon(
-                        onPressed: sample ? null : _add,
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('添加持仓'),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: sample
+                                  ? null
+                                  : () => _add(HoldingKind.stock),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('添加股票'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed:
+                                  sample ? null : () => _add(HoldingKind.fund),
+                              icon: const Icon(Icons.savings_outlined, size: 18),
+                              label: const Text('添加基金'),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       PaperCard(
@@ -245,7 +283,7 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
                             const SizedBox(height: 6),
                             Text(
                               client.isFixture
-                                  ? '当前报价来自模拟适配器，价格由标的与交易日确定，'
+                                  ? '当前报价与基金净值来自模拟适配器，价格由标的与交易日确定，'
                                       '不会逐帧随机变化；正式发布前需接入已验证的行情网关。'
                                   : '报价来自${client.sourceLabel}，属于公开接口参考数据，'
                                       '非交易所官方授权，仅供开发/个人验证；'
@@ -257,6 +295,13 @@ class _AssetsPageState extends ConsumerState<AssetsPage> {
                               'A股今日浮动使用同一来源的前收参考价；休市自然日为 0，'
                               '跨交易日基准失效时显示待更新。黄金使用人民币每克参考价，'
                               '夜盘基准以来源返回的参考交易日为准。',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '基金使用来源公布的日终单位净值，不是盘中估值、累计净值或万份收益。'
+                              '净值日期与真实抓取时间分开记录；分红/拆分覆盖不明时今日浮动待核实，'
+                              '持有估值仍按当前录入份额与成本估算。',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             if (ledger != null) ...[
@@ -300,12 +345,15 @@ class _PositionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final quote = position.quote;
+    final fund = position.kind == InstrumentKind.fund;
     final gold = position.kind == InstrumentKind.gold;
-    final price = quote?.priceCny;
+    final fundNav = position.fundNav;
+    final price = fund ? fundNav?.navCny : position.quote?.priceCny;
     final daily = position.dailyPnl;
     final held = position.heldPnl;
-    final isStock = !gold;
+    final name = displayName ?? '';
+    final quantityScale = fund ? 4 : (gold ? 3 : 0);
+    final costScale = fund ? 4 : (gold ? 2 : 3);
     return PaperCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,21 +365,28 @@ class _PositionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      (displayName?.isNotEmpty ?? false)
-                          ? (gold
-                              ? displayName!
-                              : '$displayName · ${position.instrumentId}')
-                          : (gold ? '黄金 · Au99.99' : position.instrumentId),
-                      maxLines: 1,
+                      fund
+                          ? (name.isNotEmpty
+                              ? '基金 · $name  ${fundCodeOf(position.instrumentId) ?? ''}'
+                              : '基金 · ${fundCodeOf(position.instrumentId) ?? position.instrumentId}')
+                          : (name.isNotEmpty
+                              ? (gold
+                                  ? name
+                                  : '$name · ${position.instrumentId}')
+                              : (gold ? '黄金 · Au99.99' : position.instrumentId)),
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     Text(
-                      gold
-                          ? '${position.holding.quantity.toCanonicalString(maxScale: 3)} 克 · '
-                              '成本 ${formatMoney(position.holding.costPerUnit)}/克'
-                          : '${position.holding.quantity.toCanonicalString(maxScale: 0)} 股 · '
-                              '成本 ${position.holding.costPerUnit.toFixed(3)} 元',
+                      fund
+                          ? '${position.holding.quantity.toCanonicalString(maxScale: quantityScale)} 份 · '
+                              '单位成本 ¥${position.holding.costPerUnit.toCanonicalString(maxScale: costScale)} / 份'
+                          : gold
+                              ? '${position.holding.quantity.toCanonicalString(maxScale: quantityScale)} 克 · '
+                                  '成本 ${formatMoney(position.holding.costPerUnit)}/克'
+                              : '${position.holding.quantity.toCanonicalString(maxScale: quantityScale)} 股 · '
+                                  '成本 ${position.holding.costPerUnit.toFixed(3)} 元',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -360,12 +415,17 @@ class _PositionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('当前价', style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      fund ? '最新单位净值' : '当前价',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                     MoneyText(
                       price == null
-                          ? '待报价'
-                          : '¥${price.toFixed(isStock ? 3 : 2)}'
-                              '${gold ? ' / 克' : ''}',
+                          ? (fund ? '待更新' : '待报价')
+                          : fund
+                              ? '¥${formatNav(price)} / 份'
+                              : '¥${price.toFixed(gold ? 2 : 3)}'
+                                  '${gold ? ' / 克' : ''}',
                       size: 22,
                       color: price == null ? palette.muted : palette.ink,
                     ),
@@ -399,12 +459,58 @@ class _PositionCard extends StatelessWidget {
             _note(),
             style: Theme.of(context).textTheme.bodySmall,
           ),
+          if (fund) ...[
+            const SizedBox(height: 2),
+            Text(
+              '按当前份额估算，不包含已发现金分红及未反映在成本中的费用。',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
         ],
       ),
     );
   }
 
   String _note() {
+    if (position.kind == InstrumentKind.fund) {
+      final nav = position.fundNav;
+      final status = switch (position.status) {
+        PositionStatus.pendingNav => '还没有拿到有效单位净值，今日和持有盈亏待更新。',
+        PositionStatus.fundUnsupported => '来源已确认该基金不支持按普通场外基金计算，不参与估值。',
+        PositionStatus.fundEligibilityUnknown =>
+          '品种、币种或场外持有口径待确认，暂不计算盈亏。',
+        PositionStatus.fundNavFuture => '净值日期晚于统计日，暂不使用这条净值。',
+        PositionStatus.fundClosedDay => '该日已确认休市，今日浮动为 0，持有估值保留最近净值。',
+        PositionStatus.fundCalendarUnknown =>
+          '基金日历未覆盖或不可靠，不按周末猜测今日涨跌，今日待核实。',
+        PositionStatus.fundNavPending =>
+            '今天的净值还没公布；今日浮动待更新，不沿用上一个净值日的涨跌。',
+        PositionStatus.fundActionUnknown =>
+          '来源无法确认净值区间内的分红/拆分，今日浮动待核实。',
+        PositionStatus.fundActionDetected =>
+          '净值区间内可能发生分红/拆分，请核对份额与成本；今日浮动待核实。',
+        PositionStatus.fundBaselineUnknown =>
+          '上一净值缺失或日期顺序异常，今日浮动待更新。',
+        PositionStatus.zeroQuantity => '份额为 0，盈亏是已知 0。',
+        _ => '按当前份额估算，不还原当日交易与费用。',
+      };
+      final date = nav?.navDate;
+      final dateText = date == null ? '净值日期待更新' : '净值日期 ${date.toIsoString()}';
+      final license = switch (nav?.sourceLicenseStatus) {
+        SourceLicenseStatus.verified => '许可已核实',
+        SourceLicenseStatus.developmentOnly => '开发验证源',
+        _ => '许可待确认',
+      };
+      final quality = switch (nav?.quality) {
+        QuoteQuality.live => '实时',
+        QuoteQuality.delayed => '延时',
+        QuoteQuality.eod => '日终数据',
+        QuoteQuality.stale => '缓存陈旧',
+        QuoteQuality.fixture => '模拟',
+        _ => '不可用',
+      };
+      return '$status $dateText · ${nav?.source ?? '无来源'} · $quality · $license';
+    }
     final status = switch (position.status) {
       PositionStatus.pendingQuote => '还没有拿到报价，盈亏显示待更新。',
       PositionStatus.zeroQuantity => '数量为 0，盈亏是已知 0。',
@@ -414,6 +520,7 @@ class _PositionCard extends StatelessWidget {
       PositionStatus.missingBaseline => '来源没有提供基准价，今日浮动待更新。',
       PositionStatus.awaitingReferenceSession => '参考交易日尚未落到今天，等待同源基准。',
       PositionStatus.ok => '按当前持仓重估，不还原当日交易与费用。',
+      _ => '今日浮动待更新。',
     };
     final quality = position.quote?.quality;
     final time = formatClock(position.quote?.quoteAtUtc, calendar);
@@ -430,6 +537,16 @@ class _PositionCard extends StatelessWidget {
   }
 }
 
+/// Shows at least four decimals for a fund NAV without dropping source digits.
+String formatNav(Rational value) {
+  final text = value.toCanonicalString();
+  final dot = text.indexOf('.');
+  if (dot < 0) return '$text.0000';
+  final fraction = text.substring(dot + 1);
+  if (fraction.length >= 4) return text;
+  return '${text.substring(0, dot)}.${fraction.padRight(4, '0')}';
+}
+
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.status});
 
@@ -441,12 +558,22 @@ class _StatusChip extends StatelessWidget {
     final (label, color) = switch (status) {
       PositionStatus.ok => ('正常', palette.positive),
       PositionStatus.pendingQuote => ('待报价', palette.negative),
+      PositionStatus.pendingNav => ('待净值', palette.negative),
       PositionStatus.zeroQuantity => ('空仓', palette.muted),
       PositionStatus.closedDay => ('休市', palette.muted),
       PositionStatus.staleBaseline => ('基准失效', palette.negative),
       PositionStatus.calendarUnknown => ('日历未知', palette.negative),
       PositionStatus.missingBaseline => ('缺基准', palette.negative),
       PositionStatus.awaitingReferenceSession => ('待夜盘', palette.muted),
+      PositionStatus.fundUnsupported => ('不支持', palette.negative),
+      PositionStatus.fundEligibilityUnknown => ('待确认', palette.negative),
+      PositionStatus.fundNavFuture => ('净值超前', palette.negative),
+      PositionStatus.fundClosedDay => ('休市', palette.muted),
+      PositionStatus.fundCalendarUnknown => ('日历未知', palette.negative),
+      PositionStatus.fundNavPending => ('待更新', palette.muted),
+      PositionStatus.fundActionUnknown => ('待核实', palette.negative),
+      PositionStatus.fundActionDetected => ('待核实', palette.negative),
+      PositionStatus.fundBaselineUnknown => ('缺基准', palette.negative),
     };
     return Container(
       margin: const EdgeInsets.only(right: 4),

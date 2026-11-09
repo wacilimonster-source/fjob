@@ -41,6 +41,20 @@ def allocation(data):
             * data["elapsedDaySeconds"] / data["daySeconds"])
 
 
+def plain(value):
+    """Decimal without exponent or redundant trailing zeros."""
+    text = format(value.normalize(), "f")
+    return "0" if text in ("-0", "0") else text
+
+
+def fund_held(data):
+    return (Decimal(data["nav"]) - Decimal(data["cost"])) * Decimal(data["quantity"])
+
+
+def fund_daily(data):
+    return (Decimal(data["nav"]) - Decimal(data["previousNav"])) * Decimal(data["quantity"])
+
+
 def check_case(case):
     data = case["input"]
     expected = case["expected"]
@@ -65,10 +79,28 @@ def check_case(case):
                            "monthlyPaidSeconds": data["monthlyPaidSeconds"],
                            "elapsedPaidSeconds": data["elapsedPaidSeconds"]})
             expense = allocation({**data, "monthlyCny": str(Decimal(data["housingMonthlyCny"]) + Decimal(data["carMonthlyCny"]))})
-            result = salary - expense + sum(Decimal(data[key]) if data[key] is not None else Decimal(0)
-                                           for key in ["stockDailyCny", "goldDailyCny"])
-            completeness = "partial" if any(data[key] is None for key in ["stockDailyCny", "goldDailyCny"]) else "complete"
+            result = salary - expense + sum(
+                Decimal(data[key]) if data.get(key) is not None else Decimal(0)
+                for key in ["stockDailyCny", "goldDailyCny", "fundDailyCny"]
+            )
+            fund_known = data.get("fundDailyKnown", True)
+            completeness = "partial" if (
+                any(data[key] is None for key in ["stockDailyCny", "goldDailyCny"])
+                or not fund_known
+            ) else "complete"
             assert completeness == expected["completeness"]
+        elif operation == "fundHeld":
+            result = fund_held(data)
+            assert expected.get("exact") == plain(result), (case["id"], plain(result))
+        elif operation == "fundDaily":
+            result = fund_daily(data)
+            assert expected.get("exact") == plain(result), (case["id"], plain(result))
+        elif operation == "fundDailyStale":
+            # The latest NAV predates the statistics day, so today's move is
+            # unknown; the held valuation still uses the latest NAV.
+            assert expected.get("unknown") is True
+            assert display(fund_held(data)) == expected["heldDisplayCny"]
+            return
         elif operation == "monthAllocation":
             daily = Decimal(data["monthlyCny"]) / data["monthDays"]
             result = daily * data["monthDays"]
@@ -91,23 +123,54 @@ def check_case(case):
     assert display(result) == expected["displayCny"], (case["id"], result, expected)
 
 
-def main():
-    schema = read_json("contracts/widget-snapshot.schema.json")
-    Draft202012Validator.check_schema(schema)
-    validator = Draft202012Validator(schema, format_checker=FormatChecker())
-    snapshot = read_json("fixtures/widget-snapshot.json")
-    validator.validate(snapshot)
-    private_snapshot = deepcopy(snapshot)
-    private_snapshot["privacy"] = True
-    private_snapshot["amounts"] = {key: None for key in snapshot["amounts"]}
-    validator.validate(private_snapshot)
-    leaking_snapshot = {**snapshot, "privacy": True}
+def check_widget_schemas():
+    v1 = read_json("contracts/widget-snapshot.schema.json")
+    v2 = read_json("contracts/widget-snapshot-v2.schema.json")
+    for schema in (v1, v2):
+        Draft202012Validator.check_schema(schema)
+    v1_validator = Draft202012Validator(v1, format_checker=FormatChecker())
+    v2_validator = Draft202012Validator(v2, format_checker=FormatChecker())
+
+    old_snapshot = read_json("fixtures/widget-snapshot.json")
+    v1_validator.validate(old_snapshot)
+    new_snapshot = read_json("fixtures/widget-snapshot-v2.json")
+    v2_validator.validate(new_snapshot)
+
+    # v2 must require the new key and reject a v1-shaped amount map.
+    missing_key = deepcopy(new_snapshot)
+    del missing_key["amounts"]["stockFundDaily"]
     try:
-        validator.validate(leaking_snapshot)
+        v2_validator.validate(missing_key)
     except ValidationError:
         pass
     else:
-        raise AssertionError("Privacy schema accepted non-null amounts")
+        raise AssertionError("v2 schema accepted an amount map without stockFundDaily")
+
+    # v1 must keep rejecting the v2-only key so an old parser cannot silently
+    # accept a payload it does not render.
+    try:
+        v1_validator.validate(new_snapshot)
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("v1 schema accepted a v2 amount map")
+
+    for schema, snapshot in ((v1_validator, old_snapshot), (v2_validator, new_snapshot)):
+        private = deepcopy(snapshot)
+        private["privacy"] = True
+        private["amounts"] = {key: None for key in snapshot["amounts"]}
+        schema.validate(private)
+        leaking = {**snapshot, "privacy": True}
+        try:
+            schema.validate(leaking)
+        except ValidationError:
+            pass
+        else:
+            raise AssertionError("Privacy schema accepted non-null amounts")
+
+
+def main():
+    check_widget_schemas()
 
     api = yaml.safe_load((ROOT / "contracts/market-gateway.openapi.yaml").read_text(encoding="utf-8"))
     validate(api)
@@ -124,7 +187,7 @@ def main():
                 continue
             assert (path.parent / target.split("#")[0]).exists(), (path, target)
     assert (ROOT / "prototype/source.html").stat().st_size < 1_000_000
-    print(f"PASS {len(cases)} reference calculations, OpenAPI, widget schema, privacy rejection and document links")
+    print(f"PASS {len(cases)} reference calculations, OpenAPI, widget v1/v2 schemas, privacy rejection and document links")
 
 
 if __name__ == "__main__":

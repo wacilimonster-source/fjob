@@ -92,6 +92,16 @@ SetupDraft housingDraft(String sessionId) {
 }
 
 Map<String, dynamic> readWidgetSchema() {
+  final file = File('../../contracts/widget-snapshot-v2.schema.json');
+  return jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+}
+
+Map<String, dynamic> readWidgetSchemaV1() {
   final file = File('../../contracts/widget-snapshot.schema.json');
+  return jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+}
+
+Map<String, dynamic> readWidgetFixtureV1() {
+  final file = File('../../fixtures/widget-snapshot.json');
   return jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
 }

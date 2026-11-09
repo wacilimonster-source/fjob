@@ -14,6 +14,8 @@
 6. [验收与验证记录](docs/06-acceptance.md)。定义完成标准及原型实测结果。
 7. [实现说明与交付验证](docs/07-implementation-notes.md)。记录本轮 M0–M5 实际落地的结构、命令结果、偏差与未验证项。
 8. [拍拍他与下班离场设计](docs/09-design-comfort-and-clock-out.md)。定义3.2秒拍肩回应、2.2秒离场、空工位、跨夜班、关键帧和可执行开发任务，状态为待实施。
+9. [国内基金持仓详细设计](docs/10-design-domestic-fund-holdings.md)与[开发交接任务](docs/11-handoff-domestic-fund-implementation.md)。定义场外基金的录入、日终净值、收益、兼容迁移和验收；M7-FUND 已实施，公开基金源仍为开发验证状态。
+10. [首页双核心指标设计与开发交接](docs/12-design-home-dual-metrics.md)。定义下班倒计时与今日生存结余的首屏布局、三种显示配置、时间边界和验收；M8-HOME 已实施，双卡、单项显示与本地偏好已有自动化测试和模拟器截图。
 
 [打开交互原型](prototype/index.html)。可直接用浏览器打开，首次进入体验引导，进入后底部可重新走流程。`prototype/source.html` 为可编辑源片段，`index.html` 为独立浏览器版本。
 
@@ -22,7 +24,7 @@
 ## 机器可读材料
 
 - `contracts/market-gateway.openapi.yaml` 为行情网关接口契约。
-- `contracts/widget-snapshot.schema.json` 为 Flutter 与 Android、iOS 原生小部件共享的快照格式。
+- `contracts/widget-snapshot.schema.json` 为 v1 小部件快照格式；`contracts/widget-snapshot-v2.schema.json` 为含 `stockFundDaily` 的 v2 格式，原生同时兼容两者。
 - `fixtures/calculation-cases.json` 为跨语言计算验收样例。
 - `AGENTS.md` 为开发代理的项目约束与阅读顺序。
 
@@ -45,7 +47,7 @@
 
 ## 当前实现状态
 
-已按开发任务落地 M0–M5 的开发版：`packages/finance_core` 纯 Dart 计算引擎、`apps/mobile` Flutter 应用（六步引导、四个主页面、SQLite 本地账本）、Android Kotlin 小部件、`services/market_gateway` FastAPI 网关。真实行情来源、签名与商店发布仍为外部依赖；iOS 与 AAB 已移出当前范围。
+已按开发任务落地 M0–M5 及 M7-FUND、M8-HOME 的开发版：`packages/finance_core` 纯 Dart 计算引擎、`apps/mobile` Flutter 应用（六步引导、四个主页面、首页双核心指标、SQLite 本地账本）、场外基金持仓与日终净值、Android Kotlin 小部件、`services/market_gateway` FastAPI 网关。真实行情来源、签名与商店发布仍为外部依赖；iOS 与 AAB 已移出当前范围。
 
 - 工具链与命令：[docs/07-implementation-notes.md](docs/07-implementation-notes.md)、[toolchain.lock.json](toolchain.lock.json)。
 - 界面截图：[docs/screenshots](docs/screenshots)。

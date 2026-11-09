@@ -30,6 +30,7 @@
 | AC-ASSET-03 | 黄金夜盘 | 明示参考交易日与基准 |
 | AC-ASSET-04 | 持仓盘中修改 | 快照重估，用户可看到重估说明 |
 | AC-ASSET-05 | 同代码重复添加 | 引导合并或编辑，避免重复统计 |
+| AC-ASSET-01-FUND | 场外基金录入、日终净值与合计 | FND-01～22 全部通过；股票/基金同码不串用；旧 v1/v2/v3 账本与草稿升级保留原数据 |
 | AC-API-01 | 乱序返回 | 新报价不被旧响应覆盖 |
 | AC-API-02 | 单标的失败、429、超时 | 分项保留状态，遵守退避 |
 | AC-API-03 | 断网冷启动 | 本地计算可用，无缓存资产显示待报价 |
@@ -64,9 +65,68 @@
 - 此前四个主页面与减少动效状态已经进行浏览器检查（当前产品固定浅色，不再要求暗色）。当前迭代继续检查引导、住房切换及保存行为。
 - HTML 页面执行期间未记录到 JavaScript pageerror。
 
-`tools/verify_handoff.py` 用高精度 Decimal 独立核对20个参考计算样例，并检查 OpenAPI、JSON Schema、隐私反例和文档相对链接。它验证交付契约及预期值，生产引擎在实现后仍需用相同 fixture 验收。
+`tools/verify_handoff.py` 用高精度 Decimal 独立核对24个参考计算样例（含基金持有/今日浮动与部分可计算合计），并检查 OpenAPI、v1/v2 JSON Schema、隐私反例和文档相对链接。`finance_core` 的 fixture 测试实际读取同一文件并执行新增基金样例；基金样例通过真实 `AssetCalculator` 求值。基金专项验收编号见 [国内基金持仓设计](10-design-domestic-fund-holdings.md) 的 FND-01～22。
 
 执行参考验证需要 Python 3.10+，安装 PyYAML、jsonschema 和 openapi-spec-validator，随后运行 `python tools/verify_handoff.py`。
+
+### 3.1 M7-FUND 本轮验证（2026-11-09）
+
+环境：Flutter 3.47.9 / Dart 3.13.7、JDK 17.0.20.1、Python 3.12.10、Android SDK 见 `toolchain.lock.json`。以下命令均在仓库根目录或标注的工作目录实际执行。
+
+| 命令 | 结果 |
+| --- | --- |
+| `cd packages/finance_core && dart test test/asset_test.dart test/dashboard_test.dart test/calculation_fixture_test.dart` | 59 passed |
+| `cd apps/mobile && flutter test test/holding_editor_test.dart test/setup_draft_test.dart test/database_test.dart test/quote_repository_test.dart` | 53 passed |
+| `cd apps/mobile && flutter test test/eastmoney_client_test.dart test/widget_snapshot_test.dart` | 16 passed |
+| `cd packages/finance_core && dart test` | 110 passed |
+| `cd apps/mobile && flutter analyze` | No issues found |
+| `cd apps/mobile && flutter test` | 131 passed，1 skipped（既有跳过项） |
+| `cd apps/mobile && flutter test tool/dump_widget_timeline_test.dart` | passed，生成 v2 时间线 |
+| `python tools/check_widget_payloads.py` | 8 个条目通过 v1/v2 schema |
+| `cd apps/mobile/android && gradlew.bat testDebugUnitTest` | BUILD SUCCESSFUL，v1/v2 解析与乱序测试通过 |
+| `python -m pytest -q services/market_gateway` | 18 passed |
+| `python tools/verify_handoff.py` | PASS 24 reference calculations、OpenAPI、v1/v2 schema、隐私反例与文档链接 |
+| `cd apps/mobile && flutter build apk --debug --dart-define=FJOB_ENABLE_FUND_PUBLIC_SOURCE=true` | 成功，产物见下 |
+
+数据库从 v3 平滑升级到当前 schema v5：v4 迁移段新增 `fund_nav_cache`，v5 迁移段新增并行任务使用的 `ui_preferences`；保留股票、黄金、工资、费用、草稿、名称、账本修订与 `quote_cache`。升级路径由 `database_test.dart` 的真实 v3 库验证。旧持仓/草稿中的基金不会被转成股票，份额四位小数保留。修改代码时旧 `holding_versions` 行关闭、新行新增在同一事务内，目标代码已存在则整体回滚。
+
+并行工作说明：M7-FUND 完成时点（约 18:01）全量 `flutter test` 为 131 passed、1 skipped。随后同一工作区的 M8-HOME 会话在 18:04 改写了 `dashboard_page.dart`，其 `dashboard_scene_test.dart` 出现 8 个与基金无关的离场动画/安慰文案失败；排除该文件后其余 120 项仍全部通过，M7-FUND 定向测试不受影响。上述 debug APK 构建于该并行改写之前。M7-FUND 未修改或回退 M8-HOME 的代码与测试。
+
+产物：
+
+- `G:\game\nw\FJOB\apps\mobile\build\app\outputs\flutter-apk\app-debug.apk`
+- SHA-256：`7b7bc14452fd936a527a8488cb55f1abb9a25faa37126cc202f5d33cb402228c`
+- 隔离模拟器安装并启动截图：[13-m7-fund-onboarding.png](screenshots/13-m7-fund-onboarding.png)。仅覆盖安装与首屏；资产/基金页面的设备交互与原生小部件桌面渲染未在模拟器走查。
+
+在线只读抽样（2026-11-09，本地时间，未输入任何个人持仓）：
+
+- 基金目录 `https://fund.eastmoney.com/js/fundcode_search.js`：HTTP 200，约 3,223,149 字节；真实类型为 `混合型-灵活`、`债券型-混合二级` 等复合标签，分类已按前缀匹配。
+- 基金历史净值 `https://api.fund.eastmoney.com/f10/lsjz?fundCode=000001&pageIndex=1&pageSize=2`：最新 `FSRQ=2026-11-06`、`DWJZ=0.9780`，前一行为 `2026-11-05`、`1.0000`，`FHSP` 为空。按设计，空 `FHSP` 不足以证明区间无分红/拆分，因此该来源的今日浮动保持待核实；持有估值仍使用 11-06 净值。
+
+未验证项：公开基金源的长期稳定性、字段覆盖、分红/拆分完整覆盖与**公开展示许可**；资产/基金页面的模拟器交互走查、Android 真机安装、原生小部件在桌面的实际渲染与 30 分钟调度；release 签名与发布；iOS（已移出范围）。`FJOB_ENABLE_FUND_PUBLIC_SOURCE` 默认关闭，本次 debug APK 显式开启仅用于开发验证。
+
+### 3.2 M8-HOME 本轮验证（2026-11-09）
+
+环境同 3.1；Android 14（API 34）模拟器 1080 × 2400 @ 420 dpi。
+
+| 命令 | 结果 |
+| --- | --- |
+| `cd packages/finance_core && dart test` | 110 passed |
+| `cd apps/mobile && flutter analyze` | No issues found |
+| `cd apps/mobile && flutter test` | 172 passed、1 skipped（既有跳过项） |
+| `cd apps/mobile && flutter build apk --debug` | 成功 |
+
+覆盖：HD-01/02/03/04/05/06/08/09/11/12/15/16/17/18/19 的领域与组件断言；恰好 18:00 与 06:00、17:59:59.900、跨夜跨月、休息日、排班未知、部分小计、不可用、陈旧报价、长金额、320 dp、200% 字体、三种显示模式、隐藏卡语义、连续选择/迟到失败/写入失败回滚、示例隔离、schema v5 迁移与清空重置。M7-FUND 的基金已知小计与首页完整性提示保持兼容。
+
+模拟器走查：默认双卡、显示设置展开、仅下班、仅结余、200% 系统字体；截图见 `docs/screenshots/12-implementation-*.png`。双卡首屏同时可见两个主值；单卡模式不保留空位或装订细节；200% 字体下选项纵排、卡片增高且可滚动。
+
+产物（同一路径已被 M8-HOME 构建覆盖）：
+
+- `G:\game\nw\FJOB\apps\mobile\build\app\outputs\flutter-apk\app-debug.apk`
+- 大小：163,026,082 B；SHA-256：`26d42142f3bee5d8bf2c6fd44dd0df610887811e47c6dbe8e2e8b5bf40b85b70`；`versionName=0.1.10`、`versionCode=11`
+- 3.1 的 SHA-256 记录对应 M8-HOME 合并前的 M7-FUND 构建，不再对应当前文件。
+
+未验证：物理真机、真实行情来源展示许可、原生小部件桌面实装、release 签名产物（由 tag CI 构建）。
 
 ## 4. 原型的简化边界
 

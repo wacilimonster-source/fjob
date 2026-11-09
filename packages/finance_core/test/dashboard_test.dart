@@ -114,6 +114,8 @@ void main() {
     List<MonthlyBill>? bills,
     List<SalaryVersion>? salaries,
     ScheduleVersion? scheduleVersion,
+    Map<String, FundNavSnapshot> fundNavs = const {},
+    MarketCalendar? fundCalendar,
   }) {
     final instant = now ?? DateTime.utc(2026, 11, 4, 6, 36);
     return CalculationInput(
@@ -126,11 +128,51 @@ void main() {
       holdings: holdings ?? [stock(), gold()],
       quotes: quotes ?? quotesAt(instant),
       marketCalendar: calendarFor(calendar.dateOf(instant)),
+      fundNavs: fundNavs,
+      fundCalendar: fundCalendar ?? calendarFor(calendar.dateOf(instant)),
       housingVersions: [housing()],
       carVersions: [carPlan()],
       bills: bills ?? [housingBill(), carBill()],
     );
   }
+
+  Holding fundHolding(
+    String code, {
+    String quantity = '1000.25',
+    String cost = '1.2000',
+  }) =>
+      Holding(
+        id: 'fund-$code',
+        instrumentId: 'FUND.CN.$code',
+        quantity: Rational.parse(quantity),
+        costPerUnit: Rational.parse(cost),
+        effectiveFromUtc: DateTime.utc(2026, 1, 1),
+      );
+
+  FundNavSnapshot fundNav({
+    String code = '000001',
+    String navCny = '1.2356',
+    String previousNav = '1.2256',
+    FundActionStatus action = FundActionStatus.none,
+    FundEligibility eligibility = FundEligibility.supported,
+    LocalDate? navDate,
+  }) =>
+      FundNavSnapshot(
+        instrumentId: 'FUND.CN.$code',
+        navCny: Rational.parse(navCny),
+        navDate: navDate ?? LocalDate(2026, 11, 4),
+        previousNavCny: Rational.parse(previousNav),
+        previousNavDate: LocalDate(2026, 11, 3),
+        actionStatus: action,
+        fundCalendar: FundCalendarKind.mainland,
+        eligibility: eligibility,
+        fetchedAtUtc: DateTime.utc(2026, 11, 4, 6, 36),
+        publishedAtUtc: null,
+        source: 'fixture',
+        sourceRevision: null,
+        quality: QuoteQuality.eod,
+        sourceLicenseStatus: SourceLicenseStatus.developmentOnly,
+      );
 
   group('CALC-TOTAL', () {
     test('the reference scenario reproduces -55.26', () {
@@ -242,6 +284,94 @@ void main() {
       );
       expect(snapshot.estimate, isTrue);
       expect(snapshot.notes, contains(DashboardNote.carriedForwardEstimate));
+    });
+  });
+
+  group('CALC-TOTAL-FUND', () {
+    test('FND-15 a known fund keeps the partial subtotal alive', () {
+      final snapshot = calculator.calculate(
+        input(
+          holdings: [
+            stock(),
+            gold(),
+            fundHolding('000001'),
+            fundHolding('110022'),
+          ],
+          fundNavs: {'FUND.CN.000001': fundNav()},
+        ),
+      );
+      expect(snapshot.fundDaily, isNull);
+      expect(snapshot.assets.knownFundDaily, Rational.parse('10.0025'));
+      expect(snapshot.stockDaily, Rational.parse('-350'));
+      expect(snapshot.goldDaily, Rational.parse('100'));
+      expect(snapshot.completeness, Completeness.partial);
+      expect(snapshot.notes, contains(DashboardNote.fundNavPending));
+      // The known fund subtotal never disappears because another one is
+      // waiting; the total is the old formula plus that known fund part.
+      final expected = snapshot.wage! -
+          snapshot.housing! -
+          snapshot.car! +
+          snapshot.stockDaily! +
+          snapshot.goldDaily! +
+          Rational.parse('10.0025');
+      expect(snapshot.total, expected);
+      expect(snapshot.stockFundDaily, isNull);
+    });
+
+    test('FND-18 complete stock and fund classes expose one widget sum', () {
+      final snapshot = calculator.calculate(
+        input(
+          holdings: [stock(), gold(), fundHolding('000001')],
+          fundNavs: {'FUND.CN.000001': fundNav()},
+        ),
+      );
+      expect(snapshot.completeness, Completeness.complete);
+      expect(snapshot.fundDaily, Rational.parse('10.0025'));
+      final stocks = snapshot.stockDaily!;
+      final funds = snapshot.fundDaily!;
+      expect(snapshot.stockFundDaily, stocks + funds);
+      // -350 + 10.0025 = -339.9975, HALF_UP at two decimals is -340.00.
+      expect(snapshot.stockFundDaily!.toDisplayString(), '-340.00');
+      // Gold stays a separate bucket and is never folded into the widget sum.
+      expect(snapshot.goldDaily, Rational.parse('100'));
+    });
+
+    test('no fund holdings keep a known zero and the old total', () {
+      final snapshot = calculator.calculate(input());
+      expect(snapshot.fundDaily, Rational.zero);
+      expect(snapshot.stockFundDaily, snapshot.stockDaily);
+      expect(snapshot.total!.toDisplayString(), '-55.26');
+    });
+
+    test('fund action review and eligibility notes are distinct', () {
+      final review = calculator.calculate(
+        input(
+          holdings: [fundHolding('000001')],
+          fundNavs: {
+            'FUND.CN.000001': fundNav(action: FundActionStatus.detected),
+          },
+        ),
+      );
+      expect(review.notes, contains(DashboardNote.fundActionReview));
+      expect(review.completeness, Completeness.partial);
+      expect(review.fundDaily, isNull);
+
+      final unsupported = calculator.calculate(
+        input(
+          holdings: [fundHolding('000198')],
+          fundNavs: {
+            'FUND.CN.000198': fundNav(
+              code: '000198',
+              eligibility: FundEligibility.unsupported,
+            ),
+          },
+        ),
+      );
+      expect(
+        unsupported.notes,
+        contains(DashboardNote.fundEligibilityUnconfirmed),
+      );
+      expect(unsupported.fundDaily, isNull);
     });
   });
 

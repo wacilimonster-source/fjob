@@ -6,7 +6,7 @@
 
 金额、价格、数量在 JSON 中使用规范十进制字符串。货币 CNY，价格与数量相乘后保留足够精度，最终显示金额使用四舍五入到分。内部推荐 Decimal 或有理数计算，禁止逐 tick 以浮点累加。
 
-月薪、月供、租金最多两位小数。股票价格和每股成本最多三位小数，股数为非负整数。黄金数量三位小数，每克参考价及成本两位小数。乘积和除法保留至少 12位有效小数，汇总前不对分项分别取整。`-0.00` 统一显示 `0.00`。
+月薪、月供、租金最多两位小数。股票价格和每股成本最多三位小数，股数为非负整数。黄金数量三位小数，每克参考价及成本两位小数。基金份额与每份成本最多四位小数，份额上限 10,000,000，单位成本上限 100,000；份额允许 0。基金净值至少保留来源有效位，展示不得先压到股票的两/三位精度。乘积和除法保留至少 12位有效小数，汇总前不对分项分别取整。`-0.00` 统一显示 `0.00`。
 
 时间戳使用 RFC3339 UTC，例如 `2026-11-04T06:36:00Z`。业务日期使用 `YYYY-MM-DD` 并附时区标识。生效区间为左闭右开。ID 采用 UUID，revision 为单调递增整型。数据库业务写入需要 expectedRevision。
 
@@ -22,10 +22,11 @@
 | HoldingVersion | id, instrumentId, quantity, costPerUnit, effectiveFrom, effectiveTo | 修改后标记快照重估，不生成隐含交易 |
 | HousingVersion | id, mode, effectiveFrom, effectiveTo | mode 为 mortgage/rent/none，同期互斥 |
 | MonthlyBill | id, expenseId, month, monthlyAmountCny, principalCny, status, revision | 贷款本金可 null，房租本金为 null |
-| Quote | instrumentId, priceCny, baselineCny, quoteAt, fetchedAt, tradingDate, dayBasis, marketState, quality, source | 缺失基准与真实零区分 |
-| DashboardSnapshot | computedAt, ledgerRevision, wage, stock, gold, housing, car, principal, interest, rent, total, completeness | 纯计算结果，可重建 |
+| Quote | instrumentId, priceCny, baselineCny, quoteAt, fetchedAt, tradingDate, dayBasis, marketState, quality, source | 缺失基准与真实零区分；只用于股票/黄金 |
+| FundNavSnapshot | instrumentId, navCny, navDate, previousNavCny, previousNavDate, actionStatus, fundCalendar, eligibility, fetchedAt, publishedAt, source, sourceRevision, quality, sourceLicenseStatus | 日终净值，值与日期成对；无 `quoteAt`，不得伪造 |
+| DashboardSnapshot | computedAt, ledgerRevision, wage, stock, gold, fund, housing, car, principal, interest, rent, total, completeness | 纯计算结果，可重建 |
 
-instrumentId 采用 `CN.SZ.000001`、`CN.SH.600000` 和 `GOLD.CNY_GRAM.AU9999` 等内部规范。供应商代码映射仅在适配器维护。A股市场由目录或明确代码规则校验，避免把代码前导零丢掉。
+instrumentId 采用 `CN.SZ.000001`、`CN.SH.600000`、`GOLD.CNY_GRAM.AU9999` 和 `FUND.CN.000001` 等内部规范。只有显式的 `FUND.CN.` 前缀是基金，未知 ID 不得默认当作基金。基金与股票同六位代码互不冲突。供应商代码映射仅在适配器维护。A股市场由目录或明确代码规则校验，避免把代码前导零丢掉。
 
 MonthlyBill.status 为 confirmed、carriedForwardEstimate、missing。未填写下一月时可按用户已接受规则沿用上一月，产生新月份估算记录并标记。没有有效支出配置与缺失账单为两种不同状态。
 
@@ -69,9 +70,29 @@ A股在统计自然日无交易时，今日项为0，持有盈亏保留最近有
 
 首版持仓编辑采用快照重估，用户数量修改会重算该时点估算值，不还原成交、已实现盈亏和费用。持仓版本记录生效时间，历史查询使用当时版本。
 
+### 5.1 基金估值 CALC-FUND
+
+基金只使用来源公布的**单位净值**，不得使用累计净值、盘中估算值、万份收益、场内市价或用户成本。`navCny` 与 `navDate` 必须成对；空值、缺失标记、非法数字或无日期均为未知，不能转成 0。只有来源明确发布有效零净值时才接受 `0`。
+
+持有盈亏 `CALC-FUND-HELD = (navCny − costPerUnit) × quantity`。份额为 0 时即使没有净值也是已知 0；其他情况下必须资格为 `supported`、净值与日期有效且净值日不晚于统计日。该值仅是按当前录入份额与成本的未实现估算，不含已发现金分红与费用。
+
+今日浮动 `CALC-FUND-DAILY` 按每只基金独立求值：
+
+1. 份额为 0：已知 0。
+2. 资格不是 `supported`、无有效净值/净值日，或净值日晚于统计日：未知。
+3. `navDate == 统计日`：只有同来源上一有效净值、其日期严格早于当前净值日、且 `actionStatus=none` 时才计算 `(navCny − previousNavCny) × quantity`。基准缺失、日期顺序错误、事件未知或已有分红/拆分：未知。
+4. `navDate < 统计日`：仅当 `fundCalendar=mainland` 且有效基金日历明确覆盖并标记该日为休市时，今日为已知 0；其余（QDII、日历未覆盖、品种未确认、工作日尚未出净值）均为未知。不得按星期几猜测休市，也不得把上一个净值日的涨跌当成今天。
+5. 分红/拆分当天不自动推算现金分红或再投份额，只提示核对份额与成本；持有估值仍按当前录入估算。
+
+`actionStatus=none` 仅在来源对区间有明确、完整覆盖且无事件时使用；缺字段、覆盖不明、获取失败或语义未验证均为 `unknown`。来源切换时不得拼接两源的最新净值与基准。日终净值没有真实发布时间时 `publishedAt=null`，`navDate` 不是发布时间或抓取时间；汇总若包含只有日期的基金，`quotesAsOf` 为 null。
+
+### 5.2 部分可计算合计
+
+计算层同时提供每类完整值（任一标的未知则为 null）和只累加已知标的的 `knownStockDaily`、`knownGoldDaily`、`knownFundDaily`。综合值使用已知小计，完整性仍要求每个应参与类别完整。多只基金不会因一只待更新而丢弃其他已知基金的数值。
+
 ## 6. 综合与完整性 CALC-TOTAL
 
-`total = wage + stockDaily + goldDaily − housingAllocated − carAllocated`。
+`total = wage + ΣknownStockDaily + ΣknownGoldDaily + ΣknownFundDaily − housingAllocated − carAllocated`。
 
 金融估算金额先汇总高精度数，再取显示精度。分项取整后与合计产生1分差时，说明页展示未取整数与“合计使用完整精度”。本金利息拆分未知只影响拆分完整性；报价或应付金额未知影响 total 的完整性。
 
@@ -83,8 +104,8 @@ A股在统计自然日无交易时，今日项为0，持有盈亏保留最近有
 
 以 `contracts/market-gateway.openapi.yaml` 为结构定义。
 
-- `GET /v1/instruments/search` 返回明确市场、名称、单位和支持状态。
-- `POST /v1/quotes/batch` 返回每标的成功或错误，最多30项。请求不含数量、工资或成本。
+- `GET /v1/instruments/search` 返回明确市场、名称、单位和支持状态；可选 `kind=stock|fund`，基金市场为 `CN_FUND`、单位为 `fundShare`，并提供 `eligibility`（`supported`/`unsupported`/`unknown`）与原因。已确认不支持与未确认不同。
+- `POST /v1/quotes/batch` 返回每标的成功或错误，最多30项。股票/黄金返回 `Quote`，基金返回独立的 `kind=fundNav` 分支，含 `navCny`、`navDate`、前值与事件/日历/资格状态、真实 `fetchedAt` 与可空 `publishedAt`，不填造 `quoteAt`。请求不含数量、工资或成本。
 - `GET /v1/calendars` 区分 WORK_CN 模板资料与 SSE/SZSE/BSE/SGE 市场会话，返回版本、覆盖时间和实际 UTC 区间。
 - 响应包含 `requestId`、服务时间、推荐刷新时间，分项质量和来源元数据。
 
@@ -92,11 +113,11 @@ A股在统计自然日无交易时，今日项为0，持有盈亏保留最近有
 
 服务不可提供的字段使用 null 和原因。单标的失败用 items[].error，整体请求格式错误为400，超限429，服务故障503。客户端解析失败保持原缓存并显示错误，不将异常值写成0。
 
-客户端按批次序号和 quoteAt 拒绝旧结果覆盖新报价。相同 quoteAt 但源修订变化时采用更高 `sourceRevision`。切换数据源时清除不兼容基准并等待同源组合完整后计算。
+客户端按批次序号和 quoteAt 拒绝旧结果覆盖新报价。相同 quoteAt 但源修订变化时采用更高 `sourceRevision`。基金按 `navDate` 防倒退：较旧净值日不能覆盖较新值；同日有可证明的更高 `sourceRevision` 才可替换，没有修订时以真实抓取时间/请求代次阻止晚到的旧请求覆盖新结果。切换数据源时清除不兼容基准并等待同源组合完整后计算。
 
 ## 8. 平台快照契约
 
-`contracts/widget-snapshot.schema.json` 约束一个快照。后台预计算时间线由同结构条目数组构成，外层包含 timelineVersion 和 ledgerRevision，最多289个条目，覆盖时间不超过24小时。每条 computedAt 是展示计算时间，quotesAsOf 保留同一份最后有效行情时间。
+`contracts/widget-snapshot.schema.json` 约束 v1 快照；`contracts/widget-snapshot-v2.schema.json` 约束 v2。v2 保留 v1 全部字段，并在 `amounts` 新增必填可空金额 `stockFundDaily`。后台预计算时间线由同结构条目数组构成，外层包含 timelineVersion 和 ledgerRevision，最多289个条目，覆盖时间不超过24小时。每条 computedAt 是展示计算时间，quotesAsOf 保留同一份最后有效行情时间；汇总含日终基金且无精确报价时刻时为 null。
 
 原生消费规则如下。
 
@@ -105,7 +126,8 @@ A股在统计自然日无交易时，今日项为0，持有盈亏保留最近有
 3. tombstone 为 true 时清空内容并显示待配置。
 4. privacy 为 true 时金额字段必须为 null，accessibility 文案不得包含金额。
 5. 超过 validUntil 仅显示上次更新时间和陈旧状态，不能把旧计算时间改成当前时间。
-6. 原生不重新实现领域算法，选择当前时点适用的预计算条目。
+6. 原生不重新实现领域算法，选择当前时点适用的预计算条目；v1 的股票分项沿用 `stockDaily`，v2 显示 Dart 预计算的 `stockFundDaily` 并标“股票+基金”。
+7. 隐私或 tombstone 时包括 `stockFundDaily` 在内的所有金额均为 null；同账本修订下，已保存 v2 后晚到的 v1 不得覆盖 v2。
 
 深链使用 `fjob://dashboard`、`fjob://expenses/housing`、`fjob://expenses/car` 和 `fjob://widgets`。路由只接受白名单路径，附加参数校验后使用。
 

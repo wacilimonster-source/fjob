@@ -8,7 +8,25 @@ import 'ledger.dart';
 const String goldInstrumentId = 'GOLD.CNY_GRAM.AU9999';
 const String goldInstrumentName = '上金所 Au99.99 参考价';
 
+/// Domestic open-ended fund identity. The six-digit code is a string so a
+/// leading zero survives; it never shares a market prefix with an A-share.
+const String fundInstrumentPrefix = 'FUND.CN';
+
+String fundInstrumentIdFor(String code) => '$fundInstrumentPrefix.$code';
+
+bool isFundInstrumentId(String instrumentId) =>
+    instrumentId.startsWith('$fundInstrumentPrefix.');
+
+String? fundCodeOf(String instrumentId) {
+  if (!isFundInstrumentId(instrumentId)) return null;
+  final code = instrumentId.substring(fundInstrumentPrefix.length + 1);
+  return RegExp(r'^\d{6}$').hasMatch(code) ? code : null;
+}
+
 enum StockMarket { sse, szse, bse }
+
+/// Draft-level asset class. Old drafts without the field decode as stock.
+enum HoldingKind { stock, fund }
 
 extension StockMarketX on StockMarket {
   String get prefix => switch (this) {
@@ -26,54 +44,78 @@ extension StockMarketX on StockMarket {
 
 final class HoldingDraft {
   const HoldingDraft({
+    this.kind = HoldingKind.stock,
     this.market = StockMarket.szse,
     this.code = '',
     this.name = '',
     this.quantityText = '',
     this.costText = '',
+    this.pendingQuote = false,
   });
 
+  final HoldingKind kind;
   final StockMarket market;
   final String code;
   final String name;
   final String quantityText;
   final String costText;
 
-  String get instrumentId => '${market.prefix}.$code';
+  /// Saved before the network confirmed the name or product eligibility.
+  final bool pendingQuote;
+
+  bool get isFund => kind == HoldingKind.fund;
+
+  String get instrumentId =>
+      isFund ? fundInstrumentIdFor(code) : '${market.prefix}.$code';
 
   HoldingDraft copyWith({
+    HoldingKind? kind,
     StockMarket? market,
     String? code,
     String? name,
     String? quantityText,
     String? costText,
+    bool? pendingQuote,
   }) =>
       HoldingDraft(
+        kind: kind ?? this.kind,
         market: market ?? this.market,
         code: code ?? this.code,
         name: name ?? this.name,
         quantityText: quantityText ?? this.quantityText,
         costText: costText ?? this.costText,
+        pendingQuote: pendingQuote ?? this.pendingQuote,
       );
 
   Map<String, dynamic> toJson() => {
+        'kind': kind.name,
         'market': market.name,
         'code': code,
         'name': name,
         'quantity': quantityText,
         'cost': costText,
+        'pendingQuote': pendingQuote,
       };
 
-  static HoldingDraft fromJson(Map<String, dynamic> json) => HoldingDraft(
-        market: StockMarket.values.firstWhere(
-          (value) => value.name == json['market'],
-          orElse: () => StockMarket.szse,
-        ),
-        code: LedgerJson.asString(json['code']),
-        name: LedgerJson.asString(json['name']),
-        quantityText: LedgerJson.asString(json['quantity']),
-        costText: LedgerJson.asString(json['cost']),
-      );
+  static HoldingDraft fromJson(Map<String, dynamic> json) {
+    // Old drafts have no kind and were always stocks.
+    final kind = HoldingKind.values.firstWhere(
+      (value) => value.name == json['kind'],
+      orElse: () => HoldingKind.stock,
+    );
+    return HoldingDraft(
+      kind: kind,
+      market: StockMarket.values.firstWhere(
+        (value) => value.name == json['market'],
+        orElse: () => StockMarket.szse,
+      ),
+      code: LedgerJson.asString(json['code']),
+      name: LedgerJson.asString(json['name']),
+      quantityText: LedgerJson.asString(json['quantity']),
+      costText: LedgerJson.asString(json['cost']),
+      pendingQuote: LedgerJson.asBool(json['pendingQuote']),
+    );
+  }
 }
 
 enum ScheduleMode { fixed, bigSmall }
@@ -223,6 +265,22 @@ final class SetupDraft {
       final id = entry.instrumentId;
       final parts = id.split('.');
       if (parts.length < 3) continue;
+      final name = ledger.instrumentNames[id] ?? '';
+      // Re-running onboarding must never turn a fund into a stock, and the
+      // four-decimal share count must survive the round trip.
+      if (isFundInstrumentId(id)) {
+        drafts.add(
+          HoldingDraft(
+            kind: HoldingKind.fund,
+            code: parts.last,
+            name: name,
+            quantityText: entry.quantity.toCanonicalString(maxScale: 4),
+            costText: entry.costPerUnit.toCanonicalString(maxScale: 4),
+            pendingQuote: entry.pendingQuote,
+          ),
+        );
+        continue;
+      }
       final market = StockMarket.values.firstWhere(
         (value) => value.prefix == '${parts[0]}.${parts[1]}',
         orElse: () => StockMarket.szse,
@@ -231,9 +289,10 @@ final class SetupDraft {
         HoldingDraft(
           market: market,
           code: parts[2],
-          name: ledger.instrumentNames[id] ?? '',
+          name: name,
           quantityText: entry.quantity.toCanonicalString(maxScale: 0),
           costText: entry.costPerUnit.toCanonicalString(maxScale: 3),
+          pendingQuote: entry.pendingQuote,
         ),
       );
     }
@@ -495,21 +554,46 @@ final class SetupDraft {
       final draft = holdings[index];
       if (draft.code.isEmpty && draft.quantityText.isEmpty) continue;
       if (!RegExp(r'^\d{6}$').hasMatch(draft.code)) {
-        errors['holdings'] = '证券代码是 6 位数字，请核对。';
+        errors['holdings'] = draft.isFund
+            ? '基金代码是 6 位数字，请核对。'
+            : '证券代码是 6 位数字，请核对。';
         break;
       }
-      final quantity = _decimal(draft.quantityText, maxScale: 0);
-      if (quantity == null || quantity.isNegative) {
-        errors['holdings'] = '股票数量需要是非负整数。';
-        break;
-      }
-      final cost = _decimal(draft.costText, maxScale: 3);
-      if (cost == null || cost.isNegative || cost > Rational.parse('100000')) {
-        errors['holdings'] = '每股成本需要是 0 到 100,000 之间的数字。';
-        break;
+      final Rational? quantity;
+      final Rational? cost;
+      if (draft.isFund) {
+        quantity = _decimal(draft.quantityText, maxScale: 4);
+        if (quantity == null ||
+            quantity.isNegative ||
+            quantity > Rational.parse('10000000')) {
+          errors['holdings'] = '基金份额需要是 0 到 10,000,000 之间的数字，最多四位小数。';
+          break;
+        }
+        cost = _decimal(draft.costText, maxScale: 4);
+        if (cost == null ||
+            cost.isNegative ||
+            cost > Rational.parse('100000')) {
+          errors['holdings'] = '单位成本需要是 0 到 100,000 之间的数字，最多四位小数。';
+          break;
+        }
+      } else {
+        quantity = _decimal(draft.quantityText, maxScale: 0);
+        if (quantity == null || quantity.isNegative) {
+          errors['holdings'] = '股票数量需要是非负整数。';
+          break;
+        }
+        cost = _decimal(draft.costText, maxScale: 3);
+        if (cost == null ||
+            cost.isNegative ||
+            cost > Rational.parse('100000')) {
+          errors['holdings'] = '每股成本需要是 0 到 100,000 之间的数字。';
+          break;
+        }
       }
       if (!seen.add(draft.instrumentId)) {
-        errors['holdings'] = '同一市场的同一代码只能保留一笔持仓，请编辑已有记录。';
+        errors['holdings'] = draft.isFund
+            ? '同一基金代码只能保留一笔持仓，请编辑已有记录。'
+            : '同一市场的同一代码只能保留一笔持仓，请编辑已有记录。';
         break;
       }
       holdingCommits.add(
@@ -518,6 +602,7 @@ final class SetupDraft {
           name: draft.name.trim(),
           quantity: quantity,
           costPerUnit: cost,
+          pendingQuote: draft.pendingQuote,
         ),
       );
     }
@@ -725,12 +810,14 @@ final class HoldingCommit {
     required this.name,
     required this.quantity,
     required this.costPerUnit,
+    this.pendingQuote = false,
   });
 
   final String instrumentId;
   final String name;
   final Rational quantity;
   final Rational costPerUnit;
+  final bool pendingQuote;
 }
 
 /// Validated onboarding output, ready for a single database transaction.

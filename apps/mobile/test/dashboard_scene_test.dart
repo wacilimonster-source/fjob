@@ -75,17 +75,50 @@ Future<void> _pumpDashboard(
 }
 
 Text? _moneyText(WidgetTester tester) {
-  final candidates = tester.widgetList<Text>(
-    find.byWidgetPredicate(
-      (widget) => widget is Text && widget.style?.fontSize == 42,
-    ),
-  );
-  return candidates.isEmpty ? null : candidates.first;
+  final finder = find.byKey(const Key('home-balance-amount'));
+  if (finder.evaluate().isEmpty) return null;
+  return tester.widget<Text>(finder);
 }
 
 Future<void> _finishPat(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 3200));
   await tester.pump(const Duration(milliseconds: 16)); // 完成状态落帧
+  await tester.pump(_settle);
+}
+
+/// The two metric cards sit above the scene, so the pat entry can start below
+/// the fold. Bring the scene into view first (the visibility gate disables the
+/// button while the scene is off-screen), then align the button's bottom with
+/// the viewport bottom so the scene just above it stays visible.
+Future<Finder> _preparePat(WidgetTester tester, {String label = '拍拍他'}) async {
+  final finder = find.widgetWithText(TextButton, label);
+  for (var attempt = 0; attempt < 8; attempt++) {
+    final button = tester.widget<TextButton>(finder);
+    if (button.onPressed != null) break;
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -160));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(_settle);
+  }
+  await Scrollable.ensureVisible(
+    tester.element(finder),
+    alignment: 1.0,
+    duration: Duration.zero,
+  );
+  await tester.pump();
+  await tester.pump(_settle);
+  return finder;
+}
+
+Future<void> _tapPat(WidgetTester tester, {String label = '拍拍他'}) async {
+  final finder = await _preparePat(tester, label: label);
+  await tester.tap(finder);
+}
+
+/// The dual cards can push the scene past the 640 dp fold. Scroll it fully
+/// into view before testing presence/departure transitions.
+Future<void> _showScene(WidgetTester tester) async {
+  await tester.drag(find.byType(CustomScrollView), const Offset(0, -220));
+  await tester.pump(const Duration(milliseconds: 300));
   await tester.pump(_settle);
 }
 
@@ -110,7 +143,7 @@ void main() {
       final button = find.widgetWithText(TextButton, '拍拍他');
       expect(button, findsOneWidget);
 
-      await tester.tap(button);
+      await _tapPat(tester);
       await tester.pump(); // 锚定起始帧
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('收到啦'), findsOneWidget);
@@ -130,7 +163,7 @@ void main() {
       final clock = FixedClock(_wednesday);
       await _pumpDashboard(tester, clock: clock);
 
-      final button = find.widgetWithText(TextButton, '拍拍他');
+      final button = await _preparePat(tester);
       final center = tester.getCenter(button);
       await tester.tap(button);
       for (var index = 0; index < 19; index++) {
@@ -142,7 +175,7 @@ void main() {
       expect(find.text('辛苦了。你又不是打印机。'), findsOneWidget);
 
       await _finishPat(tester);
-      await tester.tap(button);
+      await _tapPat(tester);
       await tester.pump(); // 锚定起始帧
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.text('收到，肩膀先放下来一点。'), findsOneWidget);
@@ -182,6 +215,7 @@ void main() {
       final clock = FixedClock(_shanghai(4, 17, 59, 59, 800));
       await _pumpDashboard(tester, clock: clock);
       expect(find.text('拍拍他'), findsOneWidget);
+      await _showScene(tester);
 
       clock.advance(const Duration(milliseconds: 400));
       await tester.pump(_tick);
@@ -202,7 +236,7 @@ void main() {
     sceneTest('拍拍中途下班：先离场后空位，无残留（OUT-T09）', (tester) async {
       final clock = FixedClock(_shanghai(4, 17, 59, 59, 0));
       await _pumpDashboard(tester, clock: clock);
-      await tester.tap(find.widgetWithText(TextButton, '拍拍他'));
+      await _tapPat(tester);
       await tester.pump(); // 锚定起始帧
       await tester.pump(const Duration(milliseconds: 1000));
 
@@ -225,6 +259,7 @@ void main() {
     sceneTest('切到资产页再回来：不补播、显示稳态（OUT-T11/LIFE-T01）', (tester) async {
       final clock = FixedClock(_shanghai(4, 17, 59, 59, 800));
       await _pumpDashboard(tester, clock: clock, fullShell: true);
+      await _showScene(tester);
 
       clock.advance(const Duration(milliseconds: 400));
       await tester.pump(_tick);
@@ -256,7 +291,7 @@ void main() {
       final clock = FixedClock(_wednesday);
       await _pumpDashboard(tester, clock: clock, disableAnimations: true);
 
-      await tester.tap(find.widgetWithText(TextButton, '拍拍他'));
+      await _tapPat(tester);
       await tester.pump(); // 锚定起始帧
       await tester.pump(const Duration(milliseconds: 30));
       // 没有“抬头看一眼”的中间态，直接完整回应。
@@ -272,8 +307,7 @@ void main() {
     sceneTest('320dp 宽 + 200% 字体：反馈区可读、按钮不溢出（A11Y-T01）',
         (tester) async {
       final clock = FixedClock(_wednesday);
-      // 320dp 宽、加高视口让场景与按钮同屏：滚动到按钮会使场景不可见，
-      // 可见性门控会正确拒绝拍肩，这里验收的是布局与对话本身。
+      // 320dp 宽、加高视口；双卡在 200% 字体下更高，必要时滚动到拍肩入口。
       await _pumpDashboard(
         tester,
         clock: clock,
@@ -283,7 +317,7 @@ void main() {
 
       final button = find.widgetWithText(TextButton, '拍拍他');
       expect(button, findsOneWidget);
-      await tester.tap(button);
+      await _tapPat(tester);
       await tester.pump(); // 锚定起始帧
       await tester.pump(const Duration(milliseconds: 600));
       expect(find.text('辛苦了。你又不是打印机。'), findsOneWidget);
@@ -295,7 +329,7 @@ void main() {
     sceneTest('接受一次拍肩后反馈区作为 live region 播报（A11Y-T02）', (tester) async {
       final clock = FixedClock(_wednesday);
       await _pumpDashboard(tester, clock: clock);
-      await tester.tap(find.widgetWithText(TextButton, '拍拍他'));
+      await _tapPat(tester);
       await tester.pump(); // 锚定起始帧
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(_settle);
@@ -316,7 +350,7 @@ void main() {
       final before = _moneyText(tester)!.data;
       expect(before, isNotNull);
 
-      await tester.tap(find.widgetWithText(TextButton, '拍拍他'));
+      await _tapPat(tester);
       await tester.pump(); // 锚定起始帧
       await tester.pump(const Duration(milliseconds: 800));
       final during = _moneyText(tester)!.data;

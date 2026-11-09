@@ -18,7 +18,7 @@ void main() {
     expect(fixture['contractVersion'], 1);
     expect(fixture['rounding'], 'HALF_UP');
     expect(fixture['timezone'], 'Asia/Shanghai');
-    expect(cases, hasLength(20));
+    expect(cases, hasLength(24));
     expect(cases.map((item) => item['id']).toSet(), hasLength(cases.length));
   });
 
@@ -37,8 +37,17 @@ void main() {
         );
         return;
       }
+      if (operation == 'fundDailyStale') {
+        final position = _runFund(input);
+        expect(position.dailyPnl, isNull);
+        expect(position.heldPnl!.toFixed(2), expected['heldDisplayCny']);
+        return;
+      }
       final result = _run(operation, input);
       expect(result.toFixed(2), expected['displayCny']);
+      if (expected.containsKey('exact')) {
+        expect(result.toCanonicalString(), expected['exact']);
+      }
       if (expected.containsKey('completeness')) {
         expect(_completenessOf(input), expected['completeness']);
       }
@@ -108,7 +117,14 @@ Rational _run(String operation, Map<String, dynamic> input) {
       final gold = input['goldDailyCny'] == null
           ? Rational.zero
           : _money(input['goldDailyCny']);
-      return salary + stock + gold - expense;
+      final fund = input['fundDailyCny'] == null
+          ? Rational.zero
+          : _money(input['fundDailyCny']);
+      return salary + stock + gold + fund - expense;
+    case 'fundHeld':
+      return _runFund(input).heldPnl!;
+    case 'fundDaily':
+      return _runFund(input).dailyPnl!;
     case 'monthAllocation':
       return _allocation(
         monthlyCny: _money(input['monthlyCny']),
@@ -181,10 +197,63 @@ Rational _run(String operation, Map<String, dynamic> input) {
   return (principal: principal, interest: total - principal);
 }
 
-String _completenessOf(Map<String, dynamic> input) =>
-    input['stockDailyCny'] == null || input['goldDailyCny'] == null
-        ? 'partial'
-        : 'complete';
+String _completenessOf(Map<String, dynamic> input) {
+  final fundKnown = input['fundDailyKnown'] as bool? ?? true;
+  final complete = input['stockDailyCny'] != null &&
+      input['goldDailyCny'] != null &&
+      fundKnown;
+  return complete ? 'complete' : 'partial';
+}
+
+/// Runs a fund case through the real [AssetCalculator], not a copy of it.
+AssetPosition _runFund(Map<String, dynamic> input) {
+  final statisticsDate = LocalDate.parse(input['statisticsDate'] as String);
+  final navDate = LocalDate.parse(input['navDate'] as String);
+  const instrumentId = 'FUND.CN.000001';
+  final previousNav = input['previousNav'];
+  final result = const AssetCalculator().calculate(
+    asOfUtc: DateTime.utc(2026, 11, 9, 12),
+    statisticsDate: statisticsDate,
+    holdings: [
+      Holding(
+        id: 'fund-fixture',
+        instrumentId: instrumentId,
+        quantity: _money(input['quantity']),
+        costPerUnit: _money(input['cost']),
+        effectiveFromUtc: DateTime.utc(2020),
+      ),
+    ],
+    quotes: const {},
+    marketCalendar: const MarketCalendar({}),
+    fundNavs: {
+      instrumentId: FundNavSnapshot(
+        instrumentId: instrumentId,
+        navCny: _money(input['nav']),
+        navDate: navDate,
+        previousNavCny:
+            previousNav == null ? null : _money(previousNav),
+        previousNavDate: input['previousNavDate'] == null
+            ? null
+            : LocalDate.parse(input['previousNavDate'] as String),
+        actionStatus: FundActionStatus.none,
+        fundCalendar: FundCalendarKind.mainland,
+        eligibility: FundEligibility.supported,
+        fetchedAtUtc: DateTime.utc(2026, 11, 9, 12),
+        publishedAtUtc: null,
+        source: 'fixture',
+        sourceRevision: null,
+        quality: QuoteQuality.eod,
+        sourceLicenseStatus: SourceLicenseStatus.developmentOnly,
+      ),
+    },
+    fundCalendar: MarketCalendar({
+      statisticsDate: input['statisticsDayOpen'] == true
+          ? MarketDayStatus.open
+          : MarketDayStatus.closed,
+    }),
+  );
+  return result.positions.single;
+}
 
 Rational _allocation({
   required Rational monthlyCny,

@@ -111,6 +111,39 @@ void main() {
       );
     });
 
+    test('exact boundaries are closed-open: 09:00 starts, 18:00 ends', () {
+      final start = contextAt(
+        version: version,
+        utc: DateTime.utc(2026, 11, 4, 1), // 09:00 CST
+      );
+      expect(start.phase, DayPhase.working);
+      expect(start.activeSession, isNotNull);
+
+      final lastSecond = contextAt(
+        version: version,
+        utc: DateTime.utc(2026, 11, 4, 9, 59, 59, 999), // 17:59:59.999 CST
+      );
+      expect(lastSecond.phase, DayPhase.working);
+      expect(lastSecond.activeSession, isNotNull);
+
+      final end = contextAt(
+        version: version,
+        utc: DateTime.utc(2026, 11, 4, 10), // 18:00:00 CST exactly
+      );
+      expect(end.phase, DayPhase.afterShift);
+      expect(end.activeSession, isNull);
+      expect(end.lastEndedSession, isNotNull);
+      expect(
+        end.lastEndedSession!.endUtc,
+        DateTime.utc(2026, 11, 4, 10),
+      );
+      expect(end.nextSession, isNotNull);
+      expect(
+        end.nextSession!.startUtc,
+        DateTime.utc(2026, 11, 5, 1), // 11-05 09:00 CST
+      );
+    });
+
     test('a rest override removes presence for that day', () {
       final context = contextAt(
         version: version,
@@ -180,6 +213,28 @@ void main() {
       );
       expect(morning.phase, DayPhase.afterShift);
       expect(morning.lastEndedSession!.shiftDate, LocalDate(2026, 11, 30));
+    });
+
+    test('a night shift ends exactly at 06:00, not a tick later', () {
+      final version = nightSchedule(id: 'night');
+      final lastSecond = contextAt(
+        version: version,
+        utc: DateTime.utc(2026, 11, 30, 21, 59, 59, 999), // 05:59:59.999 CST
+      );
+      expect(lastSecond.phase, DayPhase.working);
+      expect(
+        lastSecond.activeSession!.endUtc,
+        DateTime.utc(2026, 11, 30, 22), // 12-01 06:00 CST
+      );
+
+      final end = contextAt(
+        version: version,
+        utc: DateTime.utc(2026, 11, 30, 22), // 12-01 06:00 CST exactly
+      );
+      expect(end.phase, DayPhase.afterShift);
+      expect(end.activeSession, isNull);
+      expect(end.lastEndedSession!.shiftDate, LocalDate(2026, 11, 30));
+      expect(end.nextSession!.shiftDate, LocalDate(2026, 12, 1));
     });
 
     test('wage timeline stays clipped to the natural day (untouched)', () {

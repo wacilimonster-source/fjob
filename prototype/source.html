@@ -1,9 +1,9 @@
 <div id="fjob-prototype" class="viz-dotted-background">
 <style>
-#fjob-prototype{color-scheme:light dark;padding:12px 0;font-family:ui-rounded,"Microsoft YaHei",system-ui,sans-serif}
+#fjob-prototype{color-scheme:light;padding:12px 0;font-family:ui-rounded,"Microsoft YaHei",system-ui,sans-serif}
 #fjob-prototype *{box-sizing:border-box}
 #fjob-prototype [hidden]{display:none!important}
-#fjob-prototype .app{--paper:light-dark(#f7f2e9,#242823);--panel:light-dark(#fffdf7,#30362f);--ink:light-dark(#323a32,#eeeadd);--muted:light-dark(#686e61,#b9c0ae);--line:light-dark(#d5d6c8,#565f50);--soft:light-dark(#e9eddf,#3c4738);--yellow:light-dark(#f2dfac,#685c36);--rose:light-dark(#f0d2c5,#68483e);--bad:light-dark(#ad4736,#ffab95);--good:light-dark(#46644e,#b6d5a7);max-width:440px;margin:auto;background:var(--paper);color:var(--ink);border:1.5px solid var(--ink);border-radius:28px 23px 26px 22px;overflow:hidden;box-shadow:5px 6px 0 color-mix(in srgb,var(--ink) 13%,transparent);font-size:14px;line-height:1.55}
+#fjob-prototype .app{--paper:#f7f2e9;--panel:#fffdf7;--ink:#323a32;--muted:#686e61;--line:#d5d6c8;--soft:#e9eddf;--yellow:#f2dfac;--rose:#f0d2c5;--bad:#ad4736;--good:#46644e;max-width:440px;margin:auto;background:var(--paper);color:var(--ink);border:1.5px solid var(--ink);border-radius:28px 23px 26px 22px;overflow:hidden;box-shadow:5px 6px 0 color-mix(in srgb,var(--ink) 13%,transparent);font-size:14px;line-height:1.55}
 #fjob-prototype button,#fjob-prototype input,#fjob-prototype select{font:inherit;color:inherit}
 #fjob-prototype button{cursor:pointer;touch-action:manipulation}
 #fjob-prototype button:focus-visible,#fjob-prototype input:focus-visible,#fjob-prototype select:focus-visible{outline:3px solid var(--good);outline-offset:3px}
@@ -20,6 +20,45 @@
 #fjob-prototype .segments button{flex:1;border:1px solid transparent;background:transparent;border-radius:10px;padding:8px 6px;min-height:40px;color:var(--muted);font-size:12px}
 #fjob-prototype .segments button[aria-pressed=true]{background:var(--soft);border-color:var(--line);color:var(--ink)}
 #fjob-prototype .moneybox{padding:18px 16px;background:var(--panel);border:1.5px solid var(--ink);border-radius:19px 23px 17px 20px;position:relative}
+#fjob-prototype .metrics-heading{display:flex;justify-content:space-between;align-items:center;min-height:38px;margin:-2px 1px 5px}
+#fjob-prototype .metrics-title{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:650;color:var(--muted);letter-spacing:.05em}
+#fjob-prototype .metrics-title:before{content:'';width:6px;height:6px;background:#9da789;border-radius:50%;box-shadow:4px 4px 0 -1px #d8bb88}
+#fjob-prototype .metrics-edit{display:flex;align-items:center;gap:5px;border:0;background:transparent;color:var(--muted);padding:7px 0 7px 9px;min-height:44px;font-size:12px}
+#fjob-prototype .metrics-edit svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#fjob-prototype .metrics-settings{margin:0 0 11px;padding:13px;background:var(--panel);border:1px solid #dad6c6;border-radius:13px;box-shadow:0 2px 0 rgba(50,58,50,.04)}
+#fjob-prototype .metrics-settings fieldset{border:0;padding:0;margin:0;min-width:0}
+#fjob-prototype .metrics-settings legend{font-size:13px;font-weight:650;margin-bottom:8px}
+#fjob-prototype .metric-choices{display:flex;flex-wrap:wrap;gap:6px}
+#fjob-prototype .metric-choice{display:flex;flex:1 1 70px;flex-direction:row;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:44px;padding:6px 3px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font-size:11px;text-align:center}
+#fjob-prototype .metric-choice:has(input:checked){background:var(--soft);border-color:#849279;font-weight:650}
+#fjob-prototype .metric-choice input{width:14px;height:14px;min-width:14px;margin:0;padding:0;accent-color:var(--good)}
+#fjob-prototype .metrics-settings .settings-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:9px}
+#fjob-prototype .hero{position:relative}
+#fjob-prototype .metric-card{position:relative;overflow:hidden;border:1px solid #d7d2c0;border-radius:15px 17px 14px 16px;box-shadow:0 3px 0 rgba(50,58,50,.06)}
+#fjob-prototype .time-panel{padding:15px 16px 13px;background:#f6e8bf;border-color:#d5c69c}
+#fjob-prototype .metric-label{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;letter-spacing:.02em}
+#fjob-prototype .metric-label svg{width:17px;height:17px;flex:none;stroke:#586152;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#fjob-prototype .time-tag{font-size:11px;font-weight:650;color:#5a604f;border:1px solid #c9bc97;border-radius:6px;padding:2px 7px;background:rgba(255,253,247,.5);white-space:nowrap}
+#fjob-prototype .time-number{font-family:ui-monospace,"Cascadia Code",monospace;font-size:clamp(32px,9.5vw,43px);font-weight:700;line-height:1.15;letter-spacing:-1.6px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;margin:5px 0 3px}
+#fjob-prototype .time-detail{font-size:12px;color:var(--ink)}
+#fjob-prototype .time-panel .bar{margin:9px 0 2px;background:rgba(50,58,50,.2)}
+#fjob-prototype .progress-note{text-align:right;font-size:11px;color:var(--ink)}
+#fjob-prototype .paper-links{display:flex;justify-content:space-between;height:10px;margin:-2px 26px -2px;position:relative;z-index:1;pointer-events:none}
+#fjob-prototype .paper-links i{width:5px;height:14px;border:1px solid #a5a58f;border-radius:5px;background:#e8e5d6;box-shadow:0 1px 0 rgba(255,255,255,.75) inset}
+#fjob-prototype .balance-panel{padding:14px 16px 15px;background:var(--panel)}
+#fjob-prototype .balance-panel .tag{background:#f5edda;color:#655d48;border:1px solid #e3d8bc}
+#fjob-prototype .balance-panel .amount{font-size:clamp(30px,9vw,42px);line-height:1.15;white-space:normal;overflow-wrap:anywhere}
+#fjob-prototype .balance-meta{font-size:11px;color:var(--muted);margin-top:3px}
+#fjob-prototype .demo-controls{margin:12px 0 0;border:1px dashed var(--line);border-radius:12px;padding:0 12px;background:var(--paper)}
+#fjob-prototype .demo-controls summary{padding:10px 0;color:var(--muted)}
+#fjob-prototype .demo-controls .segments{margin:6px 0 12px}
+#fjob-prototype .demo-controls .segments button{flex:1 1 27%;background:var(--panel)}
+#fjob-prototype .demo-controls .segments button[aria-pressed=true]{background:var(--soft)}
+#fjob-prototype .demo-label{font-size:11px;color:var(--muted);margin-top:6px}
+#fjob-prototype .scene-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 0}
+#fjob-prototype .scene-footer .scene-caption{text-align:left;flex:1;margin:0}
+#fjob-prototype .scene-footer .tinyaction{min-height:44px;white-space:nowrap}
+#fjob-prototype .tinyaction:disabled{opacity:.55;cursor:default}
 #fjob-prototype .row{display:flex;justify-content:space-between;align-items:center;gap:12px}
 #fjob-prototype .sub{color:var(--muted);font-size:12px}
 #fjob-prototype .amount{font-family:ui-monospace,"Cascadia Code",monospace;font-size:clamp(32px,8vw,46px);font-weight:650;letter-spacing:-2px;font-variant-numeric:tabular-nums;white-space:nowrap;margin:4px 0 6px;overflow-wrap:anywhere}
@@ -112,12 +151,25 @@
  <header class="header"><div><div class="eyebrow">ANOTHER DAY, ANOTHER DEBT.</div><h1>今日又白干</h1><p class="sub" id="fj-date">11月04日 · 星期三</p></div><div class="stamp">在岗求生中</div></header>
  <div class="content">
   <section id="fj-home" role="tabpanel" aria-labelledby="fj-nav-home">
-   <div class="segments" aria-label="演示时段"><button type="button" data-scenario="work" aria-pressed="true">工作日</button><button type="button" data-scenario="off" aria-pressed="false">下班后</button><button type="button" data-scenario="weekend" aria-pressed="false">周末</button></div>
-   <div class="moneybox"><div class="row"><span>今日生存结余</span><span class="tag" id="fj-state">努力回本</span></div><div class="amount negative" id="fj-total">−¥55.26</div><p class="quote" id="fj-quote">工资正在努力追赶上午的亏损。</p></div>
+   <div class="metrics-heading"><span class="metrics-title">今日小记</span><button type="button" class="metrics-edit" id="fj-metric-settings" aria-controls="fj-metric-settings-panel" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14M7 3v4M13 8v4M8 13v4"/></svg>首页显示</button></div>
+   <div class="metrics-settings" id="fj-metric-settings-panel" hidden><fieldset><legend>首页想看什么？</legend><div class="metric-choices"><label class="metric-choice"><input type="radio" name="metric-mode" value="both" checked>都显示</label><label class="metric-choice"><input type="radio" name="metric-mode" value="time">只看下班</label><label class="metric-choice"><input type="radio" name="metric-mode" value="balance">只看结余</label></div><p class="settings-note">只调整首页主卡，不隐藏账单或小部件。</p></fieldset></div>
+   <div class="hero" aria-label="首页核心指标">
+    <section class="metric-card time-panel" id="fj-time-card" aria-labelledby="fj-time-label">
+     <div class="row"><span class="metric-label"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M17.2 10.2c-.1 4.1-3.2 7.2-7.2 7.1-4 0-7-3.1-7-7.1 0-4 3-7.3 7-7.3 4 0 7.2 3.2 7.2 7.3Z"/><path d="M10 6v4.3l2.6 1.7"/></svg><span id="fj-time-label">距离下班还有</span></span><span class="time-tag" id="fj-time-state">在岗中</span></div>
+     <div class="time-number" id="fj-countdown" aria-live="off">03:24:00</div>
+     <p class="time-detail" id="fj-time-detail">预计 18:00 下班 · 午休暂停计薪</p>
+     <div id="fj-progress-group"><div class="bar" role="progressbar" aria-label="今日计薪进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="58"><span id="fj-progress" style="width:58%"></span></div><p class="progress-note" id="fj-progress-note">今日计薪 4.6 / 8.0 小时</p></div>
+    </section>
+    <div class="paper-links" id="fj-paper-links" aria-hidden="true"><i></i><i></i></div>
+    <section class="metric-card balance-panel" id="fj-balance-card" aria-labelledby="fj-balance-label">
+     <div class="row"><span class="metric-label"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3.2h10v13.6l-2-1.1-2 1.1-2-1.1-2 1.1-2-1.1Z"/><path d="M7.5 7h5M7.5 10h5M7.5 13H11"/></svg><span id="fj-balance-label">今日生存结余</span></span><span class="tag" id="fj-state">努力回本</span></div>
+     <div class="amount negative" id="fj-total" aria-live="off">−¥55.26</div>
+     <p class="quote" id="fj-quote">工资正在努力追赶上午的亏损。</p><p class="balance-meta">工资估算 + 投资今日浮动 − 固定支出已分摊</p>
+    </section>
+   </div>
+   <details class="demo-controls"><summary>切换演示状态 · 仅原型</summary><p class="demo-label">排班状态</p><div class="segments" aria-label="演示排班状态"><button type="button" data-scenario="work" aria-pressed="true">工作中</button><button type="button" data-scenario="break" aria-pressed="false">午休</button><button type="button" data-scenario="before" aria-pressed="false">上班前</button><button type="button" data-scenario="off" aria-pressed="false">下班后</button><button type="button" data-scenario="weekend" aria-pressed="false">休息日</button><button type="button" data-scenario="unknown" aria-pressed="false">排班未知</button></div><p class="demo-label">结余完整性</p><div class="segments" aria-label="演示结余完整性"><button type="button" data-totalstate="complete" aria-pressed="true">完整</button><button type="button" data-totalstate="partial" aria-pressed="false">A股待更新</button><button type="button" data-totalstate="unavailable" aria-pressed="false">核心配置缺失</button></div><p class="note">固定演示日期、同日班次和模拟行情；若未设置午休，午休演示回退为工作状态。正式版以真实排班与数据状态为准。</p></details>
    <div class="scene"><canvas id="fj-office" width="760" height="476" role="img" aria-label="疲惫的打工人在办公室敲键盘，硬币流向两侧的住宅楼和汽车"></canvas></div>
-   <p class="scene-caption" id="fj-scene-caption">工位 0001 · 钱路过了你一下</p>
-   <div class="row"><span class="sub" id="fj-countdown">距离下班还有 03:24:00</span><button type="button" class="tinyaction" id="fj-comfort">拍拍他</button></div>
-   <div class="bar" role="progressbar" aria-label="今日排班完成比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="58"><span id="fj-progress" style="width:58%"></span></div>
+   <div class="scene-footer"><p class="scene-caption" id="fj-scene-caption">工位 0001 · 钱路过了你一下</p><button type="button" class="tinyaction" id="fj-comfort">拍拍他</button></div>
    <div class="loan-receipts" aria-label="房贷和车贷还款账单"><button type="button" class="loan-receipt" data-loan="mortgage"><div class="receipt-label"><span>住房按揭</span><small>11月账单</small></div><canvas data-debt-art="mortgage" role="img" aria-label="粗线条手绘房子，包含屋顶、窗户和门"></canvas><span class="sub">本月应还</span><strong id="fj-home-mortgage">¥4,800.00</strong><p class="sub" id="fj-home-mortgage-day">每日分摊 ¥160.00</p></button><button type="button" class="loan-receipt" data-loan="car"><div class="receipt-label"><span>车辆贷款</span><small>11月账单</small></div><canvas data-debt-art="car" role="img" aria-label="圆润的手绘小汽车，包含车窗、车灯和两个车轮"></canvas><span class="sub">本月应还</span><strong id="fj-home-car">¥1,800.00</strong><p class="sub" id="fj-home-car-day">每日分摊 ¥60.00</p></button></div>
    <div class="lines">
     <div class="entry"><span>打工 · 今日已挣</span><strong id="fj-wage">+¥328.57</strong><span class="sub" id="fj-wage-note">到手月薪 ¥12,000 / 本月排班 168 小时</span></div>
@@ -167,7 +219,7 @@
  root.querySelector('#fj-mortgage-bill .bill-meta span').id='fj-housing-bill-title';
  const defaults={salary:12000,days:21,start:'09:00',end:'18:00',breakStart:'12:00',breakEnd:'13:00',stockName:'000001 · 示例A股',stockQty:1000,stockCost:13,stockPrev:12.4,goldQty:20,goldCost:850,goldPrev:900,housingMode:'mortgage',rent:0,mortgage:4800,mortgagePrincipal:2800,car:1800,carPrincipal:1500};
  let config={...defaults};
- let ui={page:'home',scenario:'work',market:'down',platform:'android',size:'medium',privacy:false};
+ let ui={page:'home',scenario:'work',totalstate:'complete',metricmode:'both',market:'down',platform:'android',size:'medium',privacy:false};
  let onboarding={complete:false,step:0,draft:{...defaults,salary:'',stockQty:0,goldQty:0,housingMode:'none',rent:0,mortgage:0,car:0,mortgagePrincipal:null,carPrincipal:null},hasStock:false,hasGold:false,hasMortgage:false,hasRent:false,hasCar:false};
  let origin=performance.now(),frame=0,comfortUntil=0;
  const design={animated:true,tone:'温柔地丧'};
@@ -190,7 +242,7 @@
   }
   if(restored.days<1||restored.days>30||!validSchedule(restored)||restored.mortgagePrincipal>restored.mortgage||restored.carPrincipal>restored.car||restored.stockPrev<=0||restored.goldPrev<=0)return;
   config=restored;
-  const allowed={page:['home','assets','loans','widgets'],scenario:['work','off','weekend'],market:['down','up','flat'],platform:['android','ios'],size:['small','medium','large']};
+  const allowed={page:['home','assets','loans','widgets'],scenario:['work','break','before','off','weekend','unknown'],totalstate:['complete','partial','unavailable'],metricmode:['both','time','balance'],market:['down','up','flat'],platform:['android','ios'],size:['small','medium','large']};
   for(const [key,values]of Object.entries(allowed))if(values.includes(data.ui?.[key]))ui[key]=data.ui[key];
   ui.privacy=data.ui?.privacy===true;
   if(data.onboarding&&Number.isInteger(data.onboarding.step)&&data.onboarding.step>=0&&data.onboarding.step<=5){onboarding={...onboarding,...data.onboarding,draft:{...defaults,...data.onboarding.draft}};}
@@ -214,7 +266,9 @@
   $('onboard-restart').parentElement.hidden=!onboarding.complete;
   root.querySelectorAll('[data-page]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.page===ui.page)));
   ['home','assets','loans','widgets'].forEach(page=>$(page).hidden=page!==ui.page);
-  for(const key of ['scenario','market','platform','size'])root.querySelectorAll(`[data-${key}]`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[key]===ui[key])));
+  $('time-card').hidden=ui.metricmode==='balance';$('balance-card').hidden=ui.metricmode==='time';$('paper-links').hidden=ui.metricmode!=='both';
+  root.querySelectorAll('[name="metric-mode"]').forEach(input=>input.checked=input.value===ui.metricmode);
+  for(const key of ['scenario','totalstate','market','platform','size'])root.querySelectorAll(`[data-${key}]`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[key]===ui[key])));
   $('widget').className='desktop-widget '+ui.size+' '+ui.platform;
   $('widget-breakdown').hidden=ui.size==='small';$('widget-office').hidden=ui.size!=='large';
   $('platform-note').textContent=ui.platform==='android'?'Android 桌面布局预览。正式小部件按系统机制刷新，并显示数据时间。':'iOS 小部件布局预览。正式版使用系统时间线刷新，并显示数据时间。';
@@ -295,11 +349,13 @@
  $('onboard-cancel').addEventListener('click',()=>{onboarding.complete=true;setUI();persist();});
  function snapshot(){
   const elapsed=(performance.now()-origin)/1000;
-  const base=ui.scenario==='off'?18.5*3600:14.6*3600;
-  const time=Math.min(base+elapsed,86399);
   const start=timeValue(config.start),end=timeValue(config.end),bs=timeValue(config.breakStart),be=timeValue(config.breakEnd);
+  let workBase=14.6*3600;
+  if(workBase<start||workBase>=end||(workBase>=bs&&workBase<be))workBase=start+(bs>start?(bs-start)/2:(end-be)/2+(be-start));
+  const base=ui.scenario==='before'?Math.max(0,start-15*60):ui.scenario==='break'&&be>bs?(bs+be)/2:ui.scenario==='off'?Math.min(86399,end+30*60):ui.scenario==='work'||ui.scenario==='break'?workBase:14.6*3600;
+  const time=Math.min(base+elapsed,86399);
   const duration=end-start-(be-bs);
-  const worked=ui.scenario==='weekend'?0:Math.max(0,Math.min(time,end)-start-Math.max(0,Math.min(time,be)-bs));
+  const worked=['weekend','unknown'].includes(ui.scenario)?0:Math.max(0,Math.min(time,end)-start-Math.max(0,Math.min(time,be)-bs));
   const wage=config.salary/(config.days*duration)*worked;
   const bucket=Math.floor(elapsed/5);
   const wiggle=ui.scenario==='work'?Math.sin(bucket*1.7)*.001:0;
@@ -321,28 +377,43 @@
   const s=current=snapshot();
   $('date').textContent=`2026年11月${ui.scenario==='weekend'?'07日 · 星期六':'04日 · 星期三'} · ${clock(s.time)}`;
   const resting=ui.scenario==='weekend';
-  const onShift=!resting&&s.time>=timeValue(config.start)&&s.time<s.end;
+  const unknown=ui.scenario==='unknown';
+  const onShift=!resting&&!unknown&&s.time>=timeValue(config.start)&&s.time<s.end;
   const onBreak=onShift&&s.time>=timeValue(config.breakStart)&&s.time<timeValue(config.breakEnd);
-  root.querySelector('.stamp').textContent=resting?'休息也计费':onShift?'在岗求生中':'月供接班中';
-  $('total').textContent=money(s.total);$('total').className='amount '+(s.total<0?'negative':'positive');
-  $('state').textContent=s.total<0?'努力回本':'暂时领先';
-  let quote=resting?'今天不上班，生活照常扣费。':!onShift?'人下班了，生活还在全勤。':s.total<0?'工资正在努力追赶上午的亏损。':'今天暂时领先，先小声开心一下。';
-  if(design.tone==='再狠一点')quote=resting?'你休息了，账单觉得你想多了。':s.total<0?'辛苦一天，成功把亏损补小了一点。':'难得赢一局，房贷已经在候场。';
-  if(performance.now()<comfortUntil)quote='辛苦了。先喘口气，硬币会自己走。';
+  const before=!resting&&!unknown&&s.time<timeValue(config.start);
+  const after=!resting&&!unknown&&!onShift&&!before;
+  const totalState=unknown?'unavailable':ui.totalstate;
+  const shownTotal=totalState==='unavailable'?null:totalState==='partial'?s.total-s.stock:s.total;
+  root.querySelector('.stamp').textContent=unknown?'排班待确认':resting?'休息也计费':onBreak?'午休中':onShift?'在岗求生中':before?'还没上班':'月供接班中';
+  $('total').textContent=shownTotal===null?'待配置':money(shownTotal);$('total').className='amount '+(totalState!=='complete'?'':shownTotal<0?'negative':'positive');
+  $('state').textContent=shownTotal===null?'不可计算':totalState==='partial'?'部分小计':shownTotal<0?'努力回本':'暂时领先';
+  let quote=shownTotal===null?'核心配置待确认，当前结余不可计算。':totalState==='partial'?'A股今日浮动待更新，当前仅显示已知小计。':resting?'今天不上班，生活照常扣费。':after?'人下班了，生活还在全勤。':shownTotal<0?'工资正在努力追赶上午的亏损。':'今天暂时领先，先小声开心一下。';
+  if(design.tone==='再狠一点'&&totalState==='complete')quote=resting?'你休息了，账单觉得你想多了。':shownTotal<0?'辛苦一天，成功把亏损补小了一点。':'难得赢一局，房贷已经在候场。';
   $('quote').textContent=quote;
-  $('wage').textContent=money(s.wage,true);
-  $('wage-note').textContent=`到手月薪 ${money(config.salary)} / 本月排班 ${number(config.days*s.duration/3600,1)} 小时${onBreak?' · 午休暂停':''}`;
-  $('stock').textContent=money(s.stock,true);$('gold').textContent=money(s.gold,true);$('debt').textContent=money(-s.debt);
-  $('stock-note').textContent=`${config.stockName} · ${resting?'休市 · 今日变化归零':`较昨收 ${s.stockRate>=0?'+':''}${number(s.stockRate)}%`} · 模拟快照`;
+  $('wage').textContent=totalState==='unavailable'?'待配置':money(s.wage,true);
+  $('wage-note').textContent=totalState==='unavailable'?'核心配置待确认，工资暂不可计算':`到手月薪 ${money(config.salary)} / 本月排班 ${number(config.days*s.duration/3600,1)} 小时${onBreak?' · 午休暂停':''}`;
+  $('stock').textContent=totalState==='partial'?'待更新':money(s.stock,true);$('gold').textContent=money(s.gold,true);$('debt').textContent=money(-s.debt);
+  $('stock-note').textContent=totalState==='partial'?'模拟 A股报价待更新，不计入已知小计':`${config.stockName} · ${resting?'休市 · 今日变化归零':`较昨收 ${s.stockRate>=0?'+':''}${number(s.stockRate)}%`} · 模拟快照`;
   $('gold-note').textContent=`${number(config.goldQty,3)} 克 · ${resting?'周末演示冻结参考价':`参考价 ${money(s.goldPrice)}/克 · ${s.goldRate>=0?'+':''}${number(s.goldRate)}%`}`;
   const daily=(housingAmount(config)+config.car)/30;
   $('debt-note').textContent=`按自然日全天分摊 · 今日总压力 ${money(daily)}`;
-  $('countdown').textContent=resting?'工资休息中 · 月供照常营业':s.time>=s.end?'今日排班已结束 · 月供继续营业':s.time<timeValue(config.start)?`距离上班还有 ${clock(timeValue(config.start)-s.time)}`:`距离下班还有 ${clock(s.end-s.time)}`;
+  $('time-label').textContent=unknown?'排班状态':resting?'今日排班':after?'本班状态':before?'距离上班还有':'距离下班还有';
+  $('time-state').textContent=unknown?'待确认':resting?'休息日':after?'已结束':before?'未开始':onBreak?'午休中':'在岗中';
+  $('countdown').textContent=unknown?'排班待确认':resting?'今日休息':after?'已下班':before?clock(Math.ceil(Math.max(0,timeValue(config.start)-s.time))):clock(Math.ceil(Math.max(0,s.end-s.time)));
+  $('time-detail').textContent=unknown?'请在工资与排班设置中确认。':resting?'今天没有排班，好好休息。':after?`${config.end} 已下班 · 固定支出继续分摊`:before?`${config.start} 上班 · 预计 ${config.end} 下班`:`预计 ${config.end} 下班 · ${onBreak?'午休中，工资暂停':timeValue(config.breakEnd)>timeValue(config.breakStart)?'午休暂停计薪':'按排班计薪'}`;
   const progress=100*s.worked/s.duration;
   $('progress').style.width=progress+'%';root.querySelector('.bar').setAttribute('aria-valuenow',Math.round(progress));
-  $('scene-caption').textContent=onBreak?'午休暂停计薪 · 固定支出继续分摊':resting?'工位空了 · 房子和车的账单还在':'工位 0001 · 赚来的钱，流向房子和车';
-  $('stock-price').textContent=money(s.stockPrice,false);
-  $('stock-pnl').textContent=`今日 ${money(s.stock,true)} · 持有 ${money((s.stockPrice-config.stockCost)*config.stockQty,true)}`;
+  $('progress-group').hidden=resting||unknown;
+  $('progress-note').textContent=`今日计薪 ${number(s.worked/3600,1)} / ${number(s.duration/3600,1)} 小时`;
+  const canPat=onShift;
+  if(!canPat)comfortUntil=0;
+  const comforting=canPat&&performance.now()<comfortUntil;
+  $('comfort').disabled=!canPat||comforting;
+  $('comfort').textContent=comforting?'收到啦':unknown?'排班待确认':resting?'今天不在岗':after?'他已下班':before?'还没到工位':'拍拍他';
+  $('scene-caption').textContent=comforting?'辛苦了。先喘口气。':unknown?'排班还没准备好':onBreak?'午休暂停计薪 · 固定支出继续分摊':resting?'工位空了 · 今天好好休息':after?'人下班了 · 固定支出继续分摊':before?'人还没到 · 账单先到':'工位 0001 · 赚来的钱，流向房子和车';
+  $('office').setAttribute('aria-label',onBreak?'午休中的手绘办公室，人物坐在工位上':onShift?'工作中的手绘办公室，人物坐在工位上':'空工位的手绘办公室');
+  $('stock-price').textContent=totalState==='partial'?'待更新':money(s.stockPrice,false);
+  $('stock-pnl').textContent=totalState==='partial'?'今日待更新 · 持有待更新':`今日 ${money(s.stock,true)} · 持有 ${money((s.stockPrice-config.stockCost)*config.stockQty,true)}`;
   $('gold-price').textContent=money(s.goldPrice)+' / 克';
   $('gold-pnl').textContent=`今日 ${money(s.gold,true)} · 持有 ${money((s.goldPrice-config.goldCost)*config.goldQty,true)}`;
   $('quote-time').textContent=`模拟行情 · 报价快照 ${clock(baseQuoteTime(s))}${ui.scenario!=='work'?' · 演示冻结报价':''}`;
@@ -360,12 +431,12 @@
    $('bill-'+type).textContent=money(amount);
    $(type+'-allocation').textContent=`每日分摊 ${money(amount/30)} · 今日已分摊 ${money(amount/30*s.time/86400)}`;
   }
-  $('widget-total').textContent=ui.privacy?'¥ ••••':money(s.total);
-  $('widget-wage').textContent=ui.privacy?'••••':money(s.wage,true);
-  $('widget-invest').textContent=ui.privacy?'••••':money(s.stock+s.gold,true);
+  $('widget-total').textContent=ui.privacy?'¥ ••••':shownTotal===null?'待配置':money(shownTotal);
+  $('widget-wage').textContent=ui.privacy?'••••':totalState==='unavailable'?'待配置':money(s.wage,true);
+  $('widget-invest').textContent=ui.privacy?'••••':totalState==='partial'?'待更新':money(s.stock+s.gold,true);
   $('widget-debt').textContent=ui.privacy?'••••':money(-s.debt);
-  $('widget-face').textContent=s.total<0?'(－_－)':'( ˘ᴗ˘ )';
-  $('widget-quote').textContent=resting?'月供今天也很努力。':s.total<0?'钱路过了你一下。':'今天还有一点盼头。';
+  $('widget-face').textContent=totalState!=='complete'?'( ·_· )':shownTotal<0?'(－_－)':'( ˘ᴗ˘ )';
+  $('widget-quote').textContent=shownTotal===null?'核心配置待确认':totalState==='partial'?'A股待更新 · 当前为小计':resting?'月供今天也很努力。':shownTotal<0?'钱路过了你一下。':'今天还有一点盼头。';
   $('widget-time').textContent='模拟快照 · '+clock(baseQuoteTime(s)).slice(0,5);
  }
  function baseQuoteTime(s){return ui.scenario==='work'?Math.floor(s.time/5)*5:15*3600;}
@@ -450,10 +521,11 @@
   function ellipse(x,y,rx,ry,fill,stroke=true){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=ink;ctx.lineWidth=1.8;ctx.stroke();}}
   function text(str,x,y,size=12,c=ink){ctx.fillStyle=c;ctx.font=`${size}px "Microsoft YaHei",sans-serif`;ctx.fillText(str,x,y);}
   ctx.fillStyle=soft;ctx.fillRect(0,0,380,238);ctx.fillStyle=paper;ctx.fillRect(0,187,380,51);line([[0,187],[380,187]],muted,1);
-  const rising=s.total>=0;
+  const certain=ui.totalstate==='complete'&&ui.scenario!=='unknown';
+  const rising=certain&&s.total>=0;
   box(250,17,108,91,paper,7);line([[304,18],[304,108]],muted,1);line([[250,64],[358,64]],muted,1);
   if(rising){ellipse(329,40,13,13,yellow);for(let i=0;i<8;i++){const a=i*Math.PI/4;line([[329+Math.cos(a)*18,40+Math.sin(a)*18],[329+Math.cos(a)*22,40+Math.sin(a)*22]],muted,1);}}
-  else{ellipse(280,42,17,10,soft);ellipse(294,37,16,13,soft);ellipse(307,44,18,9,soft);for(let i=0;i<7;i++){let offset=(t*.025+i*8)%45;line([[263+i*12,54+offset],[259+i*12,62+offset]],muted,1);}}
+  else{ellipse(280,42,17,10,soft);ellipse(294,37,16,13,soft);ellipse(307,44,18,9,soft);if(certain)for(let i=0;i<7;i++){let offset=(t*.025+i*8)%45;line([[263+i*12,54+offset],[259+i*12,62+offset]],muted,1);}}
   box(30,21,81,66,yellow,2);line([[48,22],[89,22]],rose,5);text('上班致富',41,46,14);text('暂无进展',41,68,12,muted);
   box(124,19,36,32,paper,3);text('11 / 04',127,40,10);
   // Physical assets frame the worker. Coin destinations match the objects shown on the bills.
@@ -461,10 +533,10 @@
   ctx.save();ctx.translate(-12,109);ctx.scale(.34,.58);drawDebtObject(ctx,'mortgage',palette,true);ctx.restore();
   ctx.save();ctx.translate(283,158);ctx.scale(.33,.33);drawDebtObject(ctx,'car',palette,true);ctx.restore();
   text(config.housingMode==='rent'?'房租':config.housingMode==='none'?'住房':'房贷',22,221,11);text('车贷',323,221,11);
-  const resting=ui.scenario==='weekend',onShift=!resting&&s.time>=timeValue(config.start)&&s.time<s.end&&!(s.time>=timeValue(config.breakStart)&&s.time<timeValue(config.breakEnd));
+  const resting=ui.scenario==='weekend',present=!resting&&ui.scenario!=='unknown'&&s.time>=timeValue(config.start)&&s.time<s.end,onShift=present&&!(s.time>=timeValue(config.breakStart)&&s.time<timeValue(config.breakEnd));
   ellipse(186,206,75,8,soft,false);
   box(162,146,43,47,rose,8);line([[182,190],[182,212]],ink,4);line([[162,213],[205,213]],ink,3);
-  if(!resting){
+  if(present){
    const bob=onShift?Math.sin(t*.004)*1.6:3;
    ctx.save();ctx.translate(0,bob);
    ellipse(181,143,25,35,paper);line([[170,169],[160,198],[148,199]],ink,5);line([[187,171],[202,196],[217,196]],ink,5);
@@ -477,11 +549,11 @@
    const tap=onShift?Math.sin(t*.025)*2:0;
    line([[158,137],[146,151],[169,157+tap]],ink,4);line([[199,136],[214,150],[201,157-tap]],ink,4);
    ctx.restore();
-  }else{text('人呢？',157,112,17,muted);text('今天轮到工位休息',137,132,11,muted);}
+  }else{text('人呢？',157,112,17,muted);text(ui.scenario==='unknown'?'排班待确认':resting?'今天轮到工位休息':s.time<timeValue(config.start)?'还没到上班时间':'他已下班',137,132,11,muted);}
   // Desk, computer, market trace and a small mug.
   box(91,163,209,10,yellow,2);line([[102,174],[99,215]],ink,4);line([[287,174],[291,215]],ink,4);
   box(220,113,63,43,paper,4);line([[250,157],[250,162]],ink,3);line([[232,163],[269,163]],ink,2);
-  line(rising?[[227,144],[237,143],[244,135],[253,138],[263,125],[277,121]]:[[227,123],[238,125],[246,132],[254,130],[264,144],[277,148]],rising?resolved('--good'):resolved('--bad'),2);
+  line(!certain?[[227,135],[277,135]]:rising?[[227,144],[237,143],[244,135],[253,138],[263,125],[277,121]]:[[227,123],[238,125],[246,132],[254,130],[264,144],[277,148]],!certain?muted:rising?resolved('--good'):resolved('--bad'),2);
   box(120,147,15,15,paper,3);line([[136,149],[141,150],[141,157],[136,158]],ink,1.5);
   line([[124,140],[122,134],[125,128]],muted,1);line([[131,140],[133,135],[131,130]],muted,1);
   // Salary coins travel from the desk to the apartment and sedan.
@@ -494,9 +566,11 @@
   $(button.dataset.loan+'-bill').scrollIntoView({behavior:motion.matches?'instant':'smooth',block:'nearest'});
  }));
  root.querySelectorAll('[role=tab]').forEach((b,index)=>b.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const tabs=[...root.querySelectorAll('[role=tab]')];const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[next].click();tabs[next].focus();}));
- for(const key of ['scenario','market','platform','size'])root.querySelectorAll(`[data-${key}]`).forEach(b=>b.addEventListener('click',()=>{ui[key]=b.dataset[key];if(key==='scenario')origin=performance.now();setUI();render();persist();}));
+ for(const key of ['scenario','totalstate','market','platform','size'])root.querySelectorAll(`[data-${key}]`).forEach(b=>b.addEventListener('click',()=>{ui[key]=b.dataset[key];if(key==='scenario')origin=performance.now();setUI();render();persist();}));
+ $('metric-settings').addEventListener('click',()=>{const panel=$('metric-settings-panel');panel.hidden=!panel.hidden;$('metric-settings').setAttribute('aria-expanded',String(!panel.hidden));});
+ root.querySelectorAll('[name="metric-mode"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked){ui.metricmode=input.value;setUI();render();persist();}}));
  $('privacy').addEventListener('change',e=>{ui.privacy=e.target.checked;render();persist();});
- $('comfort').addEventListener('click',()=>{comfortUntil=performance.now()+5000;render();});
+ $('comfort').addEventListener('click',()=>{comfortUntil=performance.now()+3200;render();});
  function bindForm(name){
   const form=$(name+'-form'),button=form.querySelector('button[type=submit]');
   // In-conversation previews disallow native form submission. Validate and save locally.

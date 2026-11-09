@@ -17,10 +17,12 @@ class SnapshotStore(context: Context) {
 
     fun storedKind(): String = prefs.getString(KEY_KIND, KIND_NONE) ?: KIND_NONE
 
+    fun storedSchemaVersion(): Int = prefs.getInt(KEY_SCHEMA_VERSION, 1)
+
     /** Returns false when the payload was rejected or malformed. */
     fun storeTimeline(payload: String): Boolean {
         val timeline = WidgetTimeline.parse(payload) ?: return false
-        return store(payload, timeline.ledgerRevision, KIND_TIMELINE)
+        return store(payload, timeline.ledgerRevision, KIND_TIMELINE, timeline.schemaVersion)
     }
 
     /** Accepts only a tombstone that is not older than the stored revision. */
@@ -28,13 +30,27 @@ class SnapshotStore(context: Context) {
         val timeline = WidgetTimeline.parse(payload) ?: return false
         val entry = timeline.entries.firstOrNull() ?: return false
         if (!entry.tombstone) return false
-        return store(payload, timeline.ledgerRevision, KIND_TOMBSTONE)
+        return store(payload, timeline.ledgerRevision, KIND_TOMBSTONE, entry.schemaVersion)
     }
 
-    private fun store(payload: String, revision: Long, kind: String): Boolean {
-        if (revision < storedRevision()) return false
+    private fun store(
+        payload: String,
+        revision: Long,
+        kind: String,
+        schemaVersion: Int,
+    ): Boolean {
+        if (!WidgetTimeline.accepts(
+                storedRevision = storedRevision(),
+                storedSchemaVersion = storedSchemaVersion(),
+                incomingRevision = revision,
+                incomingSchemaVersion = schemaVersion,
+            )
+        ) {
+            return false
+        }
         prefs.edit()
             .putLong(KEY_REVISION, revision)
+            .putInt(KEY_SCHEMA_VERSION, schemaVersion)
             .putString(KEY_KIND, kind)
             .putString(KEY_PAYLOAD, payload)
             .apply()
@@ -60,6 +76,7 @@ class SnapshotStore(context: Context) {
     companion object {
         private const val PREFS_NAME = "fjob_widget_snapshot"
         private const val KEY_REVISION = "ledger_revision"
+        private const val KEY_SCHEMA_VERSION = "schema_version"
         private const val KEY_KIND = "payload_kind"
         private const val KEY_PAYLOAD = "payload"
         const val KIND_TIMELINE = "timeline"

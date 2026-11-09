@@ -32,10 +32,12 @@ class Instrument(BaseModel):
     instrumentId: str
     code: str
     name: str
-    market: Literal["SSE", "SZSE", "BSE", "SGE"]
+    market: Literal["SSE", "SZSE", "BSE", "SGE", "CN_FUND"]
     currency: Literal["CNY"] = "CNY"
-    unit: Literal["share", "gram"]
+    unit: Literal["share", "gram", "fundShare"]
     supported: bool = True
+    eligibility: Optional[Literal["supported", "unsupported", "unknown"]] = None
+    unsupportedReason: Optional[str] = None
 
 
 class Quote(BaseModel):
@@ -56,6 +58,26 @@ class Quote(BaseModel):
     delaySeconds: Optional[int] = None
 
 
+class FundNav(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["fundNav"] = "fundNav"
+    instrumentId: str
+    navCny: Optional[Decimal] = None
+    navDate: Optional[date] = None
+    previousNavCny: Optional[Decimal] = None
+    previousNavDate: Optional[date] = None
+    actionStatus: Literal["none", "detected", "unknown"]
+    fundCalendar: Literal["mainland", "unknown"]
+    eligibility: Literal["supported", "unsupported", "unknown"]
+    fetchedAt: datetime
+    publishedAt: Optional[datetime] = None
+    source: str
+    sourceRevision: Optional[int] = None
+    quality: Literal["live", "delayed", "eod", "stale", "fixture"]
+    sourceLicenseStatus: Literal["verified", "developmentOnly", "unknown"]
+
+
 class ErrorDetail(BaseModel):
     code: Literal[
         "UNKNOWN_SYMBOL",
@@ -64,6 +86,8 @@ class ErrorDetail(BaseModel):
         "ACCESS_DENIED",
         "PARSE_ERROR",
         "MISSING_BASELINE",
+        "MISSING_NAV",
+        "UNSUPPORTED_INSTRUMENT",
     ]
     message: str
     retryable: bool = False
@@ -75,6 +99,10 @@ class QuoteErrorItem(BaseModel):
 
 
 class QuoteBatchRequest(BaseModel):
+    # Only public instrument IDs may enter the service. Quantities, costs,
+    # salary and other ledger values are rejected rather than ignored.
+    model_config = ConfigDict(extra="forbid")
+
     instrumentIds: list[str] = Field(min_length=1)
 
 
@@ -82,7 +110,7 @@ class QuoteBatchResponse(BaseModel):
     requestId: str
     serverTime: datetime
     refreshAfterSeconds: int
-    items: list[Quote | QuoteErrorItem]
+    items: list[Quote | FundNav | QuoteErrorItem]
 
 
 class SearchResponse(BaseModel):
@@ -105,7 +133,7 @@ class CalendarDay(BaseModel):
 class CalendarResponse(BaseModel):
     requestId: str
     version: str
-    market: Literal["WORK_CN", "SSE", "SZSE", "BSE", "SGE"]
+    market: Literal["WORK_CN", "SSE", "SZSE", "BSE", "SGE", "FUND_CN"]
     timezone: str
     coverageFrom: date
     coverageTo: date
@@ -161,7 +189,71 @@ CATALOG: list[Instrument] = [
     ),
 ]
 
+FUND_CATALOG: list[Instrument] = [
+    Instrument(
+        instrumentId="FUND.CN.000001",
+        code="000001",
+        name="华夏成长混合",
+        market="CN_FUND",
+        unit="fundShare",
+        eligibility="supported",
+    ),
+    Instrument(
+        instrumentId="FUND.CN.110022",
+        code="110022",
+        name="易方达消费行业股票",
+        market="CN_FUND",
+        unit="fundShare",
+        eligibility="supported",
+    ),
+    Instrument(
+        instrumentId="FUND.CN.000051",
+        code="000051",
+        name="华夏沪深300ETF联接A",
+        market="CN_FUND",
+        unit="fundShare",
+        eligibility="supported",
+    ),
+    Instrument(
+        instrumentId="FUND.CN.000198",
+        code="000198",
+        name="天弘余额宝货币",
+        market="CN_FUND",
+        unit="fundShare",
+        supported=False,
+        eligibility="unsupported",
+        unsupportedReason="货币基金不使用单位净值",
+    ),
+    Instrument(
+        instrumentId="FUND.CN.510300",
+        code="510300",
+        name="华泰柏瑞沪深300ETF",
+        market="CN_FUND",
+        unit="fundShare",
+        supported=False,
+        eligibility="unknown",
+        unsupportedReason="无法确认场外持有口径（可能是场内 ETF）",
+    ),
+    Instrument(
+        instrumentId="FUND.CN.000055",
+        code="000055",
+        name="华夏优势增长美元份额",
+        market="CN_FUND",
+        unit="fundShare",
+        supported=False,
+        eligibility="unsupported",
+        unsupportedReason="外币计价份额暂不支持",
+    ),
+]
+
+CATALOG = [*CATALOG, *FUND_CATALOG]
 CATALOG_BY_ID = {item.instrumentId: item for item in CATALOG}
+
+FUND_KNOWN_NAVS: dict[str, tuple[str, str]] = {
+    "FUND.CN.000001": ("1.2356", "1.2256"),
+    "FUND.CN.110022": ("2.3456", "2.3280"),
+    "FUND.CN.000051": ("1.5120", "1.5050"),
+}
 
 KNOWN_QUOTES: dict[str, tuple[str, str]] = {
     "CN.SZ.000001": ("12.05", "12.40"),
@@ -180,11 +272,17 @@ class ProviderAdapter(Protocol):
     name: str
     license_status: Literal["verified", "developmentOnly", "unknown"]
 
-    async def search(self, query: str, limit: int) -> list[Instrument]: ...
+    async def search(
+        self, query: str, limit: int, kind: Optional[str] = None
+    ) -> list[Instrument]: ...
 
     async def fetch_quotes(
         self, instrument_ids: list[str], now: datetime
     ) -> dict[str, Quote | ErrorDetail]: ...
+
+    async def fetch_fund_navs(
+        self, instrument_ids: list[str], now: datetime
+    ) -> dict[str, FundNav | ErrorDetail]: ...
 
     async def calendar(
         self, market: str, start: date, end: date
@@ -218,12 +316,17 @@ class FixtureProvider:
     name = "fixture"
     license_status = "developmentOnly"
 
-    async def search(self, query: str, limit: int) -> list[Instrument]:
+    async def search(
+        self, query: str, limit: int, kind: Optional[str] = None
+    ) -> list[Instrument]:
         needle = query.strip().lower()
         matches = [
             item
             for item in CATALOG
-            if needle in item.code.lower() or needle in item.name.lower()
+            if (kind is None
+                or (kind == "fund" and item.market == "CN_FUND")
+                or (kind == "stock" and item.market != "CN_FUND"))
+            and (needle in item.code.lower() or needle in item.name.lower())
         ]
         return matches[:limit]
 
@@ -261,6 +364,43 @@ class FixtureProvider:
                 sourceRevision=1,
                 sourceLicenseStatus="developmentOnly",
                 delaySeconds=0,
+            )
+        return result
+
+    async def fetch_fund_navs(
+        self, instrument_ids: list[str], now: datetime
+    ) -> dict[str, FundNav | ErrorDetail]:
+        trading_date, _ = _trading_day(now)
+        previous_date = _previous_weekday(trading_date)
+        result: dict[str, FundNav | ErrorDetail] = {}
+        for instrument_id in instrument_ids:
+            instrument = CATALOG_BY_ID.get(instrument_id)
+            if instrument is None or instrument.market != "CN_FUND":
+                result[instrument_id] = ErrorDetail(
+                    code="UNKNOWN_SYMBOL",
+                    message="暂不支持该基金",
+                )
+                continue
+            eligibility = instrument.eligibility or "unknown"
+            known = FUND_KNOWN_NAVS.get(instrument_id)
+            supported = eligibility == "supported" and known is not None
+            result[instrument_id] = FundNav(
+                instrumentId=instrument_id,
+                navCny=Decimal(known[0]) if supported else None,
+                navDate=trading_date if supported else None,
+                previousNavCny=Decimal(known[1]) if supported else None,
+                previousNavDate=previous_date if supported else None,
+                # The fixture namespace explicitly models complete interval
+                # coverage and no event; real sources must not copy this.
+                actionStatus="none" if supported else "unknown",
+                fundCalendar="mainland" if supported else "unknown",
+                eligibility=eligibility,
+                fetchedAt=now,
+                publishedAt=None,
+                source="fixture",
+                sourceRevision=None,
+                quality="fixture",
+                sourceLicenseStatus="developmentOnly",
             )
         return result
 
@@ -332,8 +472,10 @@ class AksharePublicProvider:
         self._enabled = True
         self._reason = ""
 
-    async def search(self, query: str, limit: int) -> list[Instrument]:
-        return await FixtureProvider().search(query, limit)
+    async def search(
+        self, query: str, limit: int, kind: Optional[str] = None
+    ) -> list[Instrument]:
+        return await FixtureProvider().search(query, limit, kind)
 
     async def fetch_quotes(
         self, instrument_ids: list[str], now: datetime
@@ -427,6 +569,24 @@ class AksharePublicProvider:
                     retryable=True,
                 )
         return result
+
+    async def fetch_fund_navs(
+        self, instrument_ids: list[str], now: datetime
+    ) -> dict[str, FundNav | ErrorDetail]:
+        # No verified fund adapter exists for this candidate source yet. Report
+        # that explicitly instead of reusing stock data as a NAV.
+        code = "ACCESS_DENIED" if not self._enabled else "SOURCE_UNAVAILABLE"
+        message = (
+            f"公开源未启用：{self._reason}"
+            if not self._enabled
+            else "公开源尚未提供已验证的基金净值适配"
+        )
+        return {
+            instrument_id: ErrorDetail(
+                code=code, message=message, retryable=self._enabled
+            )
+            for instrument_id in instrument_ids
+        }
 
     async def calendar(
         self, market: str, start: date, end: date
@@ -527,6 +687,94 @@ class QuoteCache:
         return result
 
 
+@dataclass
+class _FundCacheEntry:
+    nav: FundNav
+    stored_at: float
+
+
+class FundNavCache:
+    """End-of-day NAV cache, kept separate from intraday quote caching.
+
+    The default TTL matches the app's 30-minute low-frequency refresh so a
+    burst of foreground launches does not hammer the upstream source.
+    """
+
+    def __init__(self, ttl_seconds: float = 1800.0, max_entries: int = 512) -> None:
+        self.ttl_seconds = ttl_seconds
+        self.max_entries = max_entries
+        self._entries: dict[str, _FundCacheEntry] = {}
+        self._lock = asyncio.Lock()
+
+    def get(self, instrument_id: str, now: float) -> Optional[FundNav]:
+        entry = self._entries.get(instrument_id)
+        if entry is None or now - entry.stored_at > self.ttl_seconds:
+            return None
+        return entry.nav
+
+    def put(self, nav: FundNav, now: float) -> None:
+        if len(self._entries) >= self.max_entries:
+            oldest = min(self._entries.items(), key=lambda item: item[1].stored_at)
+            self._entries.pop(oldest[0], None)
+        self._entries[nav.instrumentId] = _FundCacheEntry(nav=nav, stored_at=now)
+
+    async def fetch(
+        self,
+        provider: ProviderAdapter,
+        instrument_ids: list[str],
+        now: datetime,
+    ) -> dict[str, FundNav | ErrorDetail]:
+        clock = time.monotonic()
+        result: dict[str, FundNav | ErrorDetail] = {}
+        missing: list[str] = []
+        for instrument_id in instrument_ids:
+            cached = self.get(instrument_id, clock)
+            if cached is not None:
+                result[instrument_id] = cached
+            else:
+                missing.append(instrument_id)
+        if not missing:
+            return result
+        async with self._lock:
+            fresh: dict[str, FundNav | ErrorDetail] = {}
+            try:
+                fresh = await asyncio.wait_for(
+                    provider.fetch_fund_navs(missing, now), timeout=8.0
+                )
+            except asyncio.TimeoutError:
+                fresh = {
+                    instrument_id: ErrorDetail(
+                        code="SOURCE_UNAVAILABLE",
+                        message="基金净值上游超时",
+                        retryable=True,
+                    )
+                    for instrument_id in missing
+                }
+            except Exception as error:
+                fresh = {
+                    instrument_id: ErrorDetail(
+                        code="SOURCE_UNAVAILABLE",
+                        message=f"基金净值上游失败：{type(error).__name__}",
+                        retryable=True,
+                    )
+                    for instrument_id in missing
+                }
+            for instrument_id in missing:
+                value = fresh.get(instrument_id)
+                if value is None:
+                    result[instrument_id] = ErrorDetail(
+                        code="SOURCE_UNAVAILABLE",
+                        message="上游没有返回该基金",
+                        retryable=True,
+                    )
+                elif isinstance(value, FundNav):
+                    self.put(value, time.monotonic())
+                    result[instrument_id] = value
+                else:
+                    result[instrument_id] = value
+        return result
+
+
 class RateLimiter:
     def __init__(self, limit: int = 60, window_seconds: float = 60.0) -> None:
         self.limit = limit
@@ -570,6 +818,7 @@ def _build_provider(settings: Settings) -> ProviderAdapter:
 settings = Settings()
 provider = _build_provider(settings)
 cache = QuoteCache(ttl_seconds=settings.cache_ttl)
+fund_cache = FundNavCache(ttl_seconds=1800.0)
 limiter = RateLimiter(limit=settings.rate_limit)
 
 app = FastAPI(title="FJOB Market Gateway", version="1.0.0")
@@ -632,9 +881,10 @@ async def search_instruments(
     request: Request,
     q: str = Query(min_length=1, max_length=32),
     limit: int = Query(default=10, ge=1, le=20),
+    kind: Optional[Literal["stock", "fund"]] = Query(default=None),
 ) -> SearchResponse:
     _check_rate(request)
-    items = await provider.search(q, limit)
+    items = await provider.search(q, limit, kind)
     return SearchResponse(requestId=_request_id(), items=items)
 
 
@@ -661,11 +911,25 @@ async def batch_quotes(request: Request, body: QuoteBatchRequest) -> QuoteBatchR
             },
         )
     now = datetime.now(tz=UTC)
-    resolved = await cache.fetch(provider, instrument_ids, now)
-    items: list[Quote | QuoteErrorItem] = []
+    fund_ids = [
+        instrument_id
+        for instrument_id in instrument_ids
+        if instrument_id.startswith("FUND.CN.")
+    ]
+    security_ids = [
+        instrument_id
+        for instrument_id in instrument_ids
+        if not instrument_id.startswith("FUND.CN.")
+    ]
+    resolved: dict[str, Quote | FundNav | ErrorDetail] = {}
+    if security_ids:
+        resolved.update(await cache.fetch(provider, security_ids, now))
+    if fund_ids:
+        resolved.update(await fund_cache.fetch(provider, fund_ids, now))
+    items: list[Quote | FundNav | QuoteErrorItem] = []
     for instrument_id in instrument_ids:
         value = resolved.get(instrument_id)
-        if isinstance(value, Quote):
+        if isinstance(value, (Quote, FundNav)):
             items.append(value)
         else:
             detail = value or ErrorDetail(
@@ -675,7 +939,9 @@ async def batch_quotes(request: Request, body: QuoteBatchRequest) -> QuoteBatchR
     return QuoteBatchResponse(
         requestId=_request_id(),
         serverTime=now,
-        refreshAfterSeconds=max(15, int(settings.cache_ttl)),
+        refreshAfterSeconds=max(
+            15, int(settings.cache_ttl), 1800 if fund_ids else 0
+        ),
         items=items,
     )
 
@@ -683,7 +949,7 @@ async def batch_quotes(request: Request, body: QuoteBatchRequest) -> QuoteBatchR
 @app.get("/v1/calendars", response_model=CalendarResponse)
 async def get_calendar(
     request: Request,
-    market: Literal["WORK_CN", "SSE", "SZSE", "BSE", "SGE"] = Query(),
+    market: Literal["WORK_CN", "SSE", "SZSE", "BSE", "SGE", "FUND_CN"] = Query(),
     start: date = Query(alias="from"),
     end: date = Query(alias="to"),
 ) -> CalendarResponse:

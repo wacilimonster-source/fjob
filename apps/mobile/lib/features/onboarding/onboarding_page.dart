@@ -667,14 +667,19 @@ class _AssetsStep extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${draft.holdings[index].market.label} '
-                          '${draft.holdings[index].code.isEmpty ? '未填写代码' : draft.holdings[index].code}',
+                          draft.holdings[index].isFund
+                              ? '基金 ${draft.holdings[index].code.isEmpty ? '未填写代码' : draft.holdings[index].code}'
+                              : '${draft.holdings[index].market.label} '
+                                  '${draft.holdings[index].code.isEmpty ? '未填写代码' : draft.holdings[index].code}',
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${draft.holdings[index].quantityText.isEmpty ? '—' : draft.holdings[index].quantityText} 股 · '
-                          '成本 ${draft.holdings[index].costText.isEmpty ? '—' : draft.holdings[index].costText} 元',
+                          draft.holdings[index].isFund
+                              ? '${draft.holdings[index].quantityText.isEmpty ? '—' : draft.holdings[index].quantityText} 份 · '
+                                  '单位成本 ${draft.holdings[index].costText.isEmpty ? '—' : draft.holdings[index].costText} 元'
+                              : '${draft.holdings[index].quantityText.isEmpty ? '—' : draft.holdings[index].quantityText} 股 · '
+                                  '成本 ${draft.holdings[index].costText.isEmpty ? '—' : draft.holdings[index].costText} 元',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -705,16 +710,38 @@ class _AssetsStep extends StatelessWidget {
               ),
             ),
           ),
-        OutlinedButton.icon(
-          onPressed: () async {
-            final created = await showHoldingEditor(context);
-            if (created == null) return;
-            onChanged(
-              draft.copyWith(holdings: [...draft.holdings, created]),
-            );
-          },
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text('添加一只A股'),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final created =
+                      await showHoldingEditor(context, kind: HoldingKind.stock);
+                  if (created == null) return;
+                  onChanged(
+                    draft.copyWith(holdings: [...draft.holdings, created]),
+                  );
+                },
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('添加股票'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final created =
+                      await showHoldingEditor(context, kind: HoldingKind.fund);
+                  if (created == null) return;
+                  onChanged(
+                    draft.copyWith(holdings: [...draft.holdings, created]),
+                  );
+                },
+                icon: const Icon(Icons.savings_outlined, size: 18),
+                label: const Text('添加基金'),
+              ),
+            ),
+          ],
         ),
         if (attempted && validation.errorFor('holdings') != null) ...[
           const SizedBox(height: 8),
@@ -938,9 +965,12 @@ class _ReviewStep extends StatelessWidget {
     final validation = draft.validate();
     final salary = Rational.tryParse(draft.salaryText.trim());
     final monthStats = _monthStats(context, draft);
+    final stockCount =
+        draft.holdings.where((holding) => !holding.isFund).length;
+    final fundCount = draft.holdings.where((holding) => holding.isFund).length;
     final holdingsText = draft.holdings.isEmpty
-        ? '暂无A股'
-        : '${draft.holdings.length} 只A股';
+        ? '暂无股票/基金'
+        : '$stockCount 只股票 / $fundCount 只基金';
     final goldText = draft.goldEnabled
         ? '${draft.goldQuantityText.isEmpty ? '—' : draft.goldQuantityText} 克黄金'
         : '暂无黄金';

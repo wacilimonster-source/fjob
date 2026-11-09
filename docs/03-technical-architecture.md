@@ -87,7 +87,7 @@ docs/
 
 `finance_core` 只接收不可变领域对象、报价集合、显式时区和时钟，不访问 UI、数据库或 HTTP。返回 `DashboardSnapshot`，包含金额、组成、计算完整性、版本与来源时间。
 
-SQLite 表包括 app_settings、salary_versions、schedule_versions、schedule_day_overrides、holding_versions、housing_plan_versions、monthly_bills、quote_cache、onboarding_drafts、widget_publish_jobs。时间戳以 UTC 存储，业务日期单独存储统计时区日期。
+SQLite 表包括 app_settings、salary_versions、schedule_versions、schedule_day_overrides、holding_versions、housing_plan_versions、monthly_bills、quote_cache、fund_nav_cache、onboarding_drafts、widget_publish_jobs。基金日终净值单独缓存，不负用股票 `quote_cache` 的即时报价时间。时间戳以 UTC 存储，业务日期单独存储统计时区日期。
 
 版本区间用 `[effectiveFrom, effectiveTo)`，同类实体区间禁止重叠。房贷与房租在同一 housing_plan_version 中互斥。金额在 SQLite 用规范十进制字符串或明确比例整数存储，领域计算用 Decimal。跨语言 JSON 金额和数量均为字符串。
 
@@ -117,7 +117,7 @@ ProviderAdapter 定义 `searchSymbols`、`fetchQuotes`、`getCalendars`、`capab
 
 ### 网关策略
 
-- 客户端每请求最多 30 个标的，服务使用共享缓存与 single-flight 合并同标的请求。
+- 客户端每请求最多 30 个标的，服务使用共享缓存与 single-flight 合并同标的请求；股票/黄金 `Quote` 与基金 `fundNav` 使用独立缓存和分项错误。
 - 开放市场目标缓存 15秒，上游能力低于此目标时采用更慢值。休市可缓存至下一个已知会话边界。
 - 请求超时目标 5秒，最多一次可重试瞬时失败，指数退避和抖动。429 优先 Retry-After。
 - 请求 ID、来源时间、抓取时间、前值、交易日和有效性一起记录。客户端丢弃过期代次和更旧报价。
@@ -128,7 +128,7 @@ ProviderAdapter 定义 `searchSymbols`、`fetchQuotes`、`getCalendars`、`capab
 
 ### 共享数据契约
 
-Flutter 统一生成 `WidgetSnapshotV1`，原生端只消费快照或预计算时间线条目。快照带 schemaVersion、ledgerRevision、createdAt、computedAt、quotesAsOf、privacy、validUntil、完整性、金额字符串、状态及深链。详细字段由 JSON Schema 定义。
+Flutter 统一生成 `WidgetSnapshot` v1/v2（v2 增加 Dart 预计算的 `stockFundDaily`），原生端只消费快照或预计算时间线条目，并同时兼容 v1。快照带 schemaVersion、ledgerRevision、createdAt、computedAt、quotesAsOf、privacy、validUntil、完整性、金额字符串、状态及深链。详细字段由 JSON Schema 定义。
 
 隐私开启时所有金额字段从快照中移除，使用 null。原生视图生成的 accessibilityLabel 也使用占位词。更新先写临时文件再原子替换，读取失败回退“打开 App 更新”，防止半写文件。
 

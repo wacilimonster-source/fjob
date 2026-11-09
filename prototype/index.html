@@ -1814,10 +1814,10 @@ html&gt;body{padding:0}&lt;/style&gt;
 &lt;/script&gt;
 &lt;div id=&quot;fjob-prototype&quot; class=&quot;viz-dotted-background&quot;&gt;
 &lt;style&gt;
-#fjob-prototype{color-scheme:light dark;padding:12px 0;font-family:ui-rounded,&quot;Microsoft YaHei&quot;,system-ui,sans-serif}
+#fjob-prototype{color-scheme:light;padding:12px 0;font-family:ui-rounded,&quot;Microsoft YaHei&quot;,system-ui,sans-serif}
 #fjob-prototype *{box-sizing:border-box}
 #fjob-prototype [hidden]{display:none!important}
-#fjob-prototype .app{--paper:light-dark(#f7f2e9,#242823);--panel:light-dark(#fffdf7,#30362f);--ink:light-dark(#323a32,#eeeadd);--muted:light-dark(#686e61,#b9c0ae);--line:light-dark(#d5d6c8,#565f50);--soft:light-dark(#e9eddf,#3c4738);--yellow:light-dark(#f2dfac,#685c36);--rose:light-dark(#f0d2c5,#68483e);--bad:light-dark(#ad4736,#ffab95);--good:light-dark(#46644e,#b6d5a7);max-width:440px;margin:auto;background:var(--paper);color:var(--ink);border:1.5px solid var(--ink);border-radius:28px 23px 26px 22px;overflow:hidden;box-shadow:5px 6px 0 color-mix(in srgb,var(--ink) 13%,transparent);font-size:14px;line-height:1.55}
+#fjob-prototype .app{--paper:#f7f2e9;--panel:#fffdf7;--ink:#323a32;--muted:#686e61;--line:#d5d6c8;--soft:#e9eddf;--yellow:#f2dfac;--rose:#f0d2c5;--bad:#ad4736;--good:#46644e;max-width:440px;margin:auto;background:var(--paper);color:var(--ink);border:1.5px solid var(--ink);border-radius:28px 23px 26px 22px;overflow:hidden;box-shadow:5px 6px 0 color-mix(in srgb,var(--ink) 13%,transparent);font-size:14px;line-height:1.55}
 #fjob-prototype button,#fjob-prototype input,#fjob-prototype select{font:inherit;color:inherit}
 #fjob-prototype button{cursor:pointer;touch-action:manipulation}
 #fjob-prototype button:focus-visible,#fjob-prototype input:focus-visible,#fjob-prototype select:focus-visible{outline:3px solid var(--good);outline-offset:3px}
@@ -1834,6 +1834,45 @@ html&gt;body{padding:0}&lt;/style&gt;
 #fjob-prototype .segments button{flex:1;border:1px solid transparent;background:transparent;border-radius:10px;padding:8px 6px;min-height:40px;color:var(--muted);font-size:12px}
 #fjob-prototype .segments button[aria-pressed=true]{background:var(--soft);border-color:var(--line);color:var(--ink)}
 #fjob-prototype .moneybox{padding:18px 16px;background:var(--panel);border:1.5px solid var(--ink);border-radius:19px 23px 17px 20px;position:relative}
+#fjob-prototype .metrics-heading{display:flex;justify-content:space-between;align-items:center;min-height:38px;margin:-2px 1px 5px}
+#fjob-prototype .metrics-title{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:650;color:var(--muted);letter-spacing:.05em}
+#fjob-prototype .metrics-title:before{content:&#x27;&#x27;;width:6px;height:6px;background:#9da789;border-radius:50%;box-shadow:4px 4px 0 -1px #d8bb88}
+#fjob-prototype .metrics-edit{display:flex;align-items:center;gap:5px;border:0;background:transparent;color:var(--muted);padding:7px 0 7px 9px;min-height:44px;font-size:12px}
+#fjob-prototype .metrics-edit svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#fjob-prototype .metrics-settings{margin:0 0 11px;padding:13px;background:var(--panel);border:1px solid #dad6c6;border-radius:13px;box-shadow:0 2px 0 rgba(50,58,50,.04)}
+#fjob-prototype .metrics-settings fieldset{border:0;padding:0;margin:0;min-width:0}
+#fjob-prototype .metrics-settings legend{font-size:13px;font-weight:650;margin-bottom:8px}
+#fjob-prototype .metric-choices{display:flex;flex-wrap:wrap;gap:6px}
+#fjob-prototype .metric-choice{display:flex;flex:1 1 70px;flex-direction:row;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:44px;padding:6px 3px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font-size:11px;text-align:center}
+#fjob-prototype .metric-choice:has(input:checked){background:var(--soft);border-color:#849279;font-weight:650}
+#fjob-prototype .metric-choice input{width:14px;height:14px;min-width:14px;margin:0;padding:0;accent-color:var(--good)}
+#fjob-prototype .metrics-settings .settings-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:9px}
+#fjob-prototype .hero{position:relative}
+#fjob-prototype .metric-card{position:relative;overflow:hidden;border:1px solid #d7d2c0;border-radius:15px 17px 14px 16px;box-shadow:0 3px 0 rgba(50,58,50,.06)}
+#fjob-prototype .time-panel{padding:15px 16px 13px;background:#f6e8bf;border-color:#d5c69c}
+#fjob-prototype .metric-label{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;letter-spacing:.02em}
+#fjob-prototype .metric-label svg{width:17px;height:17px;flex:none;stroke:#586152;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#fjob-prototype .time-tag{font-size:11px;font-weight:650;color:#5a604f;border:1px solid #c9bc97;border-radius:6px;padding:2px 7px;background:rgba(255,253,247,.5);white-space:nowrap}
+#fjob-prototype .time-number{font-family:ui-monospace,&quot;Cascadia Code&quot;,monospace;font-size:clamp(32px,9.5vw,43px);font-weight:700;line-height:1.15;letter-spacing:-1.6px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;margin:5px 0 3px}
+#fjob-prototype .time-detail{font-size:12px;color:var(--ink)}
+#fjob-prototype .time-panel .bar{margin:9px 0 2px;background:rgba(50,58,50,.2)}
+#fjob-prototype .progress-note{text-align:right;font-size:11px;color:var(--ink)}
+#fjob-prototype .paper-links{display:flex;justify-content:space-between;height:10px;margin:-2px 26px -2px;position:relative;z-index:1;pointer-events:none}
+#fjob-prototype .paper-links i{width:5px;height:14px;border:1px solid #a5a58f;border-radius:5px;background:#e8e5d6;box-shadow:0 1px 0 rgba(255,255,255,.75) inset}
+#fjob-prototype .balance-panel{padding:14px 16px 15px;background:var(--panel)}
+#fjob-prototype .balance-panel .tag{background:#f5edda;color:#655d48;border:1px solid #e3d8bc}
+#fjob-prototype .balance-panel .amount{font-size:clamp(30px,9vw,42px);line-height:1.15;white-space:normal;overflow-wrap:anywhere}
+#fjob-prototype .balance-meta{font-size:11px;color:var(--muted);margin-top:3px}
+#fjob-prototype .demo-controls{margin:12px 0 0;border:1px dashed var(--line);border-radius:12px;padding:0 12px;background:var(--paper)}
+#fjob-prototype .demo-controls summary{padding:10px 0;color:var(--muted)}
+#fjob-prototype .demo-controls .segments{margin:6px 0 12px}
+#fjob-prototype .demo-controls .segments button{flex:1 1 27%;background:var(--panel)}
+#fjob-prototype .demo-controls .segments button[aria-pressed=true]{background:var(--soft)}
+#fjob-prototype .demo-label{font-size:11px;color:var(--muted);margin-top:6px}
+#fjob-prototype .scene-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 0}
+#fjob-prototype .scene-footer .scene-caption{text-align:left;flex:1;margin:0}
+#fjob-prototype .scene-footer .tinyaction{min-height:44px;white-space:nowrap}
+#fjob-prototype .tinyaction:disabled{opacity:.55;cursor:default}
 #fjob-prototype .row{display:flex;justify-content:space-between;align-items:center;gap:12px}
 #fjob-prototype .sub{color:var(--muted);font-size:12px}
 #fjob-prototype .amount{font-family:ui-monospace,&quot;Cascadia Code&quot;,monospace;font-size:clamp(32px,8vw,46px);font-weight:650;letter-spacing:-2px;font-variant-numeric:tabular-nums;white-space:nowrap;margin:4px 0 6px;overflow-wrap:anywhere}
@@ -1926,12 +1965,25 @@ html&gt;body{padding:0}&lt;/style&gt;
  &lt;header class=&quot;header&quot;&gt;&lt;div&gt;&lt;div class=&quot;eyebrow&quot;&gt;ANOTHER DAY, ANOTHER DEBT.&lt;/div&gt;&lt;h1&gt;今日又白干&lt;/h1&gt;&lt;p class=&quot;sub&quot; id=&quot;fj-date&quot;&gt;11月04日 · 星期三&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;stamp&quot;&gt;在岗求生中&lt;/div&gt;&lt;/header&gt;
  &lt;div class=&quot;content&quot;&gt;
   &lt;section id=&quot;fj-home&quot; role=&quot;tabpanel&quot; aria-labelledby=&quot;fj-nav-home&quot;&gt;
-   &lt;div class=&quot;segments&quot; aria-label=&quot;演示时段&quot;&gt;&lt;button type=&quot;button&quot; data-scenario=&quot;work&quot; aria-pressed=&quot;true&quot;&gt;工作日&lt;/button&gt;&lt;button type=&quot;button&quot; data-scenario=&quot;off&quot; aria-pressed=&quot;false&quot;&gt;下班后&lt;/button&gt;&lt;button type=&quot;button&quot; data-scenario=&quot;weekend&quot; aria-pressed=&quot;false&quot;&gt;周末&lt;/button&gt;&lt;/div&gt;
-   &lt;div class=&quot;moneybox&quot;&gt;&lt;div class=&quot;row&quot;&gt;&lt;span&gt;今日生存结余&lt;/span&gt;&lt;span class=&quot;tag&quot; id=&quot;fj-state&quot;&gt;努力回本&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;amount negative&quot; id=&quot;fj-total&quot;&gt;−¥55.26&lt;/div&gt;&lt;p class=&quot;quote&quot; id=&quot;fj-quote&quot;&gt;工资正在努力追赶上午的亏损。&lt;/p&gt;&lt;/div&gt;
+   &lt;div class=&quot;metrics-heading&quot;&gt;&lt;span class=&quot;metrics-title&quot;&gt;今日小记&lt;/span&gt;&lt;button type=&quot;button&quot; class=&quot;metrics-edit&quot; id=&quot;fj-metric-settings&quot; aria-controls=&quot;fj-metric-settings-panel&quot; aria-expanded=&quot;false&quot;&gt;&lt;svg viewBox=&quot;0 0 20 20&quot; aria-hidden=&quot;true&quot;&gt;&lt;path d=&quot;M3 5h14M3 10h14M3 15h14M7 3v4M13 8v4M8 13v4&quot;/&gt;&lt;/svg&gt;首页显示&lt;/button&gt;&lt;/div&gt;
+   &lt;div class=&quot;metrics-settings&quot; id=&quot;fj-metric-settings-panel&quot; hidden&gt;&lt;fieldset&gt;&lt;legend&gt;首页想看什么？&lt;/legend&gt;&lt;div class=&quot;metric-choices&quot;&gt;&lt;label class=&quot;metric-choice&quot;&gt;&lt;input type=&quot;radio&quot; name=&quot;metric-mode&quot; value=&quot;both&quot; checked&gt;都显示&lt;/label&gt;&lt;label class=&quot;metric-choice&quot;&gt;&lt;input type=&quot;radio&quot; name=&quot;metric-mode&quot; value=&quot;time&quot;&gt;只看下班&lt;/label&gt;&lt;label class=&quot;metric-choice&quot;&gt;&lt;input type=&quot;radio&quot; name=&quot;metric-mode&quot; value=&quot;balance&quot;&gt;只看结余&lt;/label&gt;&lt;/div&gt;&lt;p class=&quot;settings-note&quot;&gt;只调整首页主卡，不隐藏账单或小部件。&lt;/p&gt;&lt;/fieldset&gt;&lt;/div&gt;
+   &lt;div class=&quot;hero&quot; aria-label=&quot;首页核心指标&quot;&gt;
+    &lt;section class=&quot;metric-card time-panel&quot; id=&quot;fj-time-card&quot; aria-labelledby=&quot;fj-time-label&quot;&gt;
+     &lt;div class=&quot;row&quot;&gt;&lt;span class=&quot;metric-label&quot;&gt;&lt;svg viewBox=&quot;0 0 20 20&quot; aria-hidden=&quot;true&quot;&gt;&lt;path d=&quot;M17.2 10.2c-.1 4.1-3.2 7.2-7.2 7.1-4 0-7-3.1-7-7.1 0-4 3-7.3 7-7.3 4 0 7.2 3.2 7.2 7.3Z&quot;/&gt;&lt;path d=&quot;M10 6v4.3l2.6 1.7&quot;/&gt;&lt;/svg&gt;&lt;span id=&quot;fj-time-label&quot;&gt;距离下班还有&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;time-tag&quot; id=&quot;fj-time-state&quot;&gt;在岗中&lt;/span&gt;&lt;/div&gt;
+     &lt;div class=&quot;time-number&quot; id=&quot;fj-countdown&quot; aria-live=&quot;off&quot;&gt;03:24:00&lt;/div&gt;
+     &lt;p class=&quot;time-detail&quot; id=&quot;fj-time-detail&quot;&gt;预计 18:00 下班 · 午休暂停计薪&lt;/p&gt;
+     &lt;div id=&quot;fj-progress-group&quot;&gt;&lt;div class=&quot;bar&quot; role=&quot;progressbar&quot; aria-label=&quot;今日计薪进度&quot; aria-valuemin=&quot;0&quot; aria-valuemax=&quot;100&quot; aria-valuenow=&quot;58&quot;&gt;&lt;span id=&quot;fj-progress&quot; style=&quot;width:58%&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;p class=&quot;progress-note&quot; id=&quot;fj-progress-note&quot;&gt;今日计薪 4.6 / 8.0 小时&lt;/p&gt;&lt;/div&gt;
+    &lt;/section&gt;
+    &lt;div class=&quot;paper-links&quot; id=&quot;fj-paper-links&quot; aria-hidden=&quot;true&quot;&gt;&lt;i&gt;&lt;/i&gt;&lt;i&gt;&lt;/i&gt;&lt;/div&gt;
+    &lt;section class=&quot;metric-card balance-panel&quot; id=&quot;fj-balance-card&quot; aria-labelledby=&quot;fj-balance-label&quot;&gt;
+     &lt;div class=&quot;row&quot;&gt;&lt;span class=&quot;metric-label&quot;&gt;&lt;svg viewBox=&quot;0 0 20 20&quot; aria-hidden=&quot;true&quot;&gt;&lt;path d=&quot;M5 3.2h10v13.6l-2-1.1-2 1.1-2-1.1-2 1.1-2-1.1Z&quot;/&gt;&lt;path d=&quot;M7.5 7h5M7.5 10h5M7.5 13H11&quot;/&gt;&lt;/svg&gt;&lt;span id=&quot;fj-balance-label&quot;&gt;今日生存结余&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;tag&quot; id=&quot;fj-state&quot;&gt;努力回本&lt;/span&gt;&lt;/div&gt;
+     &lt;div class=&quot;amount negative&quot; id=&quot;fj-total&quot; aria-live=&quot;off&quot;&gt;−¥55.26&lt;/div&gt;
+     &lt;p class=&quot;quote&quot; id=&quot;fj-quote&quot;&gt;工资正在努力追赶上午的亏损。&lt;/p&gt;&lt;p class=&quot;balance-meta&quot;&gt;工资估算 + 投资今日浮动 − 固定支出已分摊&lt;/p&gt;
+    &lt;/section&gt;
+   &lt;/div&gt;
+   &lt;details class=&quot;demo-controls&quot;&gt;&lt;summary&gt;切换演示状态 · 仅原型&lt;/summary&gt;&lt;p class=&quot;demo-label&quot;&gt;排班状态&lt;/p&gt;&lt;div class=&quot;segments&quot; aria-label=&quot;演示排班状态&quot;&gt;&lt;button type=&quot;button&quot; data-scenario=&quot;work&quot; aria-pressed=&quot;true&quot;&gt;工作中&lt;/button&gt;&lt;button type=&quot;button&quot; data-scenario=&quot;break&quot; aria-pressed=&quot;false&quot;&gt;午休&lt;/button&gt;&lt;button type=&quot;button&quot; data-scenario=&quot;before&quot; aria-pressed=&quot;false&quot;&gt;上班前&lt;/button&gt;&lt;button type=&quot;button&quot; data-scenario=&quot;off&quot; aria-pressed=&quot;false&quot;&gt;下班后&lt;/button&gt;&lt;button type=&quot;button&quot; data-scenario=&quot;weekend&quot; aria-pressed=&quot;false&quot;&gt;休息日&lt;/button&gt;&lt;button type=&quot;button&quot; data-scenario=&quot;unknown&quot; aria-pressed=&quot;false&quot;&gt;排班未知&lt;/button&gt;&lt;/div&gt;&lt;p class=&quot;demo-label&quot;&gt;结余完整性&lt;/p&gt;&lt;div class=&quot;segments&quot; aria-label=&quot;演示结余完整性&quot;&gt;&lt;button type=&quot;button&quot; data-totalstate=&quot;complete&quot; aria-pressed=&quot;true&quot;&gt;完整&lt;/button&gt;&lt;button type=&quot;button&quot; data-totalstate=&quot;partial&quot; aria-pressed=&quot;false&quot;&gt;A股待更新&lt;/button&gt;&lt;button type=&quot;button&quot; data-totalstate=&quot;unavailable&quot; aria-pressed=&quot;false&quot;&gt;核心配置缺失&lt;/button&gt;&lt;/div&gt;&lt;p class=&quot;note&quot;&gt;固定演示日期、同日班次和模拟行情；若未设置午休，午休演示回退为工作状态。正式版以真实排班与数据状态为准。&lt;/p&gt;&lt;/details&gt;
    &lt;div class=&quot;scene&quot;&gt;&lt;canvas id=&quot;fj-office&quot; width=&quot;760&quot; height=&quot;476&quot; role=&quot;img&quot; aria-label=&quot;疲惫的打工人在办公室敲键盘，硬币流向两侧的住宅楼和汽车&quot;&gt;&lt;/canvas&gt;&lt;/div&gt;
-   &lt;p class=&quot;scene-caption&quot; id=&quot;fj-scene-caption&quot;&gt;工位 0001 · 钱路过了你一下&lt;/p&gt;
-   &lt;div class=&quot;row&quot;&gt;&lt;span class=&quot;sub&quot; id=&quot;fj-countdown&quot;&gt;距离下班还有 03:24:00&lt;/span&gt;&lt;button type=&quot;button&quot; class=&quot;tinyaction&quot; id=&quot;fj-comfort&quot;&gt;拍拍他&lt;/button&gt;&lt;/div&gt;
-   &lt;div class=&quot;bar&quot; role=&quot;progressbar&quot; aria-label=&quot;今日排班完成比例&quot; aria-valuemin=&quot;0&quot; aria-valuemax=&quot;100&quot; aria-valuenow=&quot;58&quot;&gt;&lt;span id=&quot;fj-progress&quot; style=&quot;width:58%&quot;&gt;&lt;/span&gt;&lt;/div&gt;
+   &lt;div class=&quot;scene-footer&quot;&gt;&lt;p class=&quot;scene-caption&quot; id=&quot;fj-scene-caption&quot;&gt;工位 0001 · 钱路过了你一下&lt;/p&gt;&lt;button type=&quot;button&quot; class=&quot;tinyaction&quot; id=&quot;fj-comfort&quot;&gt;拍拍他&lt;/button&gt;&lt;/div&gt;
    &lt;div class=&quot;loan-receipts&quot; aria-label=&quot;房贷和车贷还款账单&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;loan-receipt&quot; data-loan=&quot;mortgage&quot;&gt;&lt;div class=&quot;receipt-label&quot;&gt;&lt;span&gt;住房按揭&lt;/span&gt;&lt;small&gt;11月账单&lt;/small&gt;&lt;/div&gt;&lt;canvas data-debt-art=&quot;mortgage&quot; role=&quot;img&quot; aria-label=&quot;粗线条手绘房子，包含屋顶、窗户和门&quot;&gt;&lt;/canvas&gt;&lt;span class=&quot;sub&quot;&gt;本月应还&lt;/span&gt;&lt;strong id=&quot;fj-home-mortgage&quot;&gt;¥4,800.00&lt;/strong&gt;&lt;p class=&quot;sub&quot; id=&quot;fj-home-mortgage-day&quot;&gt;每日分摊 ¥160.00&lt;/p&gt;&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;loan-receipt&quot; data-loan=&quot;car&quot;&gt;&lt;div class=&quot;receipt-label&quot;&gt;&lt;span&gt;车辆贷款&lt;/span&gt;&lt;small&gt;11月账单&lt;/small&gt;&lt;/div&gt;&lt;canvas data-debt-art=&quot;car&quot; role=&quot;img&quot; aria-label=&quot;圆润的手绘小汽车，包含车窗、车灯和两个车轮&quot;&gt;&lt;/canvas&gt;&lt;span class=&quot;sub&quot;&gt;本月应还&lt;/span&gt;&lt;strong id=&quot;fj-home-car&quot;&gt;¥1,800.00&lt;/strong&gt;&lt;p class=&quot;sub&quot; id=&quot;fj-home-car-day&quot;&gt;每日分摊 ¥60.00&lt;/p&gt;&lt;/button&gt;&lt;/div&gt;
    &lt;div class=&quot;lines&quot;&gt;
     &lt;div class=&quot;entry&quot;&gt;&lt;span&gt;打工 · 今日已挣&lt;/span&gt;&lt;strong id=&quot;fj-wage&quot;&gt;+¥328.57&lt;/strong&gt;&lt;span class=&quot;sub&quot; id=&quot;fj-wage-note&quot;&gt;到手月薪 ¥12,000 / 本月排班 168 小时&lt;/span&gt;&lt;/div&gt;
@@ -1981,7 +2033,7 @@ html&gt;body{padding:0}&lt;/style&gt;
  root.querySelector(&#x27;#fj-mortgage-bill .bill-meta span&#x27;).id=&#x27;fj-housing-bill-title&#x27;;
  const defaults={salary:12000,days:21,start:&#x27;09:00&#x27;,end:&#x27;18:00&#x27;,breakStart:&#x27;12:00&#x27;,breakEnd:&#x27;13:00&#x27;,stockName:&#x27;000001 · 示例A股&#x27;,stockQty:1000,stockCost:13,stockPrev:12.4,goldQty:20,goldCost:850,goldPrev:900,housingMode:&#x27;mortgage&#x27;,rent:0,mortgage:4800,mortgagePrincipal:2800,car:1800,carPrincipal:1500};
  let config={...defaults};
- let ui={page:&#x27;home&#x27;,scenario:&#x27;work&#x27;,market:&#x27;down&#x27;,platform:&#x27;android&#x27;,size:&#x27;medium&#x27;,privacy:false};
+ let ui={page:&#x27;home&#x27;,scenario:&#x27;work&#x27;,totalstate:&#x27;complete&#x27;,metricmode:&#x27;both&#x27;,market:&#x27;down&#x27;,platform:&#x27;android&#x27;,size:&#x27;medium&#x27;,privacy:false};
  let onboarding={complete:false,step:0,draft:{...defaults,salary:&#x27;&#x27;,stockQty:0,goldQty:0,housingMode:&#x27;none&#x27;,rent:0,mortgage:0,car:0,mortgagePrincipal:null,carPrincipal:null},hasStock:false,hasGold:false,hasMortgage:false,hasRent:false,hasCar:false};
  let origin=performance.now(),frame=0,comfortUntil=0;
  const design={animated:true,tone:&#x27;温柔地丧&#x27;};
@@ -2004,7 +2056,7 @@ html&gt;body{padding:0}&lt;/style&gt;
   }
   if(restored.days&lt;1||restored.days&gt;30||!validSchedule(restored)||restored.mortgagePrincipal&gt;restored.mortgage||restored.carPrincipal&gt;restored.car||restored.stockPrev&lt;=0||restored.goldPrev&lt;=0)return;
   config=restored;
-  const allowed={page:[&#x27;home&#x27;,&#x27;assets&#x27;,&#x27;loans&#x27;,&#x27;widgets&#x27;],scenario:[&#x27;work&#x27;,&#x27;off&#x27;,&#x27;weekend&#x27;],market:[&#x27;down&#x27;,&#x27;up&#x27;,&#x27;flat&#x27;],platform:[&#x27;android&#x27;,&#x27;ios&#x27;],size:[&#x27;small&#x27;,&#x27;medium&#x27;,&#x27;large&#x27;]};
+  const allowed={page:[&#x27;home&#x27;,&#x27;assets&#x27;,&#x27;loans&#x27;,&#x27;widgets&#x27;],scenario:[&#x27;work&#x27;,&#x27;break&#x27;,&#x27;before&#x27;,&#x27;off&#x27;,&#x27;weekend&#x27;,&#x27;unknown&#x27;],totalstate:[&#x27;complete&#x27;,&#x27;partial&#x27;,&#x27;unavailable&#x27;],metricmode:[&#x27;both&#x27;,&#x27;time&#x27;,&#x27;balance&#x27;],market:[&#x27;down&#x27;,&#x27;up&#x27;,&#x27;flat&#x27;],platform:[&#x27;android&#x27;,&#x27;ios&#x27;],size:[&#x27;small&#x27;,&#x27;medium&#x27;,&#x27;large&#x27;]};
   for(const [key,values]of Object.entries(allowed))if(values.includes(data.ui?.[key]))ui[key]=data.ui[key];
   ui.privacy=data.ui?.privacy===true;
   if(data.onboarding&amp;&amp;Number.isInteger(data.onboarding.step)&amp;&amp;data.onboarding.step&gt;=0&amp;&amp;data.onboarding.step&lt;=5){onboarding={...onboarding,...data.onboarding,draft:{...defaults,...data.onboarding.draft}};}
@@ -2028,7 +2080,9 @@ html&gt;body{padding:0}&lt;/style&gt;
   $(&#x27;onboard-restart&#x27;).parentElement.hidden=!onboarding.complete;
   root.querySelectorAll(&#x27;[data-page]&#x27;).forEach(b=&gt;b.setAttribute(&#x27;aria-selected&#x27;,String(b.dataset.page===ui.page)));
   [&#x27;home&#x27;,&#x27;assets&#x27;,&#x27;loans&#x27;,&#x27;widgets&#x27;].forEach(page=&gt;$(page).hidden=page!==ui.page);
-  for(const key of [&#x27;scenario&#x27;,&#x27;market&#x27;,&#x27;platform&#x27;,&#x27;size&#x27;])root.querySelectorAll(`[data-${key}]`).forEach(b=&gt;b.setAttribute(&#x27;aria-pressed&#x27;,String(b.dataset[key]===ui[key])));
+  $(&#x27;time-card&#x27;).hidden=ui.metricmode===&#x27;balance&#x27;;$(&#x27;balance-card&#x27;).hidden=ui.metricmode===&#x27;time&#x27;;$(&#x27;paper-links&#x27;).hidden=ui.metricmode!==&#x27;both&#x27;;
+  root.querySelectorAll(&#x27;[name=&quot;metric-mode&quot;]&#x27;).forEach(input=&gt;input.checked=input.value===ui.metricmode);
+  for(const key of [&#x27;scenario&#x27;,&#x27;totalstate&#x27;,&#x27;market&#x27;,&#x27;platform&#x27;,&#x27;size&#x27;])root.querySelectorAll(`[data-${key}]`).forEach(b=&gt;b.setAttribute(&#x27;aria-pressed&#x27;,String(b.dataset[key]===ui[key])));
   $(&#x27;widget&#x27;).className=&#x27;desktop-widget &#x27;+ui.size+&#x27; &#x27;+ui.platform;
   $(&#x27;widget-breakdown&#x27;).hidden=ui.size===&#x27;small&#x27;;$(&#x27;widget-office&#x27;).hidden=ui.size!==&#x27;large&#x27;;
   $(&#x27;platform-note&#x27;).textContent=ui.platform===&#x27;android&#x27;?&#x27;Android 桌面布局预览。正式小部件按系统机制刷新，并显示数据时间。&#x27;:&#x27;iOS 小部件布局预览。正式版使用系统时间线刷新，并显示数据时间。&#x27;;
@@ -2109,11 +2163,13 @@ html&gt;body{padding:0}&lt;/style&gt;
  $(&#x27;onboard-cancel&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;{onboarding.complete=true;setUI();persist();});
  function snapshot(){
   const elapsed=(performance.now()-origin)/1000;
-  const base=ui.scenario===&#x27;off&#x27;?18.5*3600:14.6*3600;
-  const time=Math.min(base+elapsed,86399);
   const start=timeValue(config.start),end=timeValue(config.end),bs=timeValue(config.breakStart),be=timeValue(config.breakEnd);
+  let workBase=14.6*3600;
+  if(workBase&lt;start||workBase&gt;=end||(workBase&gt;=bs&amp;&amp;workBase&lt;be))workBase=start+(bs&gt;start?(bs-start)/2:(end-be)/2+(be-start));
+  const base=ui.scenario===&#x27;before&#x27;?Math.max(0,start-15*60):ui.scenario===&#x27;break&#x27;&amp;&amp;be&gt;bs?(bs+be)/2:ui.scenario===&#x27;off&#x27;?Math.min(86399,end+30*60):ui.scenario===&#x27;work&#x27;||ui.scenario===&#x27;break&#x27;?workBase:14.6*3600;
+  const time=Math.min(base+elapsed,86399);
   const duration=end-start-(be-bs);
-  const worked=ui.scenario===&#x27;weekend&#x27;?0:Math.max(0,Math.min(time,end)-start-Math.max(0,Math.min(time,be)-bs));
+  const worked=[&#x27;weekend&#x27;,&#x27;unknown&#x27;].includes(ui.scenario)?0:Math.max(0,Math.min(time,end)-start-Math.max(0,Math.min(time,be)-bs));
   const wage=config.salary/(config.days*duration)*worked;
   const bucket=Math.floor(elapsed/5);
   const wiggle=ui.scenario===&#x27;work&#x27;?Math.sin(bucket*1.7)*.001:0;
@@ -2135,28 +2191,43 @@ html&gt;body{padding:0}&lt;/style&gt;
   const s=current=snapshot();
   $(&#x27;date&#x27;).textContent=`2026年11月${ui.scenario===&#x27;weekend&#x27;?&#x27;07日 · 星期六&#x27;:&#x27;04日 · 星期三&#x27;} · ${clock(s.time)}`;
   const resting=ui.scenario===&#x27;weekend&#x27;;
-  const onShift=!resting&amp;&amp;s.time&gt;=timeValue(config.start)&amp;&amp;s.time&lt;s.end;
+  const unknown=ui.scenario===&#x27;unknown&#x27;;
+  const onShift=!resting&amp;&amp;!unknown&amp;&amp;s.time&gt;=timeValue(config.start)&amp;&amp;s.time&lt;s.end;
   const onBreak=onShift&amp;&amp;s.time&gt;=timeValue(config.breakStart)&amp;&amp;s.time&lt;timeValue(config.breakEnd);
-  root.querySelector(&#x27;.stamp&#x27;).textContent=resting?&#x27;休息也计费&#x27;:onShift?&#x27;在岗求生中&#x27;:&#x27;月供接班中&#x27;;
-  $(&#x27;total&#x27;).textContent=money(s.total);$(&#x27;total&#x27;).className=&#x27;amount &#x27;+(s.total&lt;0?&#x27;negative&#x27;:&#x27;positive&#x27;);
-  $(&#x27;state&#x27;).textContent=s.total&lt;0?&#x27;努力回本&#x27;:&#x27;暂时领先&#x27;;
-  let quote=resting?&#x27;今天不上班，生活照常扣费。&#x27;:!onShift?&#x27;人下班了，生活还在全勤。&#x27;:s.total&lt;0?&#x27;工资正在努力追赶上午的亏损。&#x27;:&#x27;今天暂时领先，先小声开心一下。&#x27;;
-  if(design.tone===&#x27;再狠一点&#x27;)quote=resting?&#x27;你休息了，账单觉得你想多了。&#x27;:s.total&lt;0?&#x27;辛苦一天，成功把亏损补小了一点。&#x27;:&#x27;难得赢一局，房贷已经在候场。&#x27;;
-  if(performance.now()&lt;comfortUntil)quote=&#x27;辛苦了。先喘口气，硬币会自己走。&#x27;;
+  const before=!resting&amp;&amp;!unknown&amp;&amp;s.time&lt;timeValue(config.start);
+  const after=!resting&amp;&amp;!unknown&amp;&amp;!onShift&amp;&amp;!before;
+  const totalState=unknown?&#x27;unavailable&#x27;:ui.totalstate;
+  const shownTotal=totalState===&#x27;unavailable&#x27;?null:totalState===&#x27;partial&#x27;?s.total-s.stock:s.total;
+  root.querySelector(&#x27;.stamp&#x27;).textContent=unknown?&#x27;排班待确认&#x27;:resting?&#x27;休息也计费&#x27;:onBreak?&#x27;午休中&#x27;:onShift?&#x27;在岗求生中&#x27;:before?&#x27;还没上班&#x27;:&#x27;月供接班中&#x27;;
+  $(&#x27;total&#x27;).textContent=shownTotal===null?&#x27;待配置&#x27;:money(shownTotal);$(&#x27;total&#x27;).className=&#x27;amount &#x27;+(totalState!==&#x27;complete&#x27;?&#x27;&#x27;:shownTotal&lt;0?&#x27;negative&#x27;:&#x27;positive&#x27;);
+  $(&#x27;state&#x27;).textContent=shownTotal===null?&#x27;不可计算&#x27;:totalState===&#x27;partial&#x27;?&#x27;部分小计&#x27;:shownTotal&lt;0?&#x27;努力回本&#x27;:&#x27;暂时领先&#x27;;
+  let quote=shownTotal===null?&#x27;核心配置待确认，当前结余不可计算。&#x27;:totalState===&#x27;partial&#x27;?&#x27;A股今日浮动待更新，当前仅显示已知小计。&#x27;:resting?&#x27;今天不上班，生活照常扣费。&#x27;:after?&#x27;人下班了，生活还在全勤。&#x27;:shownTotal&lt;0?&#x27;工资正在努力追赶上午的亏损。&#x27;:&#x27;今天暂时领先，先小声开心一下。&#x27;;
+  if(design.tone===&#x27;再狠一点&#x27;&amp;&amp;totalState===&#x27;complete&#x27;)quote=resting?&#x27;你休息了，账单觉得你想多了。&#x27;:shownTotal&lt;0?&#x27;辛苦一天，成功把亏损补小了一点。&#x27;:&#x27;难得赢一局，房贷已经在候场。&#x27;;
   $(&#x27;quote&#x27;).textContent=quote;
-  $(&#x27;wage&#x27;).textContent=money(s.wage,true);
-  $(&#x27;wage-note&#x27;).textContent=`到手月薪 ${money(config.salary)} / 本月排班 ${number(config.days*s.duration/3600,1)} 小时${onBreak?&#x27; · 午休暂停&#x27;:&#x27;&#x27;}`;
-  $(&#x27;stock&#x27;).textContent=money(s.stock,true);$(&#x27;gold&#x27;).textContent=money(s.gold,true);$(&#x27;debt&#x27;).textContent=money(-s.debt);
-  $(&#x27;stock-note&#x27;).textContent=`${config.stockName} · ${resting?&#x27;休市 · 今日变化归零&#x27;:`较昨收 ${s.stockRate&gt;=0?&#x27;+&#x27;:&#x27;&#x27;}${number(s.stockRate)}%`} · 模拟快照`;
+  $(&#x27;wage&#x27;).textContent=totalState===&#x27;unavailable&#x27;?&#x27;待配置&#x27;:money(s.wage,true);
+  $(&#x27;wage-note&#x27;).textContent=totalState===&#x27;unavailable&#x27;?&#x27;核心配置待确认，工资暂不可计算&#x27;:`到手月薪 ${money(config.salary)} / 本月排班 ${number(config.days*s.duration/3600,1)} 小时${onBreak?&#x27; · 午休暂停&#x27;:&#x27;&#x27;}`;
+  $(&#x27;stock&#x27;).textContent=totalState===&#x27;partial&#x27;?&#x27;待更新&#x27;:money(s.stock,true);$(&#x27;gold&#x27;).textContent=money(s.gold,true);$(&#x27;debt&#x27;).textContent=money(-s.debt);
+  $(&#x27;stock-note&#x27;).textContent=totalState===&#x27;partial&#x27;?&#x27;模拟 A股报价待更新，不计入已知小计&#x27;:`${config.stockName} · ${resting?&#x27;休市 · 今日变化归零&#x27;:`较昨收 ${s.stockRate&gt;=0?&#x27;+&#x27;:&#x27;&#x27;}${number(s.stockRate)}%`} · 模拟快照`;
   $(&#x27;gold-note&#x27;).textContent=`${number(config.goldQty,3)} 克 · ${resting?&#x27;周末演示冻结参考价&#x27;:`参考价 ${money(s.goldPrice)}/克 · ${s.goldRate&gt;=0?&#x27;+&#x27;:&#x27;&#x27;}${number(s.goldRate)}%`}`;
   const daily=(housingAmount(config)+config.car)/30;
   $(&#x27;debt-note&#x27;).textContent=`按自然日全天分摊 · 今日总压力 ${money(daily)}`;
-  $(&#x27;countdown&#x27;).textContent=resting?&#x27;工资休息中 · 月供照常营业&#x27;:s.time&gt;=s.end?&#x27;今日排班已结束 · 月供继续营业&#x27;:s.time&lt;timeValue(config.start)?`距离上班还有 ${clock(timeValue(config.start)-s.time)}`:`距离下班还有 ${clock(s.end-s.time)}`;
+  $(&#x27;time-label&#x27;).textContent=unknown?&#x27;排班状态&#x27;:resting?&#x27;今日排班&#x27;:after?&#x27;本班状态&#x27;:before?&#x27;距离上班还有&#x27;:&#x27;距离下班还有&#x27;;
+  $(&#x27;time-state&#x27;).textContent=unknown?&#x27;待确认&#x27;:resting?&#x27;休息日&#x27;:after?&#x27;已结束&#x27;:before?&#x27;未开始&#x27;:onBreak?&#x27;午休中&#x27;:&#x27;在岗中&#x27;;
+  $(&#x27;countdown&#x27;).textContent=unknown?&#x27;排班待确认&#x27;:resting?&#x27;今日休息&#x27;:after?&#x27;已下班&#x27;:before?clock(Math.ceil(Math.max(0,timeValue(config.start)-s.time))):clock(Math.ceil(Math.max(0,s.end-s.time)));
+  $(&#x27;time-detail&#x27;).textContent=unknown?&#x27;请在工资与排班设置中确认。&#x27;:resting?&#x27;今天没有排班，好好休息。&#x27;:after?`${config.end} 已下班 · 固定支出继续分摊`:before?`${config.start} 上班 · 预计 ${config.end} 下班`:`预计 ${config.end} 下班 · ${onBreak?&#x27;午休中，工资暂停&#x27;:timeValue(config.breakEnd)&gt;timeValue(config.breakStart)?&#x27;午休暂停计薪&#x27;:&#x27;按排班计薪&#x27;}`;
   const progress=100*s.worked/s.duration;
   $(&#x27;progress&#x27;).style.width=progress+&#x27;%&#x27;;root.querySelector(&#x27;.bar&#x27;).setAttribute(&#x27;aria-valuenow&#x27;,Math.round(progress));
-  $(&#x27;scene-caption&#x27;).textContent=onBreak?&#x27;午休暂停计薪 · 固定支出继续分摊&#x27;:resting?&#x27;工位空了 · 房子和车的账单还在&#x27;:&#x27;工位 0001 · 赚来的钱，流向房子和车&#x27;;
-  $(&#x27;stock-price&#x27;).textContent=money(s.stockPrice,false);
-  $(&#x27;stock-pnl&#x27;).textContent=`今日 ${money(s.stock,true)} · 持有 ${money((s.stockPrice-config.stockCost)*config.stockQty,true)}`;
+  $(&#x27;progress-group&#x27;).hidden=resting||unknown;
+  $(&#x27;progress-note&#x27;).textContent=`今日计薪 ${number(s.worked/3600,1)} / ${number(s.duration/3600,1)} 小时`;
+  const canPat=onShift;
+  if(!canPat)comfortUntil=0;
+  const comforting=canPat&amp;&amp;performance.now()&lt;comfortUntil;
+  $(&#x27;comfort&#x27;).disabled=!canPat||comforting;
+  $(&#x27;comfort&#x27;).textContent=comforting?&#x27;收到啦&#x27;:unknown?&#x27;排班待确认&#x27;:resting?&#x27;今天不在岗&#x27;:after?&#x27;他已下班&#x27;:before?&#x27;还没到工位&#x27;:&#x27;拍拍他&#x27;;
+  $(&#x27;scene-caption&#x27;).textContent=comforting?&#x27;辛苦了。先喘口气。&#x27;:unknown?&#x27;排班还没准备好&#x27;:onBreak?&#x27;午休暂停计薪 · 固定支出继续分摊&#x27;:resting?&#x27;工位空了 · 今天好好休息&#x27;:after?&#x27;人下班了 · 固定支出继续分摊&#x27;:before?&#x27;人还没到 · 账单先到&#x27;:&#x27;工位 0001 · 赚来的钱，流向房子和车&#x27;;
+  $(&#x27;office&#x27;).setAttribute(&#x27;aria-label&#x27;,onBreak?&#x27;午休中的手绘办公室，人物坐在工位上&#x27;:onShift?&#x27;工作中的手绘办公室，人物坐在工位上&#x27;:&#x27;空工位的手绘办公室&#x27;);
+  $(&#x27;stock-price&#x27;).textContent=totalState===&#x27;partial&#x27;?&#x27;待更新&#x27;:money(s.stockPrice,false);
+  $(&#x27;stock-pnl&#x27;).textContent=totalState===&#x27;partial&#x27;?&#x27;今日待更新 · 持有待更新&#x27;:`今日 ${money(s.stock,true)} · 持有 ${money((s.stockPrice-config.stockCost)*config.stockQty,true)}`;
   $(&#x27;gold-price&#x27;).textContent=money(s.goldPrice)+&#x27; / 克&#x27;;
   $(&#x27;gold-pnl&#x27;).textContent=`今日 ${money(s.gold,true)} · 持有 ${money((s.goldPrice-config.goldCost)*config.goldQty,true)}`;
   $(&#x27;quote-time&#x27;).textContent=`模拟行情 · 报价快照 ${clock(baseQuoteTime(s))}${ui.scenario!==&#x27;work&#x27;?&#x27; · 演示冻结报价&#x27;:&#x27;&#x27;}`;
@@ -2174,12 +2245,12 @@ html&gt;body{padding:0}&lt;/style&gt;
    $(&#x27;bill-&#x27;+type).textContent=money(amount);
    $(type+&#x27;-allocation&#x27;).textContent=`每日分摊 ${money(amount/30)} · 今日已分摊 ${money(amount/30*s.time/86400)}`;
   }
-  $(&#x27;widget-total&#x27;).textContent=ui.privacy?&#x27;¥ ••••&#x27;:money(s.total);
-  $(&#x27;widget-wage&#x27;).textContent=ui.privacy?&#x27;••••&#x27;:money(s.wage,true);
-  $(&#x27;widget-invest&#x27;).textContent=ui.privacy?&#x27;••••&#x27;:money(s.stock+s.gold,true);
+  $(&#x27;widget-total&#x27;).textContent=ui.privacy?&#x27;¥ ••••&#x27;:shownTotal===null?&#x27;待配置&#x27;:money(shownTotal);
+  $(&#x27;widget-wage&#x27;).textContent=ui.privacy?&#x27;••••&#x27;:totalState===&#x27;unavailable&#x27;?&#x27;待配置&#x27;:money(s.wage,true);
+  $(&#x27;widget-invest&#x27;).textContent=ui.privacy?&#x27;••••&#x27;:totalState===&#x27;partial&#x27;?&#x27;待更新&#x27;:money(s.stock+s.gold,true);
   $(&#x27;widget-debt&#x27;).textContent=ui.privacy?&#x27;••••&#x27;:money(-s.debt);
-  $(&#x27;widget-face&#x27;).textContent=s.total&lt;0?&#x27;(－_－)&#x27;:&#x27;( ˘ᴗ˘ )&#x27;;
-  $(&#x27;widget-quote&#x27;).textContent=resting?&#x27;月供今天也很努力。&#x27;:s.total&lt;0?&#x27;钱路过了你一下。&#x27;:&#x27;今天还有一点盼头。&#x27;;
+  $(&#x27;widget-face&#x27;).textContent=totalState!==&#x27;complete&#x27;?&#x27;( ·_· )&#x27;:shownTotal&lt;0?&#x27;(－_－)&#x27;:&#x27;( ˘ᴗ˘ )&#x27;;
+  $(&#x27;widget-quote&#x27;).textContent=shownTotal===null?&#x27;核心配置待确认&#x27;:totalState===&#x27;partial&#x27;?&#x27;A股待更新 · 当前为小计&#x27;:resting?&#x27;月供今天也很努力。&#x27;:shownTotal&lt;0?&#x27;钱路过了你一下。&#x27;:&#x27;今天还有一点盼头。&#x27;;
   $(&#x27;widget-time&#x27;).textContent=&#x27;模拟快照 · &#x27;+clock(baseQuoteTime(s)).slice(0,5);
  }
  function baseQuoteTime(s){return ui.scenario===&#x27;work&#x27;?Math.floor(s.time/5)*5:15*3600;}
@@ -2264,10 +2335,11 @@ html&gt;body{padding:0}&lt;/style&gt;
   function ellipse(x,y,rx,ry,fill,stroke=true){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=ink;ctx.lineWidth=1.8;ctx.stroke();}}
   function text(str,x,y,size=12,c=ink){ctx.fillStyle=c;ctx.font=`${size}px &quot;Microsoft YaHei&quot;,sans-serif`;ctx.fillText(str,x,y);}
   ctx.fillStyle=soft;ctx.fillRect(0,0,380,238);ctx.fillStyle=paper;ctx.fillRect(0,187,380,51);line([[0,187],[380,187]],muted,1);
-  const rising=s.total&gt;=0;
+  const certain=ui.totalstate===&#x27;complete&#x27;&amp;&amp;ui.scenario!==&#x27;unknown&#x27;;
+  const rising=certain&amp;&amp;s.total&gt;=0;
   box(250,17,108,91,paper,7);line([[304,18],[304,108]],muted,1);line([[250,64],[358,64]],muted,1);
   if(rising){ellipse(329,40,13,13,yellow);for(let i=0;i&lt;8;i++){const a=i*Math.PI/4;line([[329+Math.cos(a)*18,40+Math.sin(a)*18],[329+Math.cos(a)*22,40+Math.sin(a)*22]],muted,1);}}
-  else{ellipse(280,42,17,10,soft);ellipse(294,37,16,13,soft);ellipse(307,44,18,9,soft);for(let i=0;i&lt;7;i++){let offset=(t*.025+i*8)%45;line([[263+i*12,54+offset],[259+i*12,62+offset]],muted,1);}}
+  else{ellipse(280,42,17,10,soft);ellipse(294,37,16,13,soft);ellipse(307,44,18,9,soft);if(certain)for(let i=0;i&lt;7;i++){let offset=(t*.025+i*8)%45;line([[263+i*12,54+offset],[259+i*12,62+offset]],muted,1);}}
   box(30,21,81,66,yellow,2);line([[48,22],[89,22]],rose,5);text(&#x27;上班致富&#x27;,41,46,14);text(&#x27;暂无进展&#x27;,41,68,12,muted);
   box(124,19,36,32,paper,3);text(&#x27;11 / 04&#x27;,127,40,10);
   // Physical assets frame the worker. Coin destinations match the objects shown on the bills.
@@ -2275,10 +2347,10 @@ html&gt;body{padding:0}&lt;/style&gt;
   ctx.save();ctx.translate(-12,109);ctx.scale(.34,.58);drawDebtObject(ctx,&#x27;mortgage&#x27;,palette,true);ctx.restore();
   ctx.save();ctx.translate(283,158);ctx.scale(.33,.33);drawDebtObject(ctx,&#x27;car&#x27;,palette,true);ctx.restore();
   text(config.housingMode===&#x27;rent&#x27;?&#x27;房租&#x27;:config.housingMode===&#x27;none&#x27;?&#x27;住房&#x27;:&#x27;房贷&#x27;,22,221,11);text(&#x27;车贷&#x27;,323,221,11);
-  const resting=ui.scenario===&#x27;weekend&#x27;,onShift=!resting&amp;&amp;s.time&gt;=timeValue(config.start)&amp;&amp;s.time&lt;s.end&amp;&amp;!(s.time&gt;=timeValue(config.breakStart)&amp;&amp;s.time&lt;timeValue(config.breakEnd));
+  const resting=ui.scenario===&#x27;weekend&#x27;,present=!resting&amp;&amp;ui.scenario!==&#x27;unknown&#x27;&amp;&amp;s.time&gt;=timeValue(config.start)&amp;&amp;s.time&lt;s.end,onShift=present&amp;&amp;!(s.time&gt;=timeValue(config.breakStart)&amp;&amp;s.time&lt;timeValue(config.breakEnd));
   ellipse(186,206,75,8,soft,false);
   box(162,146,43,47,rose,8);line([[182,190],[182,212]],ink,4);line([[162,213],[205,213]],ink,3);
-  if(!resting){
+  if(present){
    const bob=onShift?Math.sin(t*.004)*1.6:3;
    ctx.save();ctx.translate(0,bob);
    ellipse(181,143,25,35,paper);line([[170,169],[160,198],[148,199]],ink,5);line([[187,171],[202,196],[217,196]],ink,5);
@@ -2291,11 +2363,11 @@ html&gt;body{padding:0}&lt;/style&gt;
    const tap=onShift?Math.sin(t*.025)*2:0;
    line([[158,137],[146,151],[169,157+tap]],ink,4);line([[199,136],[214,150],[201,157-tap]],ink,4);
    ctx.restore();
-  }else{text(&#x27;人呢？&#x27;,157,112,17,muted);text(&#x27;今天轮到工位休息&#x27;,137,132,11,muted);}
+  }else{text(&#x27;人呢？&#x27;,157,112,17,muted);text(ui.scenario===&#x27;unknown&#x27;?&#x27;排班待确认&#x27;:resting?&#x27;今天轮到工位休息&#x27;:s.time&lt;timeValue(config.start)?&#x27;还没到上班时间&#x27;:&#x27;他已下班&#x27;,137,132,11,muted);}
   // Desk, computer, market trace and a small mug.
   box(91,163,209,10,yellow,2);line([[102,174],[99,215]],ink,4);line([[287,174],[291,215]],ink,4);
   box(220,113,63,43,paper,4);line([[250,157],[250,162]],ink,3);line([[232,163],[269,163]],ink,2);
-  line(rising?[[227,144],[237,143],[244,135],[253,138],[263,125],[277,121]]:[[227,123],[238,125],[246,132],[254,130],[264,144],[277,148]],rising?resolved(&#x27;--good&#x27;):resolved(&#x27;--bad&#x27;),2);
+  line(!certain?[[227,135],[277,135]]:rising?[[227,144],[237,143],[244,135],[253,138],[263,125],[277,121]]:[[227,123],[238,125],[246,132],[254,130],[264,144],[277,148]],!certain?muted:rising?resolved(&#x27;--good&#x27;):resolved(&#x27;--bad&#x27;),2);
   box(120,147,15,15,paper,3);line([[136,149],[141,150],[141,157],[136,158]],ink,1.5);
   line([[124,140],[122,134],[125,128]],muted,1);line([[131,140],[133,135],[131,130]],muted,1);
   // Salary coins travel from the desk to the apartment and sedan.
@@ -2308,9 +2380,11 @@ html&gt;body{padding:0}&lt;/style&gt;
   $(button.dataset.loan+&#x27;-bill&#x27;).scrollIntoView({behavior:motion.matches?&#x27;instant&#x27;:&#x27;smooth&#x27;,block:&#x27;nearest&#x27;});
  }));
  root.querySelectorAll(&#x27;[role=tab]&#x27;).forEach((b,index)=&gt;b.addEventListener(&#x27;keydown&#x27;,event=&gt;{if(![&#x27;ArrowLeft&#x27;,&#x27;ArrowRight&#x27;,&#x27;Home&#x27;,&#x27;End&#x27;].includes(event.key))return;event.preventDefault();const tabs=[...root.querySelectorAll(&#x27;[role=tab]&#x27;)];const next=event.key===&#x27;Home&#x27;?0:event.key===&#x27;End&#x27;?tabs.length-1:(index+(event.key===&#x27;ArrowRight&#x27;?1:-1)+tabs.length)%tabs.length;tabs[next].click();tabs[next].focus();}));
- for(const key of [&#x27;scenario&#x27;,&#x27;market&#x27;,&#x27;platform&#x27;,&#x27;size&#x27;])root.querySelectorAll(`[data-${key}]`).forEach(b=&gt;b.addEventListener(&#x27;click&#x27;,()=&gt;{ui[key]=b.dataset[key];if(key===&#x27;scenario&#x27;)origin=performance.now();setUI();render();persist();}));
+ for(const key of [&#x27;scenario&#x27;,&#x27;totalstate&#x27;,&#x27;market&#x27;,&#x27;platform&#x27;,&#x27;size&#x27;])root.querySelectorAll(`[data-${key}]`).forEach(b=&gt;b.addEventListener(&#x27;click&#x27;,()=&gt;{ui[key]=b.dataset[key];if(key===&#x27;scenario&#x27;)origin=performance.now();setUI();render();persist();}));
+ $(&#x27;metric-settings&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;{const panel=$(&#x27;metric-settings-panel&#x27;);panel.hidden=!panel.hidden;$(&#x27;metric-settings&#x27;).setAttribute(&#x27;aria-expanded&#x27;,String(!panel.hidden));});
+ root.querySelectorAll(&#x27;[name=&quot;metric-mode&quot;]&#x27;).forEach(input=&gt;input.addEventListener(&#x27;change&#x27;,()=&gt;{if(input.checked){ui.metricmode=input.value;setUI();render();persist();}}));
  $(&#x27;privacy&#x27;).addEventListener(&#x27;change&#x27;,e=&gt;{ui.privacy=e.target.checked;render();persist();});
- $(&#x27;comfort&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;{comfortUntil=performance.now()+5000;render();});
+ $(&#x27;comfort&#x27;).addEventListener(&#x27;click&#x27;,()=&gt;{comfortUntil=performance.now()+3200;render();});
  function bindForm(name){
   const form=$(name+&#x27;-form&#x27;),button=form.querySelector(&#x27;button[type=submit]&#x27;);
   // In-conversation previews disallow native form submission. Validate and save locally.

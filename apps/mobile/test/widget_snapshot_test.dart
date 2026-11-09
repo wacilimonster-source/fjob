@@ -89,6 +89,146 @@ void main() {
     expect(last.difference(first).inHours, lessThanOrEqualTo(24));
   }
 
+  test('v2 carries the pre-computed stock+fund sum and a real NAV date', () {
+    final demo = buildDemoLedger(calendar, fixedNow);
+    final ledger = demo.copyWith(
+      holdings: [
+        ...demo.holdings,
+        Holding(
+          id: 'fund-1',
+          instrumentId: 'FUND.CN.000001',
+          quantity: Rational.parse('1000.25'),
+          costPerUnit: Rational.parse('1.2'),
+          effectiveFromUtc: DateTime.utc(2026, 1, 1),
+        ),
+      ],
+      fundNavs: {
+        'FUND.CN.000001': FundNavSnapshot(
+          instrumentId: 'FUND.CN.000001',
+          navCny: Rational.parse('1.2356'),
+          navDate: LocalDate(2026, 11, 4),
+          previousNavCny: Rational.parse('1.2256'),
+          previousNavDate: LocalDate(2026, 11, 3),
+          actionStatus: FundActionStatus.none,
+          fundCalendar: FundCalendarKind.mainland,
+          eligibility: FundEligibility.supported,
+          fetchedAtUtc: fixedNow,
+          publishedAtUtc: null,
+          source: 'fixture',
+          sourceRevision: null,
+          quality: QuoteQuality.eod,
+          sourceLicenseStatus: SourceLicenseStatus.developmentOnly,
+        ),
+      },
+      fundCalendar: demo.marketCalendar,
+    );
+    final calculator = DashboardCalculator(calendar);
+    final snapshot = calculator.calculate(
+      ledger.toCalculationInput(calendar: calendar, nowUtc: fixedNow),
+    );
+    expect(snapshot.quotesAsOf, isNull);
+    final entry = WidgetSnapshotBuilder.entry(
+      snapshot: snapshot,
+      privacy: false,
+      timezone: calendar.timezoneName,
+      tone: AppTone.gentle,
+    );
+    validateEntry(entry);
+    expect(entry['schemaVersion'], 2);
+    expect(entry['amounts']['stockFundDaily'], '-340.00');
+    expect(entry['amounts']['stockDaily'], '-350.00');
+    expect(entry['fundNavDate'], '2026-11-04');
+    expect(entry['quotesAsOf'], isNull);
+  });
+
+  test('v2 privacy nulls stockFundDaily as well', () {
+    final demo = buildDemoLedger(calendar, fixedNow);
+    final calculator = DashboardCalculator(calendar);
+    final snapshot = calculator.calculate(
+      demo.toCalculationInput(calendar: calendar, nowUtc: fixedNow),
+    );
+    final entry = WidgetSnapshotBuilder.entry(
+      snapshot: snapshot,
+      privacy: true,
+      timezone: calendar.timezoneName,
+      tone: AppTone.harsh,
+    );
+    validateEntry(entry);
+    expect(entry['amounts']['stockFundDaily'], isNull);
+  });
+
+  test('a future timeline entry never predicts a new fund NAV', () {
+    final lateNow = DateTime.utc(2026, 11, 4, 15, 50); // 23:50 Shanghai
+    final demo = buildDemoLedger(calendar, lateNow);
+    final ledger = demo.copyWith(
+      holdings: [
+        ...demo.holdings,
+        Holding(
+          id: 'fund-1',
+          instrumentId: 'FUND.CN.000001',
+          quantity: Rational.parse('1000.25'),
+          costPerUnit: Rational.parse('1.2'),
+          effectiveFromUtc: DateTime.utc(2026, 1, 1),
+        ),
+      ],
+      fundNavs: {
+        'FUND.CN.000001': FundNavSnapshot(
+          instrumentId: 'FUND.CN.000001',
+          navCny: Rational.parse('1.2356'),
+          navDate: LocalDate(2026, 11, 4),
+          previousNavCny: Rational.parse('1.2256'),
+          previousNavDate: LocalDate(2026, 11, 3),
+          actionStatus: FundActionStatus.none,
+          fundCalendar: FundCalendarKind.mainland,
+          eligibility: FundEligibility.supported,
+          fetchedAtUtc: lateNow,
+          publishedAtUtc: null,
+          source: 'fixture',
+          sourceRevision: null,
+          quality: QuoteQuality.eod,
+          sourceLicenseStatus: SourceLicenseStatus.developmentOnly,
+        ),
+      },
+      fundCalendar: demo.marketCalendar,
+    );
+    final timeline = WidgetSnapshotBuilder.timeline(
+      ledger: ledger,
+      calendar: calendar,
+      calculator: DashboardCalculator(calendar),
+      nowUtc: lateNow,
+      privacy: false,
+      tone: AppTone.gentle,
+      stepMinutes: 30,
+      horizonHours: 1,
+    );
+    final entries = (timeline['entries'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
+    expect(entries, hasLength(3));
+    // The same-day entry can use the published NAV.
+    expect(entries.first['fundNavDate'], '2026-11-04');
+    expect(entries.first['amounts']['stockFundDaily'], isNotNull);
+    // After midnight the NAV date is still 11-04 and today's move is unknown;
+    // the snapshot must not invent 11-05's NAV or reuse 11-04's move.
+    for (final entry in entries.skip(1)) {
+      expect(entry['fundNavDate'], '2026-11-04');
+      expect(entry['amounts']['stockFundDaily'], isNull);
+      expect(entry['completeness'], 'partial');
+    }
+  });
+
+  test('the v1 fixture still satisfies the retained v1 contract', () {
+    final v1 = readWidgetSchemaV1();
+    final fixture = readWidgetFixtureV1();
+    expect(fixture['schemaVersion'], v1['properties']['schemaVersion']['const']);
+    final v1AmountKeys = ((v1[r'$defs'] as Map<String, dynamic>)['amounts']
+            as Map<String, dynamic>)['required'] as List<dynamic>;
+    expect(
+      (fixture['amounts'] as Map<String, dynamic>).keys.toSet(),
+      v1AmountKeys.toSet(),
+    );
+    expect(v1AmountKeys, isNot(contains('stockFundDaily')));
+  });
+
   test('timeline entries satisfy the widget snapshot contract', () {
     final ledger = buildDemoLedger(calendar, fixedNow);
     final calculator = DashboardCalculator(calendar);

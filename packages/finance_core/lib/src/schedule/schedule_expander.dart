@@ -273,7 +273,10 @@ final class ScheduleExpander {
     for (final session in sessions) {
       if (session.contains(now)) {
         active = session;
-      } else if (session.endUtc.isBefore(now)) {
+      } else if (!session.endUtc.isAfter(now)) {
+        // The end boundary is closed-open: exactly at `endUtc` the shift has
+        // ended. Treating it as neither active nor ended would briefly report
+        // restDay at 18:00:00 and make the countdown skip the real transition.
         lastEnded = session;
       } else if (session.startUtc.isAfter(now)) {
         next ??= session;

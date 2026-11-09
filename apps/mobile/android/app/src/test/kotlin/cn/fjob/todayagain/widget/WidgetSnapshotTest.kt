@@ -1,6 +1,7 @@
 package cn.fjob.todayagain.widget
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -8,28 +9,36 @@ import org.junit.Test
 
 class WidgetSnapshotTest {
     private fun entry(
+        schemaVersion: Int = 2,
         revision: Long = 1,
         computedAt: String = "2026-11-04T06:36:00.000Z",
         privacy: Boolean = false,
         tombstone: Boolean = false,
         total: String = "-55.26",
+        stockFundDaily: String = "50.00",
+        fundNavDate: String? = null,
         deepLink: String = "fjob://dashboard",
         extraAmountKey: String? = null,
     ): String {
         val amounts = buildString {
             append("\"total\":").append(if (total == "null") "null" else "\"$total\"")
             append(",\"wage\":\"328.57\",\"stockDaily\":\"-350.00\",\"goldDaily\":\"100.00\"")
+            if (schemaVersion >= 2) {
+                append(",\"stockFundDaily\":\"$stockFundDaily\"")
+            }
             append(",\"housing\":\"97.33\",\"car\":\"36.50\"")
             append(",\"principal\":\"87.19\",\"interest\":\"46.64\",\"rent\":\"0.00\"")
             if (extraAmountKey != null) append(",\"$extraAmountKey\":\"1.00\"")
         }
+        val navDateLine =
+            if (fundNavDate == null) "" else ",\n\"fundNavDate\": \"$fundNavDate\""
         return """
             {
-              "schemaVersion": 1,
+              "schemaVersion": $schemaVersion,
               "ledgerRevision": $revision,
               "createdAt": "2026-11-04T06:36:00.000Z",
               "computedAt": "$computedAt",
-              "quotesAsOf": "2026-11-04T06:36:00.000Z",
+              "quotesAsOf": null,
               "validUntil": "2026-11-04T07:06:00.000Z",
               "timezone": "Asia/Shanghai",
               "privacy": $privacy,
@@ -39,24 +48,40 @@ class WidgetSnapshotTest {
               "amounts": { $amounts },
               "housingMode": "mortgage",
               "scene": "working",
-              "caption": "工资正在努力追赶上午的亏损。",
+              "caption": "工资正在努力追赶上午的亏损。"$navDateLine,
               "deepLink": "$deepLink"
             }
         """.trimIndent()
     }
 
     @Test
-    fun parsesTheContractFixture() {
-        val snapshot = WidgetSnapshot.parse(entry())
+    fun parsesTheV2ContractFixture() {
+        val snapshot = WidgetSnapshot.parse(entry(fundNavDate = "2026-11-09"))
         assertNotNull(snapshot)
-        assertEquals(1, snapshot!!.schemaVersion)
+        assertEquals(2, snapshot!!.schemaVersion)
         assertEquals("-55.26", snapshot.total)
+        assertEquals("50.00", snapshot.stockFundDaily)
+        assertEquals("50.00", snapshot.investmentDaily)
+        assertEquals("股票+基金", snapshot.investmentLabel)
+        assertEquals("2026-11-09", snapshot.fundNavDate)
         assertEquals("mortgage", snapshot.housingMode)
         assertTrue(snapshot.isNegative)
         assertEquals(1793774160000L, snapshot.computedAt)
         // Old snapshots without the visibility fields default to visible.
         assertTrue(snapshot.showHousing)
         assertTrue(snapshot.showCar)
+    }
+
+    @Test
+    fun parsesTheRetainedV1SnapshotWithStockOnly() {
+        val snapshot = WidgetSnapshot.parse(entry(schemaVersion = 1))
+        assertNotNull(snapshot)
+        assertEquals(1, snapshot!!.schemaVersion)
+        assertEquals("-350.00", snapshot.stockDaily)
+        assertNull(snapshot.stockFundDaily)
+        assertEquals("-350.00", snapshot.investmentDaily)
+        assertEquals("A股", snapshot.investmentLabel)
+        assertNull(snapshot.fundNavDate)
     }
 
     @Test
@@ -85,8 +110,36 @@ class WidgetSnapshotTest {
 
     @Test
     fun rejectsUnsupportedSchemaVersion() {
-        val json = entry().replace("\"schemaVersion\": 1", "\"schemaVersion\": 2")
-        assertNull(WidgetSnapshot.parse(json))
+        assertNull(WidgetSnapshot.parse(entry(schemaVersion = 3)))
+    }
+
+    @Test
+    fun rejectsV2WithoutThePrecomputedStockFundAmount() {
+        val missing = entry().replace(",\"stockFundDaily\":\"50.00\"", "")
+        assertNull(WidgetSnapshot.parse(missing))
+    }
+
+    @Test
+    fun rejectsV1ThatCarriesAV2OnlyAmount() {
+        assertNull(
+            WidgetSnapshot.parse(
+                entry(schemaVersion = 1, extraAmountKey = "stockFundDaily"),
+            ),
+        )
+    }
+
+    @Test
+    fun rejectsMalformedFundNavDate() {
+        assertNull(WidgetSnapshot.parse(entry(fundNavDate = "2026/11/09")))
+    }
+
+    @Test
+    fun storedV2BlocksALateV1AtTheSameRevision() {
+        assertTrue(WidgetTimeline.accepts(3, 2, 4, 1))
+        assertTrue(WidgetTimeline.accepts(3, 2, 3, 2))
+        assertFalse(WidgetTimeline.accepts(3, 2, 3, 1))
+        assertFalse(WidgetTimeline.accepts(3, 2, 2, 2))
+        assertTrue(WidgetTimeline.accepts(-1, 1, 1, 1))
     }
 
     @Test

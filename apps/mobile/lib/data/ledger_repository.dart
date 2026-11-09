@@ -22,6 +22,15 @@ final class RevisionConflictException implements Exception {
   String toString() => 'ledger revision changed ($expected != $actual)';
 }
 
+final class DuplicateHoldingException implements Exception {
+  const DuplicateHoldingException(this.instrumentId);
+
+  final String instrumentId;
+
+  @override
+  String toString() => '持仓已存在：$instrumentId';
+}
+
 final class LedgerRepository {
   LedgerRepository(this.database, this.calendar);
 
@@ -196,6 +205,51 @@ final class LedgerRepository {
           ),
     };
 
+    final fundRows = await db.query('fund_nav_cache');
+    final fundNavs = <String, FundNavSnapshot>{};
+    for (final row in fundRows) {
+      final instrumentId = row['instrument_id'] as String?;
+      if (instrumentId == null) continue;
+      final navDate = LocalDate.tryParse(row['nav_date'] as String?);
+      final nav = LedgerJson.moneyFromJson(row['nav_cny']);
+      final previousNavDate =
+          LocalDate.tryParse(row['previous_nav_date'] as String?);
+      final previousNav =
+          LedgerJson.moneyFromJson(row['previous_nav_cny']);
+      fundNavs[instrumentId] = FundNavSnapshot(
+        instrumentId: instrumentId,
+        // A value without its date is not a usable NAV.
+        navCny: navDate == null ? null : nav,
+        navDate: navDate,
+        previousNavCny: previousNavDate == null ? null : previousNav,
+        previousNavDate: previousNavDate,
+        actionStatus: FundActionStatus.values.firstWhere(
+          (value) => value.name == row['action_status'],
+          orElse: () => FundActionStatus.unknown,
+        ),
+        fundCalendar: FundCalendarKind.values.firstWhere(
+          (value) => value.name == row['fund_calendar'],
+          orElse: () => FundCalendarKind.unknown,
+        ),
+        eligibility: FundEligibility.values.firstWhere(
+          (value) => value.name == row['eligibility'],
+          orElse: () => FundEligibility.unknown,
+        ),
+        fetchedAtUtc: DateTime.parse(row['fetched_at']! as String),
+        publishedAtUtc: LedgerJson.dateFromIso(row['published_at']),
+        source: (row['source'] as String?) ?? 'unknown',
+        sourceRevision: row['source_revision'] as int?,
+        quality: QuoteQuality.values.firstWhere(
+          (value) => value.name == row['quality'],
+          orElse: () => QuoteQuality.unavailable,
+        ),
+        sourceLicenseStatus: SourceLicenseStatus.values.firstWhere(
+          (value) => value.name == row['source_license_status'],
+          orElse: () => SourceLicenseStatus.unknown,
+        ),
+      );
+    }
+
     final calendarRows = await db.query(
       'market_calendar_days',
       where: 'market = ?',
@@ -206,6 +260,20 @@ final class LedgerRepository {
       final date = LocalDate.tryParse(row['local_date'] as String?);
       if (date == null) continue;
       days[date] = MarketDayStatus.values.firstWhere(
+        (value) => value.name == row['status'],
+        orElse: () => MarketDayStatus.unknown,
+      );
+    }
+    final fundCalendarRows = await db.query(
+      'market_calendar_days',
+      where: 'market = ?',
+      whereArgs: ['FUND_CN'],
+    );
+    final fundDays = <LocalDate, MarketDayStatus>{};
+    for (final row in fundCalendarRows) {
+      final date = LocalDate.tryParse(row['local_date'] as String?);
+      if (date == null) continue;
+      fundDays[date] = MarketDayStatus.values.firstWhere(
         (value) => value.name == row['status'],
         orElse: () => MarketDayStatus.unknown,
       );
@@ -266,6 +334,12 @@ final class LedgerRepository {
         version: 'SSE@local',
         source: 'market_gateway',
       ),
+      fundNavs: fundNavs,
+      fundCalendar: MarketCalendar(
+        fundDays,
+        version: 'FUND_CN@local',
+        source: 'market_gateway',
+      ),
       instrumentNames: instrumentNames,
       goldReferenceSessionActive: goldSessionActive,
     );
@@ -297,6 +371,7 @@ final class LedgerRepository {
     if (instrumentId.startsWith('CN.SZ')) return 'SZSE';
     if (instrumentId.startsWith('CN.BJ')) return 'BSE';
     if (instrumentId.startsWith('GOLD.')) return 'SGE';
+    if (instrumentId.startsWith('FUND.CN.')) return 'CN_FUND';
     return 'UNKNOWN';
   }
 
@@ -389,7 +464,7 @@ final class LedgerRepository {
           'cost_per_unit': holding.costPerUnit.toCanonicalString(),
           'effective_from': timestamp,
           'effective_to': null,
-          'pending_quote': 0,
+          'pending_quote': holding.pendingQuote ? 1 : 0,
           'created_at': timestamp,
         });
       }
@@ -641,21 +716,46 @@ final class LedgerRepository {
     return read(nowUtc: nowUtc);
   }
 
+  /// Closes [previousInstrumentId] and inserts [instrumentId] in one
+  /// transaction. Editing a code never leaves two active rows or a half
+  /// written ledger; a duplicate target id aborts the whole transaction.
   Future<LedgerState> upsertHolding({
     required int expectedRevision,
     required String instrumentId,
     required Rational quantity,
     required Rational costPerUnit,
     String? name,
+    bool pendingQuote = false,
+    String? previousInstrumentId,
     required DateTime nowUtc,
   }) async {
     final timestamp = nowUtc.toUtc().toIso8601String();
+    final instant = nowUtc.toUtc();
     await database.transaction((txn) async {
       await _bumpRevision(txn, expectedRevision);
+      if (previousInstrumentId != null &&
+          previousInstrumentId != instrumentId) {
+        final active = await txn.query(
+          'holding_versions',
+          where: 'instrument_id = ? AND effective_to IS NULL',
+          whereArgs: [instrumentId],
+          limit: 1,
+        );
+        if (active.isNotEmpty) {
+          throw DuplicateHoldingException(instrumentId);
+        }
+        await _closeVersions(
+          txn,
+          'holding_versions',
+          instant,
+          extraWhere: 'instrument_id = ?',
+          extraArgs: [previousInstrumentId],
+        );
+      }
       await _closeVersions(
         txn,
         'holding_versions',
-        nowUtc.toUtc(),
+        instant,
         extraWhere: 'instrument_id = ?',
         extraArgs: [instrumentId],
       );
@@ -666,7 +766,7 @@ final class LedgerRepository {
         'cost_per_unit': costPerUnit.toCanonicalString(),
         'effective_from': timestamp,
         'effective_to': null,
-        'pending_quote': 0,
+        'pending_quote': pendingQuote ? 1 : 0,
         'created_at': timestamp,
       });
       if (name != null && name.trim().isNotEmpty) {
@@ -674,6 +774,110 @@ final class LedgerRepository {
       }
     });
     return read(nowUtc: nowUtc);
+  }
+
+  /// Persists date-only fund NAVs.
+  ///
+  /// Ordering rules: a newer NAV date wins; the same date only accepts a
+  /// provable higher source revision, otherwise the real fetch time decides so
+  /// a late response from an old request cannot overwrite a newer result. An
+  /// eligibility-only row never erases a cached NAV.
+  Future<void> saveFundNavs(List<FundNavSnapshot> navs) async {
+    if (navs.isEmpty) return;
+    final timestamp = DateTime.now().toUtc().toIso8601String();
+    await database.transaction((txn) async {
+      for (final nav in navs) {
+        final existing = await txn.query(
+          'fund_nav_cache',
+          where: 'instrument_id = ?',
+          whereArgs: [nav.instrumentId],
+          limit: 1,
+        );
+        final row = existing.isEmpty ? null : existing.first;
+
+        if (row != null) {
+          final oldDate = LocalDate.tryParse(row['nav_date'] as String?);
+          final oldFetched = DateTime.parse(row['fetched_at']! as String);
+          if (nav.navCny == null || nav.navDate == null) {
+            if (oldDate != null) {
+              // Directory/eligibility refresh only: keep the real NAV and its
+              // original fetch instant, update the public status columns.
+              await txn.update(
+                'fund_nav_cache',
+                {
+                  'eligibility': nav.eligibility.name,
+                  'fund_calendar': nav.fundCalendar.name,
+                  'source_license_status': nav.sourceLicenseStatus.name,
+                  'updated_at': timestamp,
+                },
+                where: 'instrument_id = ?',
+                whereArgs: [nav.instrumentId],
+              );
+              continue;
+            }
+          } else if (oldDate != null) {
+            final order = nav.navDate!.compareTo(oldDate);
+            if (order < 0) continue;
+            if (order == 0) {
+              final oldRevision = row['source_revision'] as int?;
+              final newRevision = nav.sourceRevision;
+              if (oldRevision != null && newRevision != null) {
+                if (newRevision < oldRevision) continue;
+                if (newRevision == oldRevision &&
+                    nav.fetchedAtUtc.isBefore(oldFetched)) {
+                  continue;
+                }
+              } else if (nav.fetchedAtUtc.isBefore(oldFetched)) {
+                continue;
+              }
+            }
+          } else if (nav.fetchedAtUtc.isBefore(oldFetched)) {
+            continue;
+          }
+        }
+
+        await txn.insert(
+          'fund_nav_cache',
+          {
+            'instrument_id': nav.instrumentId,
+            'nav_cny': nav.navCny?.toCanonicalString(),
+            'nav_date': nav.navDate?.toIsoString(),
+            'previous_nav_cny': nav.previousNavCny?.toCanonicalString(),
+            'previous_nav_date': nav.previousNavDate?.toIsoString(),
+            'action_status': nav.actionStatus.name,
+            'fund_calendar': nav.fundCalendar.name,
+            'eligibility': nav.eligibility.name,
+            'fetched_at': nav.fetchedAtUtc.toIso8601String(),
+            'published_at': nav.publishedAtUtc?.toIso8601String(),
+            'source': nav.source,
+            'source_revision': nav.sourceRevision,
+            'quality': nav.quality.name,
+            'source_license_status': nav.sourceLicenseStatus.name,
+            'updated_at': timestamp,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  /// Oldest cached NAV fetch time for [instrumentIds], or null when at least
+  /// one fund has no cache yet. Used for the 30-minute low-frequency refresh.
+  Future<DateTime?> oldestFundFetchedAt(List<String> instrumentIds) async {
+    if (instrumentIds.isEmpty) return null;
+    final rows = await database.raw.query(
+      'fund_nav_cache',
+      columns: ['instrument_id', 'fetched_at'],
+      where: 'instrument_id IN (${List.filled(instrumentIds.length, '?').join(',')})',
+      whereArgs: instrumentIds,
+    );
+    if (rows.length < instrumentIds.length) return null;
+    DateTime? oldest;
+    for (final row in rows) {
+      final fetched = DateTime.parse(row['fetched_at']! as String);
+      if (oldest == null || fetched.isBefore(oldest)) oldest = fetched;
+    }
+    return oldest;
   }
 
   Future<LedgerState> deleteHolding({
@@ -733,10 +937,14 @@ final class LedgerRepository {
         'car_plan_versions',
         'monthly_bills',
         'quote_cache',
+        'fund_nav_cache',
         'market_calendar_days',
         'onboarding_drafts',
         'setup_commits',
         'widget_publish_jobs',
+        // HOME-DUAL-10: clearing the ledger also resets the local layout
+        // preference; the next visit defaults to showing both cards.
+        'ui_preferences',
       ]) {
         await txn.delete(table);
       }

@@ -1,5 +1,6 @@
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:todayagain/domain/ledger.dart';
 import 'package:todayagain/domain/setup_draft.dart';
 
 void main() {
@@ -153,6 +154,213 @@ void main() {
     expect(restored.housingMode, HousingMode.rent);
     expect(restored.holdings.single.instrumentId, 'CN.BJ.430047');
     expect(restored.rentMonthlyText, '3000');
+  });
+
+  test('fund shares and unit cost keep four decimals and allow zero', () {
+    final draft = fresh()
+      ..salaryText = '12000'
+      ..holdings = [
+        const HoldingDraft(
+          kind: HoldingKind.fund,
+          code: '000001',
+          name: '华夏成长混合',
+          quantityText: '1000.2500',
+          costText: '1.2000',
+        ),
+      ];
+    final validation = draft.validate();
+    expect(validation.isValid, isTrue);
+    final commit = validation.commit!.holdings.single;
+    expect(commit.instrumentId, 'FUND.CN.000001');
+    expect(commit.quantity, Rational.parse('1000.25'));
+    expect(commit.costPerUnit, Rational.parse('1.2'));
+
+    draft.holdings = [
+      const HoldingDraft(
+        kind: HoldingKind.fund,
+        code: '000001',
+        quantityText: '0',
+        costText: '0.0000',
+      ),
+    ];
+    expect(draft.validate().isValid, isTrue);
+  });
+
+  test('fund input rejects five decimals, negatives and over-limit values', () {
+    HoldingDraft fund(String quantity, String cost) => HoldingDraft(
+          kind: HoldingKind.fund,
+          code: '000001',
+          quantityText: quantity,
+          costText: cost,
+        );
+    final draft = fresh()
+      ..salaryText = '12000'
+      ..holdings = [fund('1000.25001', '1.2')];
+    expect(draft.validate().errorFor('holdings'), contains('最多四位小数'));
+
+    draft.holdings = [fund('-1', '1.2')];
+    expect(draft.validate().errorFor('holdings'), contains('最多四位小数'));
+
+    draft.holdings = [fund('10000000.0001', '1.2')];
+    expect(draft.validate().errorFor('holdings'), contains('10,000,000'));
+
+    draft.holdings = [fund('100', '100000.0001')];
+    expect(draft.validate().errorFor('holdings'), contains('100,000'));
+  });
+
+  test('a stock and a fund may share the same six-digit code', () {
+    final draft = fresh()
+      ..salaryText = '12000'
+      ..holdings = [
+        const HoldingDraft(
+          market: StockMarket.szse,
+          code: '000001',
+          quantityText: '100',
+          costText: '12',
+        ),
+        const HoldingDraft(
+          kind: HoldingKind.fund,
+          code: '000001',
+          quantityText: '1000.25',
+          costText: '1.2',
+        ),
+      ];
+    final validation = draft.validate();
+    expect(validation.isValid, isTrue);
+    expect(
+      validation.commit!.holdings.map((holding) => holding.instrumentId),
+      containsAll(['CN.SZ.000001', 'FUND.CN.000001']),
+    );
+  });
+
+  test('duplicate fund codes are rejected', () {
+    final draft = fresh()
+      ..salaryText = '12000'
+      ..holdings = [
+        const HoldingDraft(
+          kind: HoldingKind.fund,
+          code: '000001',
+          quantityText: '1',
+          costText: '1',
+        ),
+        const HoldingDraft(
+          kind: HoldingKind.fund,
+          code: '000001',
+          quantityText: '2',
+          costText: '1',
+        ),
+      ];
+    expect(draft.validate().errorFor('holdings'), contains('同一基金代码'));
+  });
+
+  test('different fund codes (A/C shares) are separate holdings', () {
+    final draft = fresh()
+      ..salaryText = '12000'
+      ..holdings = [
+        const HoldingDraft(
+          kind: HoldingKind.fund,
+          code: '000001',
+          quantityText: '1000.25',
+          costText: '1.2',
+        ),
+        const HoldingDraft(
+          kind: HoldingKind.fund,
+          code: '000002',
+          quantityText: '2000.5',
+          costText: '1.1',
+        ),
+      ];
+    final validation = draft.validate();
+    expect(validation.isValid, isTrue);
+    expect(validation.commit!.holdings, hasLength(2));
+    expect(
+      validation.commit!.holdings.map((holding) => holding.instrumentId),
+      ['FUND.CN.000001', 'FUND.CN.000002'],
+    );
+  });
+
+  test('old drafts without a kind decode as stocks', () {
+    final restored = HoldingDraft.fromJson({
+      'market': 'sse',
+      'code': '600000',
+      'name': '浦发银行',
+      'quantity': '100',
+      'cost': '9.855',
+    });
+    expect(restored.kind, HoldingKind.stock);
+    expect(restored.pendingQuote, isFalse);
+    expect(restored.instrumentId, 'CN.SH.600000');
+  });
+
+  test('fund drafts round-trip kind, precision and pending state', () {
+    final restored = HoldingDraft.fromJson({
+      'kind': 'fund',
+      'code': '000001',
+      'name': '华夏成长混合',
+      'quantity': '1000.2500',
+      'cost': '1.2000',
+      'pendingQuote': true,
+    });
+    expect(restored.kind, HoldingKind.fund);
+    expect(restored.instrumentId, 'FUND.CN.000001');
+    expect(restored.pendingQuote, isTrue);
+    expect(restored.quantityText, '1000.2500');
+  });
+
+  test('redo prefill keeps funds, names, precision and pending state', () {
+    final calendar = BusinessCalendar.shanghai;
+    final now = DateTime.utc(2026, 11, 4, 6, 36);
+    final ledger = LedgerState(
+      settings: const AppSettings(
+        ledgerRevision: 4,
+        onboardingCompletedAt: null,
+      ),
+      salaryVersions: const [],
+      schedules: const {},
+      overrides: const [],
+      holdings: [
+        Holding(
+          id: 'fund-1',
+          instrumentId: 'FUND.CN.000001',
+          quantity: Rational.parse('1000.25'),
+          costPerUnit: Rational.parse('1.2'),
+          effectiveFromUtc: DateTime.utc(2026, 1, 1),
+          pendingQuote: true,
+        ),
+        Holding(
+          id: 'stock-1',
+          instrumentId: 'CN.SZ.000001',
+          quantity: Rational.parse('100'),
+          costPerUnit: Rational.parse('12'),
+          effectiveFromUtc: DateTime.utc(2026, 1, 1),
+        ),
+      ],
+      housingVersions: const [],
+      carVersions: const [],
+      bills: const [],
+      quotes: const {},
+      marketCalendar: MarketCalendar({}),
+      instrumentNames: const {
+        'FUND.CN.000001': '华夏成长混合',
+        'CN.SZ.000001': '平安银行',
+      },
+    );
+    final draft = SetupDraft.fromLedger(
+      ledger,
+      'redo-session',
+      today: calendar.dateOf(now),
+      nowUtc: now,
+    );
+    expect(draft.holdings, hasLength(2));
+    final fund = draft.holdings.firstWhere((item) => item.isFund);
+    expect(fund.code, '000001');
+    expect(fund.name, '华夏成长混合');
+    expect(fund.quantityText, '1000.25');
+    expect(fund.costText, '1.2');
+    expect(fund.pendingQuote, isTrue);
+    final stock = draft.holdings.firstWhere((item) => !item.isFund);
+    expect(stock.instrumentId, 'CN.SZ.000001');
+    expect(stock.quantityText, '100');
   });
 
   test('大小周 supports custom core days and an anchor flip', () {

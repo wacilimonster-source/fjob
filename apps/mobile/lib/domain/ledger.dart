@@ -70,6 +70,8 @@ final class LedgerState {
     required this.bills,
     required this.quotes,
     required this.marketCalendar,
+    this.fundNavs = const <String, FundNavSnapshot>{},
+    this.fundCalendar = const MarketCalendar({}),
     this.instrumentNames = const <String, String>{},
     this.goldReferenceSessionActive = false,
   });
@@ -85,6 +87,8 @@ final class LedgerState {
         bills: [],
         quotes: {},
         marketCalendar: MarketCalendar({}),
+        fundNavs: {},
+        fundCalendar: MarketCalendar({}),
       );
 
   final AppSettings settings;
@@ -97,6 +101,12 @@ final class LedgerState {
   final List<MonthlyBill> bills;
   final Map<String, Quote> quotes;
   final MarketCalendar marketCalendar;
+
+  /// Date-only fund NAVs, kept apart from intraday security quotes.
+  final Map<String, FundNavSnapshot> fundNavs;
+
+  /// Mainland fund settlement calendar; missing dates stay unknown.
+  final MarketCalendar fundCalendar;
 
   /// Display names cached from the instrument directory, keyed by id.
   final Map<String, String> instrumentNames;
@@ -118,6 +128,8 @@ final class LedgerState {
     List<MonthlyBill>? bills,
     Map<String, Quote>? quotes,
     MarketCalendar? marketCalendar,
+    Map<String, FundNavSnapshot>? fundNavs,
+    MarketCalendar? fundCalendar,
     Map<String, String>? instrumentNames,
     bool? goldReferenceSessionActive,
   }) =>
@@ -132,6 +144,8 @@ final class LedgerState {
         bills: bills ?? this.bills,
         quotes: quotes ?? this.quotes,
         marketCalendar: marketCalendar ?? this.marketCalendar,
+        fundNavs: fundNavs ?? this.fundNavs,
+        fundCalendar: fundCalendar ?? this.fundCalendar,
         instrumentNames: instrumentNames ?? this.instrumentNames,
         goldReferenceSessionActive:
             goldReferenceSessionActive ?? this.goldReferenceSessionActive,
@@ -151,6 +165,8 @@ final class LedgerState {
         holdings: holdings,
         quotes: quotes,
         marketCalendar: marketCalendar,
+        fundNavs: fundNavs,
+        fundCalendar: fundCalendar,
         housingVersions: housingVersions,
         carVersions: carVersions,
         bills: bills,

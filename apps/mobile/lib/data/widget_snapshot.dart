@@ -10,7 +10,8 @@ import 'package:finance_core/finance_core.dart';
 import '../domain/ledger.dart';
 
 abstract final class WidgetCaps {
-  static const int schemaVersion = 1;
+  /// Dart emits v2; the native side still accepts and renders v1 snapshots.
+  static const int schemaVersion = 2;
   static const int maxEntries = 289;
   static const int stepMinutes = 5;
   static const int horizonHours = 24;
@@ -24,11 +25,19 @@ abstract final class WidgetSnapshotBuilder {
     required AppTone tone,
     DateTime? createdAt,
   }) {
+    final fundDates = snapshot.assets.positions
+        .where((position) => position.kind == InstrumentKind.fund)
+        .map((position) => position.fundNav?.navDate)
+        .whereType<LocalDate>()
+        .map((date) => date.toIsoString())
+        .toSet();
+    final fundNavDate = fundDates.length == 1 ? fundDates.single : null;
     final amounts = <String, String?>{
       'total': _amount(snapshot.total, privacy),
       'wage': _amount(snapshot.wage, privacy),
       'stockDaily': _amount(snapshot.stockDaily, privacy),
       'goldDaily': _amount(snapshot.goldDaily, privacy),
+      'stockFundDaily': _amount(snapshot.stockFundDaily, privacy),
       'housing': _amount(snapshot.housing, privacy),
       'car': _amount(snapshot.car, privacy),
       'principal': _amount(snapshot.principal, privacy),
@@ -51,6 +60,7 @@ abstract final class WidgetSnapshotBuilder {
       'completeness': snapshot.completeness.name,
       'quoteQuality': snapshot.quoteQuality.name,
       'amounts': amounts,
+      'fundNavDate': fundNavDate,
       'housingMode': snapshot.housingDetail.housingMode?.name ?? 'none',
       'scene': sceneFor(snapshot),
       // WSC-01：房/车可见性跟随配置状态，原生据此选择静态图；
@@ -162,12 +172,14 @@ abstract final class WidgetSnapshotBuilder {
             'wage': null,
             'stockDaily': null,
             'goldDaily': null,
+            'stockFundDaily': null,
             'housing': null,
             'car': null,
             'principal': null,
             'interest': null,
             'rent': null,
           },
+          'fundNavDate': null,
           'housingMode': 'none',
           'scene': 'unknown',
           'caption': '账本已清空，打开 App 重新登记。',

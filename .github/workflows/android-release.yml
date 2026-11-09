@@ -63,6 +63,28 @@ jobs:
           path: |
             apps/mobile/build/app/outputs/flutter-apk/app-release.apk
             apps/mobile/SHA256SUMS
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ASSET="fjob-${GITHUB_REF_NAME#v}-universal.apk"
+          cp apps/mobile/build/app/outputs/flutter-apk/app-release.apk "$ASSET"
+          NOTES="docs/releases/${GITHUB_REF_NAME}.md"
+          if [ -f "$NOTES" ]; then
+            gh release create "$GITHUB_REF_NAME" \
+              "$ASSET" \
+              apps/mobile/SHA256SUMS \
+              --title "今日又白干 $GITHUB_REF_NAME" \
+              --notes-file "$NOTES" \
+              --prerelease
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              "$ASSET" \
+              apps/mobile/SHA256SUMS \
+              --title "今日又白干 $GITHUB_REF_NAME" \
+              --generate-notes \
+              --prerelease
+          fi
       - name: Clean signing files
         if: always()
         run: rm -rf "$RUNNER_TEMP/signing" apps/mobile/android/key.properties

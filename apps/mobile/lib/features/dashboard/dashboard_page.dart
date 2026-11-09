@@ -1,4 +1,4 @@
-/// HOME-01 求生现场。
+/// HOME-01 求生现场 + M8-HOME 首页双核心指标。
 library;
 
 import 'dart:async';
@@ -12,10 +12,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../domain/format.dart';
+import '../../domain/home_metrics.dart';
 import '../../domain/ledger.dart';
 import '../ledger/ledger_controller.dart';
 import '../settings/settings_page.dart';
 import '../shell/tabs.dart';
+import 'home_metrics_controller.dart';
+import 'home_metrics_model.dart';
 import 'office_scene.dart';
 import 'scene_interaction_controller.dart';
 
@@ -32,6 +35,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
       SceneInteractionController(vsync: this);
   final GlobalKey _sceneKey = GlobalKey();
   bool _sceneInViewport = true;
+  bool _metricsSettingsOpen = false;
 
   /// PAT-01：按钮与头肩触控共用一个入口。
   void _requestPat() {
@@ -45,6 +49,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
     if (result == PatRequestResult.accepted) {
       // PAT-06：一次接受对应一次轻触觉，遵循系统触觉设置。
       unawaited(HapticFeedback.selectionClick());
+    }
+  }
+
+  Future<void> _selectMetricsMode(HomeMetricsMode mode) async {
+    final saved = await ref.read(homeMetricsModeProvider.notifier).select(mode);
+    if (!saved && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('显示设置没存上，请重试')),
+      );
     }
   }
 
@@ -83,6 +96,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
     final palette = context.palette;
     final ledger = ref.watch(effectiveLedgerProvider).value;
     final snapshotAsync = ref.watch(dashboardProvider);
+    final metrics = ref.watch(homeMetricsModeProvider);
     final calendar = ref.watch(calendarProvider);
     final settings = ledger?.settings;
     final reduceMotion = settings?.motion == MotionSetting.reduced ||
@@ -139,7 +153,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
                           phase: snapshot?.phase ?? DayPhase.unknown,
                           clock: formatClock(now, calendar),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 10),
                         snapshotAsync.when(
                           data: (snapshot) => _Body(
                             snapshot: snapshot,
@@ -150,6 +164,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
                             sceneKey: _sceneKey,
                             sceneVisible: sceneVisible,
                             onRequestPat: _requestPat,
+                            metrics: metrics,
+                            settingsOpen: _metricsSettingsOpen,
+                            onToggleSettings: () => setState(
+                              () => _metricsSettingsOpen =
+                                  !_metricsSettingsOpen,
+                            ),
+                            onSelectMode: (mode) =>
+                                unawaited(_selectMetricsMode(mode)),
                           ),
                           loading: () => const _LoadingCard(),
                           error: (error, _) => PaperCard(
@@ -191,7 +213,7 @@ class _Header extends StatelessWidget {
     final palette = context.palette;
     final stamp = switch (phase) {
       DayPhase.working => '在岗求生中',
-      DayPhase.breakTime => '午休计费暂停',
+      DayPhase.breakTime => '休息中暂停计薪',
       DayPhase.restDay => '休息也计费',
       DayPhase.beforeShift => '还没轮到上班',
       DayPhase.afterShift => '月供接班中',
@@ -264,6 +286,10 @@ class _Body extends StatelessWidget {
     required this.sceneKey,
     required this.sceneVisible,
     required this.onRequestPat,
+    required this.metrics,
+    required this.settingsOpen,
+    required this.onToggleSettings,
+    required this.onSelectMode,
   });
 
   final DashboardSnapshot snapshot;
@@ -274,19 +300,29 @@ class _Body extends StatelessWidget {
   final Key sceneKey;
   final bool sceneVisible;
   final VoidCallback onRequestPat;
+  final AsyncValue<HomeMetricsMode> metrics;
+  final bool settingsOpen;
+  final VoidCallback onToggleSettings;
+  final ValueChanged<HomeMetricsMode> onSelectMode;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
     final settings = ledger?.settings;
-    final total = snapshot.total;
-    final known = total != null;
-    final positive = known && !total.isNegative;
     final tone = settings?.tone ?? AppTone.gentle;
     final housingConfigured = snapshot.housingDetail.configured;
     final carConfigured = snapshot.carDetail.configured;
 
-    final quote = _quoteLine(snapshot: snapshot, tone: tone);
+    final mode = metrics.value;
+    final loading = mode == null;
+    final timeDisplay = buildHomeTimeDisplay(
+      snapshot: snapshot,
+      calendar: calendar,
+    );
+    final balanceDisplay = buildHomeBalanceDisplay(
+      snapshot: snapshot,
+      calendar: calendar,
+      tone: tone,
+    );
     final steadyFeedback = _steadyFeedbackLine(
       snapshot: snapshot,
       housingConfigured: housingConfigured,
@@ -296,60 +332,29 @@ class _Body extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        PaperCard(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Expanded(child: Text('今日生存结余')),
-                  _Tag(
-                    snapshot.completeness == Completeness.unavailable
-                        ? '待配置'
-                        : !known
-                            ? '待更新'
-                            : positive
-                                ? '暂时领先'
-                                : '努力回本',
-                    background: snapshot.completeness == Completeness.complete
-                        ? palette.yellow
-                        : palette.line,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: MoneyText(
-                  formatMoney(total),
-                  size: 42,
-                  color: !known
-                      ? palette.muted
-                      : positive
-                          ? palette.positive
-                          : palette.negative,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                    left: BorderSide(color: palette.rose, width: 3),
-                  ),
-                ),
-                padding: const EdgeInsets.only(left: 9),
-                child: Text(quote, style: const TextStyle(fontSize: 13)),
-              ),
-              if (snapshot.completeness != Completeness.complete) ...[
-                const SizedBox(height: 10),
-                _CompletenessNote(snapshot: snapshot),
-              ],
-            ],
-          ),
+        _MetricsHeading(
+          expanded: settingsOpen,
+          onToggle: onToggleSettings,
         ),
-        const SizedBox(height: 14),
+        if (settingsOpen) ...[
+          const SizedBox(height: 5),
+          _MetricsSettingsPanel(
+            mode: mode,
+            onSelect: onSelectMode,
+          ),
+          const SizedBox(height: 11),
+        ] else
+          const SizedBox(height: 5),
+        if (loading)
+          const _MetricsPlaceholder()
+        else ...[
+          if (mode != HomeMetricsMode.balance)
+            _TimeMetricCard(display: timeDisplay),
+          if (mode == HomeMetricsMode.both) const _PaperLinks(),
+          if (mode != HomeMetricsMode.time)
+            _BalanceMetricCard(display: balanceDisplay),
+        ],
+        const SizedBox(height: 12),
         ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: OfficeScene(
@@ -372,22 +377,25 @@ class _Body extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        // PAT-02：固定预留的反馈区，平常显示状态说明，拍肩时升级为对话气泡。
-        _FeedbackArea(
-          controller: controller,
-          steadyText: steadyFeedback,
+        // PAT-02：固定预留的反馈区；拍肩入口放在场景附近，不再挤占时间卡。
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: _FeedbackArea(
+                controller: controller,
+                steadyText: steadyFeedback,
+              ),
+            ),
+            const SizedBox(width: 8),
+            _PatButton(
+              controller: controller,
+              onRequestPat: onRequestPat,
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        _ClockRow(
-          snapshot: snapshot,
-          calendar: calendar,
-          controller: controller,
-          onRequestPat: onRequestPat,
-        ),
-        const SizedBox(height: 8),
-        _ProgressBar(snapshot: snapshot),
         if (housingConfigured || carConfigured) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           _ReceiptsRow(snapshot: snapshot),
         ],
         const SizedBox(height: 16),
@@ -422,7 +430,7 @@ class _Body extends StatelessWidget {
           (false, true) => '工位 0001 · 赚来的钱，流向车',
           _ => '工位 0001 · 赚来的钱都是自己的',
         },
-      DayPhase.breakTime => '午休暂停计薪 · 固定支出继续分摊',
+      DayPhase.breakTime => '休息中 · 固定支出继续分摊',
       DayPhase.restDay => switch ((housingConfigured, carConfigured)) {
           (true, true) => '工位空了 · 房子和车的账单还在',
           (true, false) => '工位空了 · 房子的账单还在',
@@ -434,41 +442,595 @@ class _Body extends StatelessWidget {
       DayPhase.unknown => '排班还没准备好',
     };
   }
+}
 
-  static String _quoteLine({
-    required DashboardSnapshot snapshot,
-    required AppTone tone,
-  }) {
-    final harsh = tone == AppTone.harsh;
-    if (snapshot.completeness == Completeness.unavailable) {
-      return '配置还差一点，工资与账单暂时无法开工。';
-    }
-    if (snapshot.phase == DayPhase.restDay) {
-      return harsh ? '你休息了，账单觉得你想多了。' : '今天不上班，生活照常扣费。';
-    }
-    if (snapshot.phase == DayPhase.breakTime) {
-      return '午休不涨工资，账单倒是很准时。';
-    }
-    if (snapshot.phase == DayPhase.afterShift) {
-      return '人下班了，生活还在全勤。';
-    }
-    if (snapshot.completeness == Completeness.partial) {
-      return '投资待更新，当前合计不完整。';
-    }
-    final total = snapshot.total;
-    if (total == null) return '数字还在路上。';
-    if (total.isNegative) {
-      return harsh ? '辛苦一天，成功把亏损补小了一点。' : '工资正在努力追赶上午的亏损。';
-    }
-    return harsh ? '难得赢一局，房贷已经在候场。' : '今天暂时领先，先小声开心一下。';
+class _MetricsHeading extends StatelessWidget {
+  const _MetricsHeading({required this.expanded, required this.onToggle});
+
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 38),
+      child: Row(
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: const Color(0xFF9DA789),
+              shape: BoxShape.circle,
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0xFFD8BB88),
+                  offset: Offset(4, 4),
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 9),
+          Text(
+            '今日小记',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.6,
+                ),
+          ),
+          const Spacer(),
+          Semantics(
+            button: true,
+            label: '首页显示，${expanded ? '已展开' : '已收起'}',
+            excludeSemantics: true,
+            child: TextButton.icon(
+              onPressed: onToggle,
+              icon: const Icon(Icons.tune, size: 15),
+              label: const Text('首页显示'),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(44, 44),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                foregroundColor: palette.muted,
+                textStyle: const TextStyle(fontSize: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class _Tag extends StatelessWidget {
-  const _Tag(this.text, {required this.background});
+class _MetricsSettingsPanel extends StatelessWidget {
+  const _MetricsSettingsPanel({required this.mode, required this.onSelect});
+
+  final HomeMetricsMode? mode;
+  final ValueChanged<HomeMetricsMode> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final enabled = mode != null;
+    final textScale = MediaQuery.textScalerOf(context).scale(12);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(13, 12, 13, 11),
+      decoration: BoxDecoration(
+        color: palette.panel,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: const Color(0xFFDAD6C6)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A323A32),
+            offset: Offset(0, 2),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      child: Semantics(
+        container: true,
+        label: '首页想看什么？',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ExcludeSemantics(
+              child: Text(
+                '首页想看什么？',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(height: 8),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final vertical = textScale > 16 || constraints.maxWidth < 300;
+                final options = [
+                  _MetricChoice(
+                    label: '都显示',
+                    selected: mode == HomeMetricsMode.both,
+                    enabled: enabled,
+                    onTap: () => onSelect(HomeMetricsMode.both),
+                  ),
+                  _MetricChoice(
+                    label: '只看下班',
+                    selected: mode == HomeMetricsMode.time,
+                    enabled: enabled,
+                    onTap: () => onSelect(HomeMetricsMode.time),
+                  ),
+                  _MetricChoice(
+                    label: '只看结余',
+                    selected: mode == HomeMetricsMode.balance,
+                    enabled: enabled,
+                    onTap: () => onSelect(HomeMetricsMode.balance),
+                  ),
+                ];
+                if (vertical) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var index = 0; index < options.length; index++) ...[
+                        if (index > 0) const SizedBox(height: 6),
+                        options[index],
+                      ],
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    for (var index = 0; index < options.length; index++) ...[
+                      if (index > 0) const SizedBox(width: 6),
+                      Expanded(child: options[index]),
+                    ],
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 9),
+            Text(
+              '只调整首页主卡，不隐藏账单或小部件。',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                    height: 1.5,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricChoice extends StatelessWidget {
+  const _MetricChoice({
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      checked: selected,
+      enabled: enabled,
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(9),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected ? palette.soft : palette.paper,
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(
+              color: selected ? const Color(0xFF849279) : palette.line,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _RadioDot(selected: selected, enabled: enabled),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    color: enabled ? palette.ink : palette.muted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RadioDot extends StatelessWidget {
+  const _RadioDot({required this.selected, required this.enabled});
+
+  final bool selected;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      width: 14,
+      height: 14,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: selected ? palette.positive : palette.paper,
+        border: Border.all(
+          color: enabled ? palette.muted : palette.line,
+          width: 1.4,
+        ),
+      ),
+      child: selected
+          ? Center(
+              child: Container(
+                width: 5,
+                height: 5,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFFDF7),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+class _MetricsPlaceholder extends StatelessWidget {
+  const _MetricsPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Semantics(
+      label: '正在读取首页显示设置',
+      child: Container(
+        height: 132,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: palette.panel,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: palette.line),
+        ),
+        child: Text(
+          '正在读取首页显示设置…',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeMetricCard extends StatelessWidget {
+  const _TimeMetricCard({required this.display});
+
+  final HomeTimeDisplay display;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final semantics = display.showProgress
+        ? '${display.semanticsLabel}。${display.progressSemantics}'
+        : display.semanticsLabel;
+    return Semantics(
+      container: true,
+      label: semantics,
+      excludeSemantics: true,
+      child: _MetricCard(
+        background: const Color(0xFFF6E8BF),
+        border: const Color(0xFFD5C69C),
+        radius: 16,
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const _HandDrawnClockIcon(),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    display.label,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+                _TimeTag(display.tag),
+              ],
+            ),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                display.mainValue,
+                key: const Key('home-countdown'),
+                maxLines: 1,
+                style: TextStyle(
+                  fontFamily: 'Consolas',
+                  fontFamilyFallback: const ['monospace'],
+                  fontSize: 42,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -1.6,
+                  height: 1.15,
+                  color: palette.ink,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              display.detail,
+              style: const TextStyle(fontSize: 12, height: 1.4),
+            ),
+            if (display.showProgress) ...[
+              const SizedBox(height: 9),
+              _MetricProgress(display: display),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BalanceMetricCard extends StatelessWidget {
+  const _BalanceMetricCard({required this.display});
+
+  final HomeBalanceDisplay display;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final amountColor = !display.known
+        ? palette.muted
+        : display.neutral
+            ? palette.ink
+            : display.negative
+                ? palette.negative
+                : palette.positive;
+    final stale = display.sourceNote?.startsWith('缓存') ?? false;
+    return Semantics(
+      container: true,
+      label: display.semanticsLabel,
+      excludeSemantics: true,
+      child: _MetricCard(
+        background: palette.panel,
+        border: const Color(0xFFD7D2C0),
+        radius: 15,
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const _HandDrawnBillIcon(),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    '今日生存结余',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+                Wrap(
+                  spacing: 5,
+                  runSpacing: 4,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    _StatusTag(
+                      display.tag,
+                      background: display.neutral
+                          ? palette.line
+                          : palette.yellow,
+                      color: display.known ? palette.ink : palette.muted,
+                    ),
+                    if (stale)
+                      _StatusTag(
+                        '缓存/陈旧',
+                        background: palette.rose,
+                        color: palette.ink,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              display.amountText,
+              key: const Key('home-balance-amount'),
+              softWrap: true,
+              style: TextStyle(
+                fontFamily: 'Consolas',
+                fontFamilyFallback: const ['monospace'],
+                fontSize: _metricNumberSize(context),
+                fontWeight: FontWeight.w700,
+                letterSpacing: -1.2,
+                height: 1.15,
+                color: amountColor,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(height: 5),
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: palette.rose, width: 3),
+                ),
+              ),
+              padding: const EdgeInsets.only(left: 9),
+              child: Text(display.flavorLine, style: const TextStyle(fontSize: 13)),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              display.formula,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                  ),
+            ),
+            if (display.completenessNote != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: palette.paper,
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: palette.line),
+                ),
+                child: Text(
+                  display.completenessNote!,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+            if (display.sourceNote != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                display.sourceNote!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                    ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  static double _metricNumberSize(BuildContext context) {
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    return scale > 1.5 ? 32 : 42;
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.background,
+    required this.border,
+    required this.radius,
+    required this.child,
+    required this.padding,
+  });
+
+  final Color background;
+  final Color border;
+  final double radius;
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(color: border),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0F323A32),
+              offset: Offset(0, 3),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: child,
+      );
+}
+
+class _MetricProgress extends StatelessWidget {
+  const _MetricProgress({required this.display});
+
+  final HomeTimeDisplay display;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: display.progress,
+            minHeight: 5,
+            backgroundColor: const Color(0x33323A32),
+            valueColor: AlwaysStoppedAnimation<Color>(palette.positive),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            display.progressLabel,
+            style: const TextStyle(fontSize: 11),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TimeTag extends StatelessWidget {
+  const _TimeTag(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0x80FFFDF7),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: const Color(0xFFC9BC97)),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF5A604F),
+          ),
+        ),
+      );
+}
+
+class _StatusTag extends StatelessWidget {
+  const _StatusTag(
+    this.text, {
+    required this.background,
+    required this.color,
+  });
 
   final String text;
   final Color background;
+  final Color color;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -479,37 +1041,147 @@ class _Tag extends StatelessWidget {
         ),
         child: Text(
           text,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
       );
 }
 
-class _CompletenessNote extends StatelessWidget {
-  const _CompletenessNote({required this.snapshot});
-
-  final DashboardSnapshot snapshot;
+class _PaperLinks extends StatelessWidget {
+  const _PaperLinks();
 
   @override
-  Widget build(BuildContext context) {
-    final missing = <String>[
-      if (snapshot.stockDaily == null) 'A股今日浮动',
-      if (snapshot.goldDaily == null) '黄金今日浮动',
-      if (snapshot.housing == null) '住房账单',
-      if (snapshot.car == null) '车贷账单',
-    ];
-    final message = snapshot.completeness == Completeness.unavailable
-        ? '核心配置无效，主数字暂不可用。'
-        : '缺少：${missing.join('、')}。当前只展示可计算部分。';
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: context.palette.paper,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: context.palette.line),
+  Widget build(BuildContext context) => ExcludeSemantics(
+        child: SizedBox(
+          height: 10,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 26),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [_PaperLink(), _PaperLink()],
+            ),
+          ),
+        ),
+      );
+}
+
+class _PaperLink extends StatelessWidget {
+  const _PaperLink();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 5,
+        height: 10,
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8E5D6),
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(color: const Color(0xFFA5A58F)),
+        ),
+      );
+}
+
+class _HandDrawnClockIcon extends StatelessWidget {
+  const _HandDrawnClockIcon();
+
+  @override
+  Widget build(BuildContext context) => const CustomPaint(
+        size: Size.square(17),
+        painter: _ClockIconPainter(),
+      );
+}
+
+class _ClockIconPainter extends CustomPainter {
+  const _ClockIconPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF586152)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.7
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width * 0.4;
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(-0.06);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset.zero,
+        width: radius * 2.02,
+        height: radius * 1.96,
       ),
-      child: Text(message, style: Theme.of(context).textTheme.bodySmall),
+      paint,
+    );
+    canvas.drawLine(Offset.zero, Offset(0, -radius * 0.55), paint);
+    canvas.drawLine(
+      Offset.zero,
+      Offset(radius * 0.38, radius * 0.22),
+      paint,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _ClockIconPainter oldDelegate) => false;
+}
+
+class _HandDrawnBillIcon extends StatelessWidget {
+  const _HandDrawnBillIcon();
+
+  @override
+  Widget build(BuildContext context) => const CustomPaint(
+        size: Size.square(17),
+        painter: _BillIconPainter(),
+      );
+}
+
+class _BillIconPainter extends CustomPainter {
+  const _BillIconPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF586152)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.7
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final left = size.width * 0.22;
+    final right = size.width * 0.78;
+    final top = size.height * 0.16;
+    final bottom = size.height * 0.84;
+    final path = Path()
+      ..moveTo(left, top)
+      ..lineTo(right, top + 0.4)
+      ..lineTo(right - 0.4, bottom - 2.2)
+      ..lineTo((left + right) / 2, bottom)
+      ..lineTo(left + 0.4, bottom - 2.2)
+      ..close();
+    canvas.drawPath(path, paint);
+    canvas.drawLine(
+      Offset(left + 2.6, size.height * 0.36),
+      Offset(right - 2.6, size.height * 0.36),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(left + 2.6, size.height * 0.52),
+      Offset(right - 2.6, size.height * 0.52),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(left + 2.6, size.height * 0.68),
+      Offset((left + right) / 2, size.height * 0.68),
+      paint,
     );
   }
+
+  @override
+  bool shouldRepaint(covariant _BillIconPainter oldDelegate) => false;
 }
 
 /// PAT-02 反馈区：预留最小高度，交互开始时不推动布局跳动。
@@ -602,88 +1274,36 @@ class _FeedbackArea extends StatelessWidget {
   }
 }
 
-class _ClockRow extends StatelessWidget {
-  const _ClockRow({
-    required this.snapshot,
-    required this.calendar,
+class _PatButton extends StatelessWidget {
+  const _PatButton({
     required this.controller,
     required this.onRequestPat,
   });
 
-  final DashboardSnapshot snapshot;
-  final BusinessCalendar calendar;
   final SceneInteractionController controller;
   final VoidCallback onRequestPat;
 
   @override
   Widget build(BuildContext context) {
-    final now = snapshot.computedAtUtc;
-    final timeline = snapshot.timeline;
-    final session = snapshot.workSession;
-    String text;
-    if (session.scheduleValid) {
-      text = switch (snapshot.phase) {
-        DayPhase.working => _countdown(
-            '距离下班还有',
-            session.activeSession?.endUtc,
-            now,
-            fallback: '计薪中',
-          ),
-        DayPhase.breakTime => '午休中 · 账单继续分摊',
-        DayPhase.beforeShift => _countdown(
-            '距离上班还有',
-            session.nextSession?.startUtc,
-            now,
-            fallback: '还没上班',
-          ),
-        DayPhase.afterShift => _afterShiftText(session, calendar),
-        _ => '排班还没准备好',
-      };
-    } else if (timeline == null || timeline.isRestDay) {
-      text = '工资休息中 · 月供照常营业';
-    } else if (snapshot.phase == DayPhase.working) {
-      final end = timeline.shiftEndUtc;
-      text = end == null
-          ? '计薪中'
-          : '距离下班还有 ${formatDuration(end.difference(now).inSeconds)}';
-    } else if (snapshot.phase == DayPhase.breakTime) {
-      text = '午休中 · 账单继续分摊';
-    } else if (snapshot.phase == DayPhase.beforeShift) {
-      final start = timeline.shiftStartUtc;
-      text = start == null
-          ? '还没上班'
-          : '距离上班还有 ${formatDuration(start.difference(now).inSeconds)}';
-    } else if (snapshot.phase == DayPhase.afterShift) {
-      text = '今日排班已结束 · 月供继续营业';
-    } else {
-      text = '排班还没准备好';
-    }
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
         final presentation = controller.presentation;
         final canPat = presentation.canPat;
         final (label, enabled) = _patButtonState(presentation);
-        return Row(
-          children: [
-            Expanded(
-              child: Text(text, style: Theme.of(context).textTheme.bodySmall),
+        return Semantics(
+          label: '拍拍他，给正在工位上的他一点安慰',
+          button: true,
+          child: TextButton.icon(
+            onPressed: enabled ? onRequestPat : null,
+            icon: const Icon(Icons.back_hand_outlined, size: 16),
+            label: Text(label),
+            style: TextButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              foregroundColor:
+                  canPat ? context.palette.ink : context.palette.muted,
             ),
-            Semantics(
-              label: '拍拍他，给正在工位上的他一点安慰',
-              button: true,
-              child: TextButton.icon(
-                onPressed: enabled ? onRequestPat : null,
-                icon: const Icon(Icons.back_hand_outlined, size: 16),
-                label: Text(label),
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(44, 44),
-                  foregroundColor:
-                      canPat ? context.palette.ink : context.palette.muted,
-                ),
-              ),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -707,67 +1327,6 @@ class _ClockRow extends StatelessWidget {
       DayPhase.restDay => ('今天不在岗', false),
       DayPhase.unknown => ('排班待确认', false),
     };
-  }
-
-  static String _countdown(
-    String prefix,
-    DateTime? endUtc,
-    DateTime now, {
-    required String fallback,
-  }) {
-    if (endUtc == null) return fallback;
-    return '$prefix ${formatDuration(endUtc.difference(now).inSeconds)}';
-  }
-
-  static String _afterShiftText(
-    WorkSessionContext session,
-    BusinessCalendar calendar,
-  ) {
-    final next = session.nextSession;
-    final ended = session.lastEndedSession?.endUtc;
-    if (next != null && ended != null && next.startUtc.isAfter(ended)) {
-      return '已下班，下一班 ${formatClock(next.startUtc, calendar)}';
-    }
-    return '今日排班已结束 · 月供继续营业';
-  }
-}
-
-class _ProgressBar extends StatelessWidget {
-  const _ProgressBar({required this.snapshot});
-
-  final DashboardSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context) {
-    final timeline = snapshot.timeline;
-    final total = timeline?.paidSecondsTotal ?? 0;
-    final elapsed = timeline?.paidSecondsElapsed(snapshot.computedAtUtc) ?? 0;
-    final progress = total == 0 ? 0.0 : (elapsed / total).clamp(0.0, 1.0);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 6,
-            backgroundColor: context.palette.line,
-            valueColor: AlwaysStoppedAnimation<Color>(context.palette.positive),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Semantics(
-          label: '今日排班完成 ${(progress * 100).round()}%',
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '今日计薪 ${formatHours(elapsed)} / ${formatHours(total)} 小时',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }
 
@@ -891,7 +1450,25 @@ class _Entries extends StatelessWidget {
     final palette = context.palette;
     final wage = snapshot.wage;
     final stock = snapshot.stockDaily;
+    final fund = snapshot.fundDaily;
     final gold = snapshot.goldDaily;
+    final fundPositions = snapshot.assets.positions
+        .where((position) => position.kind == InstrumentKind.fund)
+        .toList();
+    final knownFundCount =
+        fundPositions.where((position) => position.dailyPnl != null).length;
+    final anyKnownFund = knownFundCount > 0;
+    final fundIncomplete = fund == null && fundPositions.isNotEmpty;
+    final fundValue = fundIncomplete
+        ? (anyKnownFund ? snapshot.assets.knownFundDaily : null)
+        : fund;
+    final fundDates = fundPositions
+        .map((position) => position.fundNav?.navDate)
+        .whereType<LocalDate>()
+        .map((date) => date.toIsoString())
+        .toSet()
+        .toList()
+      ..sort();
     final expenses = snapshot.allocatedExpenses;
     final monthStats = snapshot.monthStats;
     final quotesAsOf = formatClock(snapshot.quotesAsOf, calendar);
@@ -918,7 +1495,23 @@ class _Entries extends StatelessWidget {
           note: snapshot.assets.positions.isEmpty
               ? '没有A股持仓'
               : '${snapshot.assets.positions.where((p) => p.kind == InstrumentKind.stock).length} 只持仓 · '
-                  '${snapshot.quoteQuality == QuoteQuality.fixture ? '模拟报价' : '报价截至 $quotesAsOf'}',
+                  '${snapshot.quoteQuality == QuoteQuality.fixture ? '模拟报价' : (snapshot.quotesAsOf == null ? '报价时间待更新' : '报价截至 $quotesAsOf')}',
+        ),
+        _EntryRow(
+          label: fundIncomplete && anyKnownFund
+              ? '基金 · 已知小计（不完整）'
+              : '基金 · 今日浮动',
+          value: formatMoney(fundValue, signed: true),
+          color: (fundValue?.isNegative ?? false)
+              ? palette.negative
+              : palette.positive,
+          note: fundPositions.isEmpty
+              ? '没有基金持仓'
+              : fundIncomplete
+                  ? '$knownFundCount/${fundPositions.length} 只基金已知 · '
+                      '${fundDates.isEmpty ? '净值待更新' : '净值日期 ${fundDates.join('、')}'}'
+                  : '${fundPositions.length} 只基金 · '
+                      '${fundDates.isEmpty ? '净值待更新' : '净值日期 ${fundDates.join('、')}'}',
         ),
         _EntryRow(
           label: '黄金 · 今日浮动',
@@ -1006,8 +1599,9 @@ class _Explanation extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '细分精度：工资 ${_precision(snapshot.wage)}，A股 ${_precision(snapshot.stockDaily)}，'
-            '黄金 ${_precision(snapshot.goldDaily)}，住房 ${_precision(snapshot.housing)}，'
-            '车贷 ${_precision(snapshot.car)}。分项显示取整后合计使用完整精度。',
+            '基金 ${_precision(snapshot.fundDaily)}，黄金 ${_precision(snapshot.goldDaily)}，'
+            '住房 ${_precision(snapshot.housing)}，车贷 ${_precision(snapshot.car)}。'
+            '分项显示取整后合计使用完整精度；基金含已知小计，缺一只时整体标不完整。',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
@@ -1019,9 +1613,15 @@ class _Explanation extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '统计时区 ${snapshot.timezone} · 报价截至 '
-            '${formatClock(snapshot.quotesAsOf, calendar)} · '
+            '统计时区 ${snapshot.timezone} · '
+            '${snapshot.quotesAsOf == null ? '报价时间待更新（基金只有净值日期）' : '报价截至 ${formatClock(snapshot.quotesAsOf, calendar)}'} · '
             '交易基准 ${snapshot.assets.positions.isEmpty ? '无持仓' : '按来源交易日'}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '基金使用已公布单位净值，不是盘中估值；净值日期早于今天时，'
+            '今日浮动只在已确认休市时为 0，否则等待今天的净值。',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
