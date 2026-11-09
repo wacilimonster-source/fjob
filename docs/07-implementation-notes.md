@@ -217,4 +217,6 @@ tools/                     契约校验与会话交付脚本
 
 验证：finance_core 110 passed；`flutter analyze` 无问题；`flutter test` 172 passed、1 skipped；`flutter build apk --debug` 成功（163,026,082 B，SHA-256 `26d42142f3bee5d8bf2c6fd44dd0df610887811e47c6dbe8e2e8b5bf40b85b70`，versionName `0.1.10` / versionCode `11`）。Android 14 模拟器走查双卡、显示设置、仅下班、仅结余与 200% 字体，截图见 `docs/screenshots/12-implementation-*.png`。
 
-未验证：物理真机、真实行情来源展示许可、原生小部件桌面实装、release 签名产物（由 tag CI 构建）。
+未验证：物理真机、真实行情来源展示许可、原生小部件桌面实装。
+
+**v0.1.10 发布（2026-11-09）**：tag `v0.1.10` 触发 `android-release` run #13，versionCode `1013`，CI 签名产物 `fjob-0.1.10-universal.apk`（58,398,406 B，SHA-256 `fa50c14c3ae5094dee09853091fa0ea7e4f43c0b9a8902207ea432bff0f39ae5`）已随 GitHub Release v0.1.10 发布；`ci` 工作流同时成功。正式产物一律以 CI 构建为准。
