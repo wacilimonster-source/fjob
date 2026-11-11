@@ -128,6 +128,39 @@
 
 未验证：物理真机、真实行情来源展示许可、原生小部件桌面实装、release 签名产物（由 tag CI 构建）。
 
+### 3.3 M9-PC 本轮验证（2026-11-11）
+
+环境：Windows 11 专业版 10.0.26300，2560×1440 @125% DPI（逻辑 2048×1152），16 核；release 构建 `apps/desktop/build/windows/x64/runner/Release/todayagain_desktop.exe`；走查账本由 `tool/make_walkthrough_bundle.dart` 锚定 2026-11 生成（月薪 12000、房贷 4800/本金 2800、车贷 1800/本金 1500、A股 000001×1000、黄金×20），经 `.fjob` 真机导入。
+
+| 命令 | 结果 |
+| --- | --- |
+| `cd packages/finance_core && dart analyze` | No issues found |
+| `cd packages/finance_core && dart test` | 110 passed |
+| `cd packages/ledger_model && dart test` | 77 passed |
+| `cd packages/ledger_store && dart test` | 13 passed |
+| `cd packages/market_data && dart test` | 65 passed |
+| `cd packages/fjob_ui && flutter test` | 35 passed |
+| `cd apps/desktop && flutter analyze` | No issues found |
+| `cd apps/desktop && flutter test` | 19 passed（12 基线 + 层级回归 1 + 真实 IO 回归 1 + 定位解析 5） |
+| `cd apps/mobile && flutter analyze` | No issues found |
+| `cd apps/mobile && flutter test` | 176 passed、1 skipped（共享包改动后无回归） |
+| `python -X utf8 tools/verify_handoff.py` | PASS（24 参考计算 + OpenAPI + v1/v2 schema + 隐私反例 + 文档链接） |
+| `flutter build windows --release` | 成功（最终 data/app.so 于修复后重建） |
+
+固定窗真机走查（PowerShell UI 自动化 + PrintWindow 截图，见 docs/21）：S/M/L 三档切换、显示项都显示/只看下班/只看结余、金额隐身遮蔽（结余 ¥••••、下班时间保留）、老板键 Ctrl+Alt+H 隐身/恢复、点击穿透开启（右键透传、无菜单）与关闭、锁定位置防拖拽、拖拽移动、位置记忆持久化与重启恢复、右键菜单四项（打开主窗/金额隐身/点击穿透/隐藏到托盘）、双击拉起主窗、纸面透明度 85%/100%、125% DPI 无裁切、贴角定位（逻辑边距 28/22 精确换算）。视觉层级按用户要求落地：下班时间为固定窗主核心（M 档 40px 倒计时 + 迷你计薪进度），今日生存结余为次核心（金额 34px、S 档 21/18px）。
+
+本轮修复（真机走查发现，均有回归测试）：偏好保存失败（createTemp 混合分隔符 ERROR_PATH_NOT_FOUND，改为确定性暂存目录 + 规范化路径）；页面偏好与持久化不同步（provider 启动同步）；卡窗右键菜单崩溃（showMenu 使用 MaterialApp 之外的 context）；卡窗位置记忆缺失（onWindowMoved 上报 + 指纹校验恢复 + 程序性贴角后上报）；双 preferences store 实例互覆盖（main 单实例 override）；finance_core 2 处 analyze 遗留。
+
+范围变更（用户决定，2026-11-11）：PC 端**移除今日页**，主窗五页改四页（配置/桌面/数据/设置），默认落配置页；欢迎面板改为一次性 dismiss（`_welcomeDismissed`），`lib/pages/today_page.dart` 删除。今日页相关的 parity 走查与手机到分核对随之取消。
+
+产物（覆盖旧包，旧 SHA `6c4421fa…`、`5046fc2e…` 均作废）：
+
+- `G:\game\nw\FJOB\apps\desktop\build\fjob-desktop-0.1.0-win-x64.zip`
+- 大小：13,731,005 B；SHA-256：`dc0836df897f79d7b7158d1a4ce0a591fda1d77f585f145fadb92cce637f1664`
+- 解压冒烟：临时目录解压启动，主窗 + 固定窗正常显示，退出后清理。
+
+未验证：全屏应用自动隐藏（模拟器探针受焦点竞争干扰，需真实全屏应用实测）、托盘菜单逐项点击、200% 缩放/键盘全流程/Narrator、空闲内存 <150MB（上轮 168.7MB 缺口未复核）、配置/数据/设置页功能级走查、PC 与手机同账本到分一致的真机核对、真实行情来源展示许可、代码签名、Windows CI（需用户确认）。
+
 ## 4. 原型的简化边界
 
 | 内容 | 原型状态 | 正式开发要求 |

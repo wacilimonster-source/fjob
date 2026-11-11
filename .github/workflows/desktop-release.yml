@@ -1,0 +1,101 @@
+name: desktop-release
+
+# PC 端发布通道：desktop-v* 标签触发，与手机 v* 通道互不干扰。
+# 产出安装包（Inno Setup）、便携 zip 与 SHA-256 校验和，并创建 Release。
+on:
+  push:
+    tags: ['desktop-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+      - name: Resolve
+        working-directory: apps/desktop
+        run: flutter pub get
+      - name: Analyze and test
+        working-directory: apps/desktop
+        run: |
+          flutter analyze
+          flutter test
+      - name: Build release
+        working-directory: apps/desktop
+        run: flutter build windows --release
+      - name: Package portable zip
+        working-directory: apps/desktop
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $ver = if ($tag -match '^desktop-v(.+)$') { $Matches[1] } else { "0.1.0" }
+          $src = "build/windows/x64/runner/Release"
+          $zip = "build/fjob-desktop-$ver-win-x64.zip"
+          if (Test-Path $zip) { Remove-Item $zip }
+          Compress-Archive -Path "$src/*" -DestinationPath $zip
+      - name: Build installer
+        working-directory: apps/desktop
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $ver = if ($tag -match '^desktop-v(.+)$') { $Matches[1] } else { "0.1.0" }
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "Inno Setup not found at $iscc" }
+          & $iscc "/DAppVersion=$ver" "installer\fjob_setup.iss"
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with $LASTEXITCODE" }
+      - name: Checksums
+        working-directory: apps/desktop
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $ver = if ($tag -match '^desktop-v(.+)$') { $Matches[1] } else { "0.1.0" }
+          $files = @(
+            "build/installer/FJOB-Setup-$ver.exe",
+            "build/fjob-desktop-$ver-win-x64.zip"
+          )
+          $lines = foreach ($file in $files) {
+            if (-not (Test-Path $file)) { throw "missing $file" }
+            $hash = (Get-FileHash -Path $file -Algorithm SHA256).Hash.ToLower()
+            $name = Split-Path -Leaf $file
+            "$hash  $name"
+          }
+          $lines | Set-Content -Path "build/SHA256SUMS" -Encoding ascii
+          Get-Content "build/SHA256SUMS"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-release
+          path: |
+            apps/desktop/build/installer/FJOB-Setup-*.exe
+            apps/desktop/build/fjob-desktop-*-win-x64.zip
+            apps/desktop/build/SHA256SUMS
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -notmatch '^desktop-v') {
+            Write-Host "workflow_dispatch without a desktop-v tag; artifacts only."
+            exit 0
+          }
+          $ver = $Matches[1]
+          $installer = "apps/desktop/build/installer/FJOB-Setup-$ver.exe"
+          $zip = "apps/desktop/build/fjob-desktop-$ver-win-x64.zip"
+          $notes = "docs/releases/$tag.md"
+          $args = @(
+            "release", "create", $tag,
+            $installer, $zip, "apps/desktop/build/SHA256SUMS",
+            "--title", "今日又白干 PC $tag",
+            "--prerelease"
+          )
+          if (Test-Path $notes) { $args += @("--notes-file", $notes) }
+          else { $args += "--generate-notes" }
+          gh @args

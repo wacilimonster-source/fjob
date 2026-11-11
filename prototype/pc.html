@@ -1,0 +1,2224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今日又白干 · PC 伴生端原型</title>
+<style>
+:root{
+  --paper:#f7f2e9; --panel:#fffdf7; --ink:#323a32; --muted:#686e61;
+  --line:#d5d6c8; --soft:#e9eddf; --yellow:#f2dfac; --rose:#f0d2c5;
+  --bad:#ad4736; --good:#46644e; --rail:#f2ede3; --cream:#fbf7ee;
+  --wall-1:#dbe3d5; --wall-2:#c9d5c7; --shadow:rgba(50,58,50,.14);
+  --mono:"Cascadia Mono","JetBrains Mono","Consolas",monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;overflow:hidden;background:#cfd8cc;color:var(--ink);font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;font-size:13px;line-height:1.55}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--good);outline-offset:2px}
+[hidden]{display:none!important}
+svg{flex:none}
+
+/* ---------- desktop ---------- */
+.desktop{position:relative;width:100vw;height:100vh;min-width:1180px;min-height:720px;overflow:hidden;isolation:isolate;
+  background:
+    radial-gradient(900px 520px at 16% 4%,rgba(255,253,247,.62),transparent 62%),
+    radial-gradient(760px 520px at 82% 18%,rgba(242,223,172,.38),transparent 64%),
+    linear-gradient(135deg,var(--wall-1),var(--wall-2));}
+.wallpaper{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.wallpaper:before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(50,58,50,.07) 1px,transparent 1px);background-size:5px 5px;opacity:.45}
+.wallpaper:after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 42%,transparent 45%,rgba(52,68,54,.13) 100%)}
+.blob{position:absolute;border-radius:50%;filter:blur(1px);opacity:.55}
+.blob.a{width:420px;height:420px;left:-120px;top:120px;background:radial-gradient(circle at 35% 30%,rgba(242,223,172,.62),rgba(242,223,172,0) 68%)}
+.blob.b{width:520px;height:520px;right:-160px;bottom:-120px;background:radial-gradient(circle at 40% 35%,rgba(240,210,197,.48),rgba(240,210,197,0) 68%)}
+.wall-note{position:absolute;left:7%;bottom:88px;writing-mode:vertical-rl;font-size:11px;letter-spacing:.32em;color:rgba(50,58,50,.25);user-select:none}
+.wall-frame{position:absolute;right:6%;top:10%;width:190px;height:130px;border:1.5px solid rgba(50,58,50,.16);border-radius:4px;transform:rotate(2deg)}
+.wall-frame:before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(50,58,50,.12)}
+.wall-frame:after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(50,58,50,.12)}
+
+/* ---------- main window ---------- */
+.app-window{position:absolute;left:64px;top:54px;width:min(1000px,calc(100vw - 420px));height:min(680px,calc(100vh - 130px));min-width:780px;min-height:560px;
+  background:var(--paper);border:1.5px solid var(--ink);border-radius:18px 14px 17px 13px;
+  box-shadow:6px 7px 0 rgba(50,58,50,.12),0 28px 60px rgba(40,50,40,.18);
+  display:flex;flex-direction:column;overflow:hidden;z-index:20;animation:window-in .45s ease both}
+@keyframes window-in{from{opacity:0;transform:translateY(8px) scale(.995)}to{opacity:1;transform:none}}
+.app-window.is-hidden{display:none}
+.titlebar{height:44px;flex:none;display:flex;align-items:center;gap:9px;padding:0 9px 0 12px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fbf7ee,#f3eee4)}
+.brand{display:flex;align-items:center;gap:8px;min-width:0}
+.brand-mark{width:24px;height:24px;border:1.5px solid var(--ink);border-radius:7px 6px 8px 5px;background:var(--yellow);display:grid;place-items:center;font-size:8px;font-weight:700;letter-spacing:-1px;transform:rotate(-2deg)}
+.brand-name{font-weight:700;font-size:13px;white-space:nowrap}
+.brand-sub{font-size:10px;color:var(--muted);border-left:1px solid var(--line);padding-left:8px;white-space:nowrap}
+.titlebar-status{margin-left:auto;font-size:10px;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px rgba(70,100,78,.12)}
+.window-controls{display:flex;gap:2px;margin-left:2px}
+.window-controls button{width:30px;height:28px;border:0;background:transparent;border-radius:6px;color:var(--muted);display:grid;place-items:center;padding:0}
+.window-controls button:hover{background:rgba(50,58,50,.08);color:var(--ink)}
+.window-controls button.close:hover{background:var(--bad);color:#fff}
+.window-controls svg{width:13px;height:13px}
+.app-body{flex:1;display:flex;min-height:0}
+.rail{width:170px;flex:none;background:var(--rail);border-right:1px solid var(--line);padding:12px 10px;display:flex;flex-direction:column;gap:3px}
+.rail-item{display:flex;align-items:center;gap:9px;width:100%;height:39px;padding:0 10px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--muted);font-size:12px;text-align:left}
+.rail-item svg{width:17px;height:17px}
+.rail-item:hover{background:rgba(50,58,50,.05);color:var(--ink)}
+.rail-item.is-active{background:var(--soft);border-color:#c7cfba;color:var(--ink);font-weight:700}
+.rail-item .rail-hint{margin-left:auto;font-size:9px;color:var(--muted);font-weight:400}
+.rail-foot{margin-top:auto;padding:10px 8px 4px;font-size:9px;color:var(--muted);border-top:1px dashed var(--line);line-height:1.5}
+.content{flex:1;min-width:0;overflow-y:auto;padding:20px 22px 26px;scrollbar-width:thin;scrollbar-color:#c9c4b4 transparent}
+.content::-webkit-scrollbar{width:8px}
+.content::-webkit-scrollbar-thumb{background:#c9c4b4;border-radius:99px}
+.page{animation:page-in .22s ease both}
+@keyframes page-in{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.page-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:15px}
+.page-head h1{font-size:22px;line-height:1.2;margin:0;letter-spacing:-.5px}
+.page-head p{margin:4px 0 0;font-size:10px;color:var(--muted)}
+.page-actions{margin-left:auto;display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.stamp{border:1.5px solid var(--bad);color:var(--bad);transform:rotate(6deg);padding:3px 7px;border-radius:4px;font-size:10px;white-space:nowrap;opacity:.88}
+.btn{min-height:30px;padding:0 11px;border:1.5px solid var(--ink);border-radius:8px;background:var(--panel);box-shadow:0 2px 0 rgba(50,58,50,.08);font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(1px);box-shadow:none}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.ghost{background:transparent;border-color:var(--line);box-shadow:none;color:var(--muted);font-weight:400}
+.btn.danger{color:var(--bad);border-color:var(--bad);background:transparent}
+.btn.small{min-height:26px;padding:0 8px;font-size:10px}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.link{border:0;background:transparent;color:var(--muted);font-size:10px;padding:4px 0;text-decoration:underline;text-underline-offset:3px}
+.link:hover{color:var(--ink)}
+
+/* ---------- today ---------- */
+.metrics-grid{display:grid;grid-template-columns:1.04fr .96fr;gap:14px;margin-bottom:14px}
+.metric-card{position:relative;overflow:hidden;border:1.5px solid var(--ink);border-radius:15px 17px 13px 16px;padding:13px 15px;min-height:154px;box-shadow:0 3px 0 rgba(50,58,50,.06)}
+.time-card{background:var(--yellow);border-color:#cbb983}
+.balance-card{background:var(--panel);border-color:#d7d2c0}
+.metric-row{display:flex;align-items:center;gap:8px;min-width:0}
+.metric-label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink);min-width:0}
+.metric-label svg{width:16px;height:16px;color:#586152}
+.chip{font-size:9px;padding:2px 7px;border-radius:99px;background:rgba(255,253,247,.7);border:1px solid rgba(50,58,50,.18);white-space:nowrap;margin-left:auto}
+.chip.good{background:rgba(70,100,78,.12);border-color:rgba(70,100,78,.3);color:var(--good)}
+.chip.warn{background:rgba(173,71,54,.1);border-color:rgba(173,71,54,.3);color:var(--bad)}
+.metric-big{font-family:var(--mono);font-size:40px;font-weight:800;letter-spacing:-.5px;line-height:1.1;margin:6px 0 2px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.balance-card .metric-big{font-size:34px}
+.metric-big.is-negative{color:var(--bad)}
+.metric-big.is-positive{color:var(--good)}
+.metric-big.is-muted{color:var(--muted);font-size:27px}
+.metric-detail{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metric-progress{height:8px;border-radius:99px;background:rgba(50,58,50,.13);margin-top:10px;overflow:hidden}
+.metric-progress i{display:block;height:100%;background:var(--good);border-radius:99px;transition:width .25s}
+.metric-progress-note{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:4px}
+.today-lower{display:grid;grid-template-columns:1.42fr .78fr;gap:14px}
+.section-card{background:var(--panel);border:1.5px solid #d7d2c0;border-radius:13px 15px 12px 14px;padding:12px 14px;box-shadow:0 2px 0 rgba(50,58,50,.04);min-width:0}
+.section-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;min-height:24px}
+.section-head h2{font-size:12px;margin:0;font-weight:700}
+.section-head .head-sub{font-size:9px;color:var(--muted);font-weight:400}
+.section-head .link{margin-left:auto}
+.office-canvas{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft);border:1px solid #d5d6c8}
+.scene-caption{font-size:9px;color:var(--muted);margin:7px 0 0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.breakdown-list{list-style:none;margin:0;padding:0}
+.breakdown-list li{display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:10px;min-width:0}
+.breakdown-list li:last-child{border-bottom:0}
+.bd-dot{width:6px;height:6px;border-radius:50%;background:var(--soft);border:1px solid var(--muted);flex:none}
+.bd-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bd-name small{display:block;font-size:8px;color:var(--muted);line-height:1.3}
+.bd-amount{font-family:var(--mono);font-size:10px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.bd-amount.negative{color:var(--bad)}
+.bd-amount.positive{color:var(--good)}
+.total-row{display:flex;justify-content:space-between;align-items:baseline;margin-top:7px;padding-top:7px;border-top:1.5px solid var(--ink);font-size:11px;font-weight:700}
+.total-row b{font-family:var(--mono);font-size:13px}
+.today-quote{margin:12px 0 0;padding:8px 10px;border-left:3px solid var(--yellow);background:rgba(242,223,172,.18);font-size:10px;color:var(--muted)}
+
+/* ---------- config ---------- */
+.subtabs{display:flex;gap:4px;padding:4px;background:#eee8dc;border:1px solid var(--line);border-radius:10px;margin-bottom:13px}
+.subtab{flex:1;height:29px;border:0;background:transparent;border-radius:7px;font-size:10px;color:var(--muted);white-space:nowrap}
+.subtab:hover{color:var(--ink)}
+.subtab.is-active{background:var(--panel);border:1px solid var(--line);color:var(--ink);font-weight:700;box-shadow:0 1px 0 rgba(50,58,50,.05)}
+.config-grid{display:grid;grid-template-columns:minmax(0,1fr) 292px;gap:14px;align-items:start}
+.config-grid[data-tab="assets"]{grid-template-columns:minmax(0,1fr)}
+.config-grid[data-tab="assets"] .preview-panel{display:none}
+.table-scroll{overflow-x:auto;scrollbar-width:thin}
+.asset-table{min-width:660px}
+.bill-table{min-width:560px}
+.form-card{background:var(--panel);border:1.5px solid #d7d2c0;border-radius:13px;padding:16px;min-width:0}
+.form-section + .form-section{margin-top:15px;padding-top:13px;border-top:1px dashed var(--line)}
+.form-section h3{font-size:11px;margin:0 0 9px;display:flex;align-items:center;gap:6px}
+.form-section h3 .section-badge{font-size:8px;font-weight:400;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:1px 5px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:10px;color:var(--muted);min-width:0}
+.field input,.field select{height:32px;border:1.5px solid var(--line);border-radius:7px;background:var(--paper);padding:0 9px;font-size:11px;color:var(--ink);min-width:0;width:100%}
+.field input:focus,.field select:focus{border-color:var(--good);outline:2px solid rgba(70,100,78,.18);outline-offset:0}
+.field input.is-error{border-color:var(--bad);background:rgba(173,71,54,.04)}
+.hint{font-size:9px;color:var(--muted);margin:5px 0 0;line-height:1.5}
+.error-text{font-size:9px;color:var(--bad);margin:5px 0 0;line-height:1.5}
+.weekday-chips{display:flex;gap:4px;flex-wrap:wrap}
+.weekday-chip{width:32px;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-size:10px;color:var(--muted)}
+.weekday-chip.is-on{background:var(--soft);border-color:#aab59b;color:var(--ink);font-weight:700}
+.shift-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:8px}
+.check-row{display:flex;align-items:center;gap:7px;font-size:10px;margin-top:9px;color:var(--ink)}
+.check-row input{accent-color:var(--good);width:13px;height:13px;margin:0}
+.stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:7px 8px;min-width:0}
+.stat b{display:block;font-family:var(--mono);font-size:13px;line-height:1.2;white-space:nowrap}
+.stat span{font-size:8px;color:var(--muted)}
+.preview-panel{position:sticky;top:0;background:var(--panel);border:1.5px solid #d7d2c0;border-radius:13px;padding:11px;box-shadow:0 2px 0 rgba(50,58,50,.04);min-width:0}
+.preview-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.preview-head h2{font-size:11px;margin:0;font-weight:700}
+.preview-head .chip{margin-left:0}
+.preview-stage{height:232px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(145deg,#dbe3d5,#c9d5c7);display:grid;place-items:center;overflow:hidden;position:relative}
+.preview-stage .card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.80);transform-origin:center;box-shadow:0 8px 20px rgba(40,50,40,.18);z-index:1;animation:none}
+.preview-stage[data-size="l"]{height:280px}
+.preview-stage[data-size="l"] .card{transform:translate(-50%,-50%) scale(.58)}
+.preview-stage[data-size="s"]{height:150px}
+.preview-stage[data-size="s"] .card{transform:translate(-50%,-50%) scale(.92)}
+.preview-note{font-size:9px;color:var(--muted);margin:8px 0 0;text-align:center}
+.impact-list{list-style:none;margin:8px 0 0;padding:0;border-top:1px dashed var(--line)}
+.impact-list li{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:9px;color:var(--muted);border-bottom:1px dashed var(--line)}
+.impact-list li:last-child{border-bottom:0}
+.impact-list b{color:var(--ink);font-weight:700}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+
+/* ---------- assets ---------- */
+.asset-table{width:100%;border-collapse:collapse;font-size:10px}
+.asset-table th{text-align:left;color:var(--muted);font-weight:600;padding:7px 5px;border-bottom:1px solid var(--line);white-space:nowrap}
+.asset-table td{padding:8px 5px;border-bottom:1px dashed var(--line);vertical-align:middle}
+.asset-table tr:last-child td{border-bottom:0}
+.asset-table .amount-cell{text-align:right;font-family:var(--mono);white-space:nowrap;font-variant-numeric:tabular-nums;padding-right:14px}
+.holding-name{font-weight:700;font-size:10px}
+.holding-code{display:block;font-size:8px;color:var(--muted)}
+.pill{display:inline-block;font-size:8px;padding:1px 5px;border-radius:99px;border:1px solid var(--line);background:var(--paper);color:var(--muted);white-space:nowrap}
+.pill.good{border-color:rgba(70,100,78,.3);background:rgba(70,100,78,.08);color:var(--good)}
+.pill.warn{border-color:rgba(173,71,54,.28);background:rgba(173,71,54,.06);color:var(--bad)}
+.asset-actions{display:flex;gap:5px;justify-content:flex-end}
+.asset-summary{display:flex;align-items:center;gap:14px;margin-top:11px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font-size:10px;color:var(--muted);flex-wrap:wrap}
+.asset-summary b{font-family:var(--mono);font-size:11px;color:var(--ink)}
+.asset-summary .spacer{flex:1}
+.asset-summary .negative{color:var(--bad)}
+.asset-summary .positive{color:var(--good)}
+.icon-btn{width:24px;height:24px;border:1px solid var(--line);background:var(--paper);border-radius:6px;display:grid;place-items:center;color:var(--muted);padding:0}
+.icon-btn:hover{color:var(--ink);border-color:var(--ink)}
+.icon-btn svg{width:13px;height:13px}
+
+/* ---------- housing / bills ---------- */
+.housing-modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.housing-mode{position:relative;border:1.5px solid var(--line);border-radius:10px;background:var(--paper);padding:9px 10px;display:flex;flex-direction:column;gap:3px;cursor:pointer;min-height:68px}
+.housing-mode:hover{border-color:#b9b3a2}
+.housing-mode:has(input:checked){border-color:var(--good);background:var(--soft);box-shadow:inset 0 0 0 1px rgba(70,100,78,.12)}
+.housing-mode input{position:absolute;opacity:0;pointer-events:none}
+.housing-mode strong{font-size:11px}
+.housing-mode span{font-size:8px;color:var(--muted);line-height:1.4}
+.housing-mode .mode-mark{width:24px;height:24px;border:1.5px solid var(--ink);border-radius:7px;display:grid;place-items:center;margin-bottom:2px;background:var(--panel)}
+.housing-mode .mode-mark svg{width:14px;height:14px}
+.debt-visuals{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:11px}
+.debt-visual{border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:5px;text-align:center}
+.debt-visual canvas{width:100%;height:auto;display:block}
+.debt-visual span{display:block;font-size:8px;color:var(--muted);margin-top:2px}
+.bill-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+.bill-toolbar select{height:29px;border:1.5px solid var(--line);border-radius:7px;background:var(--paper);padding:0 8px;font-size:10px}
+.bill-toolbar .spacer{flex:1}
+.notice{background:rgba(242,223,172,.3);border:1px solid #d5c69c;border-radius:8px;padding:8px 10px;font-size:9px;color:#5d563f;margin-top:10px;line-height:1.5}
+
+/* ---------- desktop settings ---------- */
+.desktop-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.settings-stack{display:flex;flex-direction:column;gap:11px}
+.settings-card{background:var(--panel);border:1.5px solid #d7d2c0;border-radius:12px;padding:11px 13px}
+.settings-card h3{font-size:11px;margin:0 0 4px}
+.setting-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:10px}
+.setting-row:last-child{border-bottom:0}
+.setting-copy{flex:1;min-width:0}
+.setting-copy b{display:block;font-size:10px;font-weight:700}
+.setting-copy span{display:block;font-size:8px;color:var(--muted);line-height:1.4}
+.switch{appearance:none;width:36px;height:20px;border-radius:99px;background:#d7d2c0;position:relative;flex:none;transition:.15s;border:1px solid #bdb7a5;cursor:pointer;margin:0}
+.switch:after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:var(--panel);top:2px;left:2px;box-shadow:0 1px 2px rgba(50,58,50,.2);transition:.15s}
+.switch:checked{background:var(--good);border-color:var(--good)}
+.switch:checked:after{transform:translateX(16px)}
+.seg{display:flex;gap:3px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:3px;flex:none}
+.seg button{height:24px;padding:0 8px;border:0;background:transparent;border-radius:6px;font-size:9px;color:var(--muted);white-space:nowrap}
+.seg button.is-active{background:var(--soft);color:var(--ink);font-weight:700}
+.density-choices{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:7px}
+.density-choice{border:1.5px solid var(--line);border-radius:8px;background:var(--paper);padding:7px;text-align:left;font-size:9px;color:var(--muted)}
+.density-choice:hover{border-color:#b9b3a2}
+.density-choice.is-active{border-color:var(--good);background:var(--soft);color:var(--ink)}
+.density-choice b{display:block;font-size:10px;margin-bottom:4px;color:var(--ink)}
+.density-sketch{height:34px;border:1px solid var(--line);border-radius:4px;background:var(--panel);margin-top:4px;position:relative;overflow:hidden}
+.density-sketch:before{content:"";position:absolute;left:4px;top:4px;height:9px;width:42%;background:var(--yellow);border:1px solid #cbb983;border-radius:2px}
+.density-sketch:after{content:"";position:absolute;left:4px;bottom:4px;height:8px;width:58%;background:var(--soft);border:1px solid #c2cbb8;border-radius:2px}
+.density-choice[data-density="s"] .density-sketch{height:22px}
+.density-choice[data-density="s"] .density-sketch:before{width:64%;height:6px;top:3px}
+.density-choice[data-density="s"] .density-sketch:after{width:38%;height:6px;bottom:3px;left:auto;right:4px}
+.density-choice[data-density="l"] .density-sketch{height:42px}
+.density-choice[data-density="l"] .density-sketch:after{width:100%;height:15px;left:0;bottom:0;border-radius:0;border:0;border-top:1px dashed #c2cbb8}
+.hotkey-list{margin-top:8px;border-top:1px dashed var(--line)}
+.hotkey-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;font-size:9px;color:var(--muted);border-bottom:1px dashed var(--line)}
+.hotkey-row:last-child{border-bottom:0}
+kbd{font-family:var(--mono);font-size:8px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 4px;background:var(--paper);color:var(--ink);white-space:nowrap}
+.mini-desktop{height:258px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(145deg,#dbe3d5,#c9d5c7);position:relative;overflow:hidden;display:grid;place-items:center}
+.mini-desktop .card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.70);transform-origin:center;box-shadow:0 8px 18px rgba(40,50,40,.18);z-index:1;animation:none}
+.mini-desktop[data-size="l"] .card{transform:translate(-50%,-50%) scale(.54)}
+.mini-desktop[data-size="s"] .card{transform:translate(-50%,-50%) scale(.95)}
+.slider-row{display:flex;align-items:center;gap:8px;flex:none}
+.slider-row input[type=range]{width:86px;accent-color:var(--good)}
+
+/* ---------- data / settings ---------- */
+.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.data-card{background:var(--panel);border:1.5px solid #d7d2c0;border-radius:12px;padding:13px;min-width:0}
+.data-card h3{font-size:11px;margin:0 0 4px;display:flex;align-items:center;gap:6px}
+.data-card p{font-size:9px;color:var(--muted);margin:0;line-height:1.5}
+.data-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.status-line{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--muted);margin-top:7px;flex-wrap:wrap}
+.status-line b{color:var(--ink)}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.about-list{list-style:none;margin:0;padding:0}
+.about-list li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:9px;color:var(--muted)}
+.about-list li:last-child{border-bottom:0}
+.about-list b{color:var(--ink);font-weight:600}
+
+/* ---------- fixed card ---------- */
+.card{position:absolute;width:320px;height:220px;background:var(--panel);border:1.5px solid var(--ink);border-radius:16px 18px 14px 17px;box-shadow:0 4px 0 rgba(50,58,50,.08),0 18px 36px rgba(40,50,40,.18);z-index:40;overflow:hidden;user-select:none;transition:width .18s ease,height .18s ease,box-shadow .18s ease}
+.card.is-unpinned{z-index:15}
+.card--s{width:220px;height:76px}
+.card--l{width:420px;height:390px}
+.card.is-dragging{box-shadow:0 8px 0 rgba(50,58,50,.06),0 24px 46px rgba(40,50,40,.24);transition:none}
+.card.is-dim:after{content:"";position:absolute;inset:0;background:rgba(37,30,20,var(--dim,.1));pointer-events:none;z-index:8}
+.card-body{height:100%;display:flex;flex-direction:column;min-height:0}
+.card-controls{position:absolute;top:5px;right:5px;display:flex;gap:2px;z-index:9;opacity:0;transition:opacity .15s}
+.card:hover .card-controls,.card:focus-within .card-controls{opacity:1}
+.card-controls button{width:22px;height:22px;border:1px solid rgba(50,58,50,.18);border-radius:6px;background:rgba(255,253,247,.85);display:grid;place-items:center;color:var(--muted);padding:0}
+.card-controls button:hover{background:var(--panel);color:var(--ink)}
+.card-controls button[aria-pressed="true"]{color:var(--good);border-color:rgba(70,100,78,.35)}
+.card-controls svg{width:12px;height:12px}
+.card-time{flex:none;background:var(--yellow);padding:11px 14px 9px;border-bottom:1px solid #d5c69c;position:relative}
+.card-row{display:flex;align-items:center;gap:6px;min-width:0}
+.card-label{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;min-width:0}
+.card-label svg{width:15px;height:15px;color:#586152}
+.card-chip{font-size:8px;padding:2px 6px;border-radius:99px;background:rgba(255,253,247,.65);border:1px solid rgba(50,58,50,.18);white-space:nowrap;margin-left:auto}
+.card-chip.good{background:rgba(70,100,78,.12);border-color:rgba(70,100,78,.32);color:var(--good)}
+.card-chip.warn{background:rgba(173,71,54,.1);border-color:rgba(173,71,54,.3);color:var(--bad)}
+.card-countdown{font-family:var(--mono);font-size:40px;font-weight:800;line-height:1.06;letter-spacing:-.5px;margin:3px 0 1px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.card-detail{font-size:9px;color:#5f644f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-progress{height:6px;border-radius:99px;background:rgba(50,58,50,.14);margin-top:7px;overflow:hidden}
+.card-progress i{display:block;height:100%;background:var(--good);border-radius:99px;transition:width .25s}
+.card-progress-note{display:flex;justify-content:space-between;gap:8px;font-size:8px;color:#6d6b55;margin-top:3px;white-space:nowrap}
+.card-time .clip{position:absolute;bottom:-6px;width:9px;height:13px;border:1.5px solid #9c9c8a;border-radius:5px;background:var(--paper);z-index:7}
+.card-time .clip.a{left:26px}
+.card-time .clip.b{right:26px}
+.card-balance{flex:1;min-height:0;background:var(--panel);padding:7px 14px 8px;display:flex;flex-direction:column;justify-content:center;position:relative}
+.card-amount{font-family:var(--mono);font-size:34px;font-weight:800;line-height:1.08;letter-spacing:-.4px;margin:1px 0 0;white-space:nowrap;font-variant-numeric:tabular-nums}
+.card-amount.is-negative{color:var(--bad)}
+.card-amount.is-positive{color:var(--good)}
+.card-amount.is-muted{color:var(--muted);font-size:26px}
+.card-note{font-size:8px;color:var(--muted);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-freshness{font-size:7px;color:#8a8a79;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-tag{font-size:8px;padding:2px 6px;border-radius:99px;background:var(--yellow);border:1px solid #d5c69c;color:#5d563f;white-space:nowrap;margin-left:auto}
+.card-tag.good{background:rgba(70,100,78,.1);border-color:rgba(70,100,78,.3);color:var(--good)}
+.card-tag.muted{background:var(--paper);border-color:var(--line);color:var(--muted)}
+.card--s .card-time{display:none}
+.card-s{height:100%;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:7px 11px;background:linear-gradient(180deg,var(--yellow) 0 50%,var(--panel) 50% 100%)}
+.card-s-row{display:flex;align-items:center;gap:6px;min-width:0}
+.card-s-label{font-size:8px;font-weight:700;color:#5f644f;white-space:nowrap}
+.card-s-value{font-family:var(--mono);font-size:21px;font-weight:800;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.card-s-amount{font-family:var(--mono);font-size:18px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.card-s-amount.is-negative{color:var(--bad)}
+.card-s-amount.is-positive{color:var(--good)}
+.card-s-amount.is-muted{color:var(--muted);font-size:15px}
+.card-s-tag{font-size:8px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.card-scene{flex:none;height:112px;border-top:1px dashed var(--line);background:var(--soft);position:relative;overflow:hidden}
+.card-scene canvas{display:block;width:100%;height:100%}
+.card-mini-breakdown{flex:none;display:flex;gap:8px;justify-content:space-between;padding:4px 14px 9px;border-top:1px dashed var(--line);font-size:7px;color:var(--muted);background:var(--panel)}
+.card-mini-breakdown b{font-family:var(--mono);font-size:8px;color:var(--ink);display:block;white-space:nowrap}
+.card.is-click-through{pointer-events:none;outline:2px dashed rgba(173,71,54,.7);outline-offset:-5px}
+.through-badge{position:absolute;z-index:55;background:var(--bad);color:#fff;font-size:9px;padding:4px 8px;border-radius:6px;box-shadow:0 3px 8px rgba(50,58,50,.2);pointer-events:auto;white-space:nowrap}
+.through-badge button{border:0;background:transparent;color:inherit;font-size:9px;text-decoration:underline;padding:0 0 0 4px}
+
+/* ---------- taskbar ---------- */
+.taskbar{position:absolute;left:0;right:0;bottom:0;height:46px;display:flex;align-items:center;gap:5px;padding:0 9px;background:rgba(247,242,233,.86);backdrop-filter:blur(16px);border-top:1px solid rgba(50,58,50,.16);z-index:50}
+.start{width:34px;height:34px;border:0;border-radius:7px;background:transparent;display:grid;grid-template-columns:repeat(2,8px);grid-template-rows:repeat(2,8px);gap:3px;place-items:center;padding:4px}
+.start:hover{background:rgba(50,58,50,.07)}
+.start i{width:8px;height:8px;background:#5b6b58;border-radius:2px}
+.task-app{width:36px;height:36px;border:1.5px solid transparent;border-radius:8px;background:transparent;display:grid;place-items:center;position:relative;padding:0}
+.task-app:hover{background:rgba(50,58,50,.07)}
+.task-app.is-active{background:rgba(50,58,50,.08);border-color:rgba(50,58,50,.18)}
+.task-mark{width:24px;height:24px;border:1.5px solid var(--ink);border-radius:7px 6px 8px 5px;background:var(--yellow);display:grid;place-items:center;font-size:7px;font-weight:700;letter-spacing:-.5px}
+.task-dot{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--good)}
+.task-ghost{width:34px;height:34px;border:0;border-radius:7px;background:transparent;display:grid;place-items:center;color:#6c7568;opacity:.65;padding:0}
+.task-ghost:hover{background:rgba(50,58,50,.06);opacity:1}
+.task-ghost svg{width:16px;height:16px}
+.task-right{margin-left:auto;display:flex;align-items:center;gap:11px;font-size:9px;color:var(--muted)}
+.task-clock{text-align:right;line-height:1.25;font-variant-numeric:tabular-nums}
+.task-sync{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.task-sync .status-dot{width:5px;height:5px}
+
+/* ---------- menus / modal / toast ---------- */
+.menu{position:absolute;z-index:95;min-width:196px;background:var(--panel);border:1.5px solid var(--ink);border-radius:10px;box-shadow:4px 5px 0 rgba(50,58,50,.12),0 14px 30px rgba(40,50,40,.16);padding:5px;font-size:10px}
+.menu button{display:flex;align-items:center;gap:7px;width:100%;height:29px;padding:0 8px;border:0;border-radius:6px;background:transparent;text-align:left;font-size:10px;color:var(--ink)}
+.menu button:hover{background:var(--soft)}
+.menu .menu-sep{height:1px;background:var(--line);margin:4px 2px}
+.menu .check{margin-left:auto;color:var(--good);font-weight:700;font-size:10px}
+.menu .danger{color:var(--bad)}
+.menu .menu-note{padding:5px 8px 3px;font-size:8px;color:var(--muted)}
+.modal-backdrop{position:absolute;inset:0;background:rgba(32,38,32,.38);backdrop-filter:blur(3px);z-index:100;display:flex;align-items:center;justify-content:center;padding:24px}
+.modal{width:min(510px,calc(100vw - 80px));max-height:calc(100vh - 80px);overflow:auto;background:var(--paper);border:1.5px solid var(--ink);border-radius:16px 14px 18px 13px;box-shadow:6px 7px 0 rgba(50,58,50,.12);padding:17px 18px;animation:modal-in .2s ease both}
+@keyframes modal-in{from{opacity:0;transform:translateY(6px) scale(.995)}to{opacity:1;transform:none}}
+.modal-head{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.modal-head h2{font-size:16px;margin:0;letter-spacing:-.3px}
+.modal-head .icon-btn{margin-left:auto}
+.modal-body{font-size:10px;color:var(--muted)}
+.modal-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.toast{position:absolute;left:50%;bottom:76px;transform:translateX(-50%) translateY(7px);background:var(--ink);color:var(--paper);padding:8px 13px;border-radius:8px;font-size:10px;opacity:0;pointer-events:none;transition:.22s;z-index:120;max-width:520px;text-align:center;box-shadow:0 8px 20px rgba(30,40,30,.25)}
+.toast.is-show{opacity:1;transform:translateX(-50%) translateY(0)}
+.file-row{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--panel);margin-bottom:10px}
+.file-icon{width:28px;height:32px;border:1.5px solid var(--ink);border-radius:4px;background:var(--yellow);display:grid;place-items:center;font-size:8px;font-weight:700;flex:none}
+.file-row b{display:block;font-size:10px;color:var(--ink)}
+.file-row span{display:block;font-size:8px;color:var(--muted)}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:9px 0}
+.summary-item{border:1px solid var(--line);border-radius:7px;background:var(--panel);padding:6px 8px}
+.summary-item span{display:block;font-size:8px;color:var(--muted)}
+.summary-item b{display:block;font-size:10px;color:var(--ink)}
+.radio-row{display:flex;align-items:flex-start;gap:7px;padding:6px 0;font-size:10px;color:var(--ink)}
+.radio-row input{accent-color:var(--good);margin-top:1px}
+.radio-row span{display:block;font-size:8px;color:var(--muted)}
+.warn{font-size:9px;color:var(--bad);background:rgba(173,71,54,.06);border:1px solid rgba(173,71,54,.2);border-radius:7px;padding:7px 9px;margin-top:8px;line-height:1.5}
+.modal .form-grid{margin-top:9px}
+.modal .field input{background:var(--panel)}
+.tour-step{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.tour-step:last-child{border-bottom:0}
+.tour-num{width:22px;height:22px;border-radius:50%;background:var(--yellow);border:1.5px solid #cbb983;display:grid;place-items:center;font-size:9px;font-weight:700;flex:none}
+.welcome-paths{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.welcome-path{text-align:left;border:1.5px solid var(--line);border-radius:9px;background:var(--panel);padding:9px 10px;display:flex;align-items:flex-start;gap:9px}
+.welcome-path:hover{border-color:var(--good);background:var(--soft)}
+.welcome-path .wp-num{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--ink);background:var(--yellow);display:grid;place-items:center;font-size:9px;font-weight:700;flex:none}
+.welcome-path b{display:block;font-size:10px;color:var(--ink)}
+.welcome-path span{display:block;font-size:8px;color:var(--muted);line-height:1.45}
+.tour-step b{display:block;font-size:10px;color:var(--ink)}
+.tour-step span{display:block;font-size:9px;color:var(--muted);line-height:1.45}
+
+/* ---------- demo panel ---------- */
+.demo-panel{position:absolute;right:18px;top:18px;z-index:70;font-size:10px}
+.demo-toggle{height:29px;padding:0 10px;border:1.5px solid var(--ink);border-radius:8px;background:rgba(255,253,247,.92);box-shadow:0 2px 0 rgba(50,58,50,.1);font-size:10px;font-weight:700;display:flex;align-items:center;gap:6px}
+.demo-toggle:hover{background:var(--panel)}
+.demo-toggle .chev{font-size:9px;color:var(--muted);transition:transform .15s}
+.demo-toggle[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.demo-body{width:266px;max-height:calc(100vh - 110px);overflow:auto;background:rgba(255,253,247,.97);border:1.5px solid var(--ink);border-radius:11px;padding:10px;box-shadow:4px 5px 0 rgba(50,58,50,.1),0 14px 30px rgba(40,50,40,.16);margin-top:5px}
+.demo-note{font-size:8px;color:var(--muted);margin:0 0 7px;line-height:1.45}
+.demo-group{padding:6px 0;border-top:1px dashed var(--line)}
+.demo-group:first-of-type{border-top:0;padding-top:0}
+.demo-group h3{font-size:9px;margin:0 0 5px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.demo-btns{display:flex;flex-wrap:wrap;gap:4px}
+.demo-btn{height:24px;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-size:9px;color:var(--muted)}
+.demo-btn:hover{color:var(--ink);border-color:#b9b3a2}
+.demo-btn.is-active{background:var(--soft);border-color:#9fae90;color:var(--ink);font-weight:700}
+.demo-sep{height:1px;background:var(--line);margin:6px 0}
+
+/* ---------- misc ---------- */
+.hidden-badge{position:absolute;right:18px;bottom:60px;background:var(--ink);color:var(--paper);font-size:9px;padding:6px 10px;border-radius:7px;z-index:80;box-shadow:0 6px 16px rgba(30,40,30,.2)}
+.hidden-badge button{border:0;background:transparent;color:var(--paper);text-decoration:underline;font-size:9px;padding:0 0 0 4px}
+@media (max-width:1320px){
+  .app-window{left:40px;width:calc(100vw - 400px);min-width:760px}
+  .content{padding:18px 18px 22px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div class="desktop" id="desktop">
+  <div class="wallpaper" aria-hidden="true">
+    <span class="blob a"></span><span class="blob b"></span>
+    <span class="wall-frame"></span>
+    <span class="wall-note">ANOTHER DAY, ANOTHER DEBT · 工位 0001</span>
+  </div>
+
+  <!-- prototype-only controls -->
+  <aside class="demo-panel" aria-label="原型演示控制">
+    <button type="button" class="demo-toggle" id="demo-toggle" aria-expanded="false">演示控制 <span class="chev">⌄</span></button>
+    <div class="demo-body" id="demo-body" hidden>
+      <p class="demo-note">仅原型调试 · 不写入正式账本。快捷键：<b>Ctrl+Alt+H</b> 隐身，<b>Ctrl+Alt+M</b> 金额隐身，<b>Ctrl+Alt+L</b> 穿透。</p>
+      <div class="demo-group">
+        <h3>工作状态</h3>
+        <div class="demo-btns">
+          <button class="demo-btn" data-scenario="work">工作中</button>
+          <button class="demo-btn" data-scenario="break">午休</button>
+          <button class="demo-btn" data-scenario="before">上班前</button>
+          <button class="demo-btn" data-scenario="off">已下班</button>
+          <button class="demo-btn" data-scenario="rest">今日休息</button>
+          <button class="demo-btn" data-scenario="unknown">排班待确认</button>
+          <button class="demo-btn" data-scenario="overnight">跨夜 23:59</button>
+        </div>
+      </div>
+      <div class="demo-group">
+        <h3>数据完整性</h3>
+        <div class="demo-btns">
+          <button class="demo-btn" data-completeness="complete">完整</button>
+          <button class="demo-btn" data-completeness="partial">部分小计</button>
+          <button class="demo-btn" data-completeness="unavailable">不可用</button>
+        </div>
+      </div>
+      <div class="demo-group">
+        <h3>固定窗密度</h3>
+        <div class="demo-btns">
+          <button class="demo-btn" data-density="s">S 数字条</button>
+          <button class="demo-btn" data-density="m">M 便签卡</button>
+          <button class="demo-btn" data-density="l">L 工位窗</button>
+        </div>
+      </div>
+      <div class="demo-group">
+        <h3>窗口与隐私</h3>
+        <div class="demo-btns">
+          <button class="demo-btn" id="demo-main">隐藏主窗</button>
+          <button class="demo-btn" id="demo-boss">老板键</button>
+          <button class="demo-btn" id="demo-privacy">金额隐身</button>
+          <button class="demo-btn" id="demo-through">点击穿透</button>
+          <button class="demo-btn" id="demo-pin">置顶</button>
+        </div>
+      </div>
+      <div class="demo-group">
+        <h3>时间</h3>
+        <div class="demo-btns">
+          <button class="demo-btn" id="demo-reset">重置演示</button>
+          <button class="demo-btn" id="demo-tour">固定窗引导</button>
+          <button class="demo-btn" id="demo-welcome">首次启动</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- main window -->
+  <section class="app-window" id="main-window" aria-label="今日又白干 工位后台">
+    <header class="titlebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">(－_－)</span>
+        <span class="brand-name">今日又白干</span>
+        <span class="brand-sub">工位后台</span>
+      </div>
+      <div class="titlebar-status"><span class="status-dot"></span>数据截至 <span id="titlebar-time">14:36</span> · 账本 #<span id="ledger-rev">42</span></div>
+      <div class="window-controls" aria-label="窗口控制">
+        <button type="button" id="win-min" aria-label="最小化"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h10"/></svg></button>
+        <button type="button" id="win-max" aria-label="最大化"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="8" height="8" rx="1"/></svg></button>
+        <button type="button" class="close" id="win-close" aria-label="关闭到托盘"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+      </div>
+    </header>
+    <div class="app-body">
+      <nav class="rail" aria-label="主导航">
+        <button type="button" class="rail-item is-active" data-nav="today" aria-current="page">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h12v11H4z"/><path d="M7 3v4M13 3v4M4 9h12"/><path d="M7 12h2M11 12h2"/></svg>
+          <span>今日</span><span class="rail-hint">14:36</span>
+        </button>
+        <button type="button" class="rail-item" data-nav="config">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12v12H4z"/><path d="M7 8h6M7 11h4"/></svg>
+          <span>配置</span>
+        </button>
+        <button type="button" class="rail-item" data-nav="desktop">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="9" rx="1"/><path d="M7 16h6M10 13v3"/></svg>
+          <span>桌面</span>
+        </button>
+        <button type="button" class="rail-item" data-nav="data">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="10" cy="5" rx="6" ry="2.5"/><path d="M4 5v10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V5"/><path d="M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"/></svg>
+          <span>数据</span>
+        </button>
+        <button type="button" class="rail-item" data-nav="settings">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.6"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2M5 5l1.4 1.4M13.6 13.6L15 15M15 5l-1.4 1.4M6.4 13.6L5 15"/></svg>
+          <span>设置</span>
+        </button>
+        <div class="rail-foot">v0.1.0 · PC 预览<br>账本只在本机</div>
+      </nav>
+
+      <main class="content">
+        <!-- TODAY -->
+        <section class="page" data-page="today">
+          <div class="page-head">
+            <div>
+              <h1>今日</h1>
+              <p id="main-date">11月10日 · 周二 · 14:36:00 · 演示数据</p>
+            </div>
+            <div class="page-actions">
+              <span class="stamp" id="main-stamp">在岗求生中</span>
+              <button type="button" class="btn ghost" id="refresh-btn">手动刷新</button>
+            </div>
+          </div>
+
+          <div class="metrics-grid">
+            <section class="metric-card time-card" aria-labelledby="main-time-label">
+              <div class="metric-row">
+                <span class="metric-label">
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.6 1.7"/></svg>
+                  <span id="main-time-label">距离下班还有</span>
+                </span>
+                <span class="chip good" id="main-status">在岗中</span>
+              </div>
+              <div class="metric-big" id="main-countdown">03:24:00</div>
+              <div class="metric-detail" id="main-detail">预计 18:00 下班 · 按排班计薪</div>
+              <div class="metric-progress"><i id="main-progress" style="width:57%"></i></div>
+              <div class="metric-progress-note"><span id="main-progress-text">今日计薪 4.6 / 8.0 小时</span><span>按排班计薪</span></div>
+            </section>
+
+            <section class="metric-card balance-card" aria-labelledby="main-balance-label">
+              <div class="metric-row">
+                <span class="metric-label">
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h10v14l-2-1-2 1-2-1-2 1z"/><path d="M7.5 7h5M7.5 10h5M7.5 13H11"/></svg>
+                  <span>今日生存结余</span>
+                </span>
+                <span class="chip warn" id="main-tag">努力回本</span>
+              </div>
+              <div class="metric-big is-negative" id="main-amount">−¥55.26</div>
+              <div class="metric-detail" id="main-note">工资正在努力追赶上午的亏损。</div>
+              <div class="metric-progress-note" style="margin-top:12px"><span id="main-freshness">报价截至 14:36 · 基金净值 11-07</span><span>模拟行情</span></div>
+            </section>
+          </div>
+
+          <div class="today-lower">
+            <section class="section-card">
+              <div class="section-head">
+                <h2>工位 0001</h2><span class="head-sub">人、房、车在同一张纸上</span>
+                <button type="button" class="btn ghost small" id="pat-btn" style="margin-left:auto">拍拍他</button>
+              </div>
+              <canvas id="main-office" class="office-canvas" width="380" height="238" role="img" aria-label="手绘办公室里坐着一个疲惫的小人，旁边是房子和汽车"></canvas>
+              <p class="scene-caption" id="main-scene-caption">工位 0001 · 赚来的钱，流向房子和车</p>
+            </section>
+
+            <section class="section-card">
+              <div class="section-head"><h2>今日分项</h2><button type="button" class="link" id="open-calc">统计口径</button></div>
+              <ul class="breakdown-list">
+                <li><i class="bd-dot"></i><span class="bd-name">工资估算<small>按排班与真实时钟</small></span><span class="bd-amount positive" id="main-wage">+¥328.57</span></li>
+                <li><i class="bd-dot"></i><span class="bd-name">A股<small>000001 · 模拟报价</small></span><span class="bd-amount negative" id="main-stock">−¥600.00</span></li>
+                <li><i class="bd-dot"></i><span class="bd-name">场外基金<small>000001 · 净值 11-07</small></span><span class="bd-amount positive" id="main-fund">+¥80.00</span></li>
+                <li><i class="bd-dot"></i><span class="bd-name">黄金<small>Au99.99 · 参考估值</small></span><span class="bd-amount positive" id="main-gold">+¥270.00</span></li>
+                <li><i class="bd-dot"></i><span class="bd-name">住房分摊<small id="main-housing-note">房贷 · 按自然日</small></span><span class="bd-amount negative" id="main-housing">−¥133.83</span></li>
+                <li><i class="bd-dot"></i><span class="bd-name">车贷分摊<small>固定支出 · 继续全勤</small></span><span class="bd-amount negative" id="main-car">−¥50.00</span></li>
+              </ul>
+              <div class="total-row"><span>今日生存结余</span><b id="main-total">−¥55.26</b></div>
+            </section>
+          </div>
+          <p class="today-quote">“钱路过了你一下。” 所有金额先按完整精度求和，再四舍五入到分；未知不当作 0。</p>
+        </section>
+
+        <!-- CONFIG -->
+        <section class="page" data-page="config" hidden>
+          <div class="page-head">
+            <div><h1>配置</h1><p>改完即时预览，保存后按新版本重算今天。原型不写入正式账本。</p></div>
+            <div class="page-actions"><button type="button" class="btn primary" id="save-config">保存配置</button></div>
+          </div>
+          <div class="subtabs" role="tablist" aria-label="配置分组">
+            <button type="button" class="subtab is-active" data-config-tab="income" role="tab" aria-selected="true">收入与排班</button>
+            <button type="button" class="subtab" data-config-tab="assets" role="tab" aria-selected="false">资产</button>
+            <button type="button" class="subtab" data-config-tab="housing" role="tab" aria-selected="false">住房与车贷</button>
+            <button type="button" class="subtab" data-config-tab="bills" role="tab" aria-selected="false">账单</button>
+          </div>
+
+          <div class="config-grid" id="config-grid" data-tab="income">
+            <div class="form-card" id="config-form">
+              <!-- income -->
+              <div class="config-pane" data-config-pane="income">
+                <div class="form-section">
+                  <h3>收入 <span class="section-badge">必填</span></h3>
+                  <div class="form-grid">
+                    <label class="field">到手月薪 / 元<input id="salary-input" type="number" min="0" max="10000000" step="0.01" value="12000"></label>
+                    <label class="field">生效日期<input id="effective-input" type="date" value="2026-11-01"></label>
+                  </div>
+                  <p class="hint">可以填 0。人生偶尔缓冲，也值得被认真记录。</p>
+                </div>
+                <div class="form-section">
+                  <h3>作息与排班 <span class="section-badge">必填</span></h3>
+                  <div class="weekday-chips" aria-label="工作日">
+                    <button type="button" class="weekday-chip is-on" data-weekday="1">一</button>
+                    <button type="button" class="weekday-chip is-on" data-weekday="2">二</button>
+                    <button type="button" class="weekday-chip is-on" data-weekday="3">三</button>
+                    <button type="button" class="weekday-chip is-on" data-weekday="4">四</button>
+                    <button type="button" class="weekday-chip is-on" data-weekday="5">五</button>
+                    <button type="button" class="weekday-chip" data-weekday="6">六</button>
+                    <button type="button" class="weekday-chip" data-weekday="7">日</button>
+                  </div>
+                  <div class="shift-row">
+                    <label class="field">上班<input id="start-input" type="time" value="09:00"></label>
+                    <label class="field">下班<input id="end-input" type="time" value="18:00"></label>
+                  </div>
+                  <div class="shift-row">
+                    <label class="field">休息开始<input id="break-start" type="time" value="12:00"></label>
+                    <label class="field">休息结束<input id="break-end" type="time" value="13:00"></label>
+                  </div>
+                  <label class="check-row"><input type="checkbox" id="overnight-toggle"> 跨夜班（结束时间为次日）</label>
+                  <p class="hint" id="schedule-hint">当前为同日班次，午休不计薪。</p>
+                </div>
+                <div class="form-section">
+                  <h3>本月预览</h3>
+                  <div class="stat-strip">
+                    <div class="stat"><b id="month-days">21 天</b><span>计薪天数</span></div>
+                    <div class="stat"><b id="month-hours">168.0 h</b><span>计薪工时</span></div>
+                    <div class="stat"><b id="month-rate">¥71.43/h</b><span>折算时薪</span></div>
+                  </div>
+                  <p class="hint">日期覆盖：11-11 请假（示例）。正式版支持调休上班、半天与跨月版本。</p>
+                </div>
+              </div>
+
+              <!-- assets -->
+              <div class="config-pane" data-config-pane="assets" hidden>
+                <div class="section-head"><h2>持仓</h2><span class="head-sub">仅为演示数据</span><button type="button" class="btn small" id="add-holding" style="margin-left:auto">添加持仓</button></div>
+                <div class="table-scroll"><table class="asset-table">
+                  <thead><tr><th>标的</th><th>持仓</th><th>成本</th><th>现价/净值</th><th class="amount-cell">今日</th><th class="amount-cell">持有</th><th>状态</th><th></th></tr></thead>
+                  <tbody id="asset-rows"></tbody>
+                </table></div>
+                <p class="hint">A股 6 位代码自动识别市场；基金与股票同码不冲突。份额为 0 是已知 0，不是未知。</p>
+                <div class="asset-summary">
+                  <span><b id="asset-count">3</b> 项持仓</span>
+                  <span>今日 <b id="asset-today">−¥250.00</b></span>
+                  <span>持有 <b id="asset-held">+¥750.00</b></span>
+                  <span class="spacer"></span>
+                  <button type="button" class="btn ghost small" id="refresh-assets">刷新报价</button>
+                </div>
+              </div>
+
+              <!-- housing -->
+              <div class="config-pane" data-config-pane="housing" hidden>
+                <div class="form-section">
+                  <h3>住房方式 <span class="section-badge">三选一</span></h3>
+                  <div class="housing-modes">
+                    <label class="housing-mode"><input type="radio" name="housing-mode" value="mortgage" checked><span class="mode-mark"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9l7-5 7 5v8H3z"/><path d="M8 17v-4h4v4"/></svg></span><strong>房贷</strong><span>月供全额计入压力，本金利息分列</span></label>
+                    <label class="housing-mode"><input type="radio" name="housing-mode" value="rent"><span class="mode-mark"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h8v14H6z"/><path d="M8 7h4M8 10h4M8 13h2"/></svg></span><strong>房租</strong><span>按自然日分摊，不拆本金</span></label>
+                    <label class="housing-mode"><input type="radio" name="housing-mode" value="none"><span class="mode-mark"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10h12"/></svg></span><strong>暂无</strong><span>住房分项为 0，不暗示贷款</span></label>
+                  </div>
+                  <div class="form-grid" id="mortgage-fields" style="margin-top:11px">
+                    <label class="field">本月月供 / 元<input id="mortgage-input" type="number" min="0" step="0.01" value="4800"></label>
+                    <label class="field">其中本金 / 元（选填）<input id="mortgage-principal" type="number" min="0" step="0.01" value="2800"></label>
+                  </div>
+                  <div class="form-grid" id="rent-fields" style="margin-top:11px" hidden>
+                    <label class="field">本月租金 / 元<input id="rent-input" type="number" min="0" step="0.01" value="0"></label>
+                    <label class="field">到期日<input id="rent-due" type="date" value="2026-11-05"></label>
+                  </div>
+                  <p class="error-text" id="principal-error" hidden></p>
+                  <div class="debt-visuals">
+                    <div class="debt-visual"><canvas data-debt-art="mortgage" width="320" height="165" role="img" aria-label="粗线条手绘房子"></canvas><span>住房 · 歪屋顶与亮灯窗</span></div>
+                    <div class="debt-visual"><canvas data-debt-art="car" width="320" height="165" role="img" aria-label="粗线条手绘小汽车"></canvas><span>车贷 · 独立配置</span></div>
+                  </div>
+                </div>
+                <div class="form-section">
+                  <h3>车贷 <span class="section-badge">独立开关</span></h3>
+                  <label class="check-row"><input type="checkbox" id="car-enabled" checked> 这辆车还在还贷</label>
+                  <div class="form-grid" id="car-fields" style="margin-top:9px">
+                    <label class="field">本月月供 / 元<input id="car-input" type="number" min="0" step="0.01" value="1800"></label>
+                    <label class="field">其中本金 / 元（选填）<input id="car-principal" type="number" min="0" step="0.01" value="1500"></label>
+                  </div>
+                  <p class="hint">本金未知显示“待补充”，不影响已知月供计入结余。</p>
+                </div>
+              </div>
+
+              <!-- bills -->
+              <div class="config-pane" data-config-pane="bills" hidden>
+                <div class="bill-toolbar">
+                  <select id="bill-month" aria-label="账单月份"><option>2026 年 11 月</option><option>2026 年 12 月</option></select>
+                  <button type="button" class="btn ghost small" id="copy-bill">复制上月</button>
+                  <span class="spacer"></span>
+                  <span class="pill">当前月 · 已确认</span>
+                </div>
+                <div class="table-scroll"><table class="asset-table bill-table">
+                  <thead><tr><th>项目</th><th class="amount-cell">标准月额</th><th class="amount-cell">今日已分摊</th><th class="amount-cell">本金</th><th class="amount-cell">利息</th><th>状态</th></tr></thead>
+                  <tbody>
+                    <tr><td><span class="holding-name" id="bill-housing-name">住房按揭</span><span class="holding-code">按自然日全天分摊</span></td><td class="amount-cell" id="bill-housing">¥4,800.00</td><td class="amount-cell" id="bill-housing-today">¥133.83</td><td class="amount-cell" id="bill-housing-principal">¥2,800.00</td><td class="amount-cell" id="bill-housing-interest">¥2,000.00</td><td><span class="pill good" id="bill-housing-status">已确认</span></td></tr>
+                    <tr><td><span class="holding-name">车辆贷款</span><span class="holding-code">独立于住房方式</span></td><td class="amount-cell" id="bill-car">¥1,800.00</td><td class="amount-cell" id="bill-car-today">¥50.00</td><td class="amount-cell" id="bill-car-principal">¥1,500.00</td><td class="amount-cell" id="bill-car-interest">¥300.00</td><td><span class="pill good" id="bill-car-status">已确认</span></td></tr>
+                    <tr><td><span class="holding-name">下月预填</span><span class="holding-code">12 月账单尚未填写</span></td><td class="amount-cell">—</td><td class="amount-cell">—</td><td class="amount-cell">—</td><td class="amount-cell">—</td><td><span class="pill warn">沿用上期估算</span></td></tr>
+                  </tbody>
+                </table></div>
+                <div class="notice">缺失账单与金额 0 是两种状态。未来月份可“沿用上期估算”，但不会静默把未知写成 0。</div>
+              </div>
+
+              <p class="error-text" id="config-error" hidden></p>
+            </div>
+
+            <aside class="preview-panel" aria-label="固定窗实时预览">
+              <div class="preview-head"><h2>固定窗预览</h2><span class="chip" id="preview-size-label">M</span></div>
+              <div class="preview-stage" id="preview-stage" data-size="m">
+                <div class="card preview-card card--m" id="preview-card"><div class="card-body" id="preview-body"></div></div>
+              </div>
+              <p class="preview-note">今天将按新配置重算</p>
+              <ul class="impact-list">
+                <li><span>生效</span><b>11-10 起</b></li>
+                <li><span>历史版本</span><b>保留</b></li>
+                <li><span>账本修订</span><b id="preview-rev">#42</b></li>
+              </ul>
+            </aside>
+          </div>
+        </section>
+
+        <!-- DESKTOP -->
+        <section class="page" data-page="desktop" hidden>
+          <div class="page-head">
+            <div><h1>桌面</h1><p>固定窗怎么出现、怎么消失，都在这里。改动即时生效。</p></div>
+            <div class="page-actions"><button type="button" class="btn ghost" id="reset-position">重置位置</button></div>
+          </div>
+          <div class="desktop-grid">
+            <div class="settings-stack">
+              <section class="settings-card">
+                <h3>显示项</h3>
+                <div class="setting-row"><div class="setting-copy"><b>固定窗显示什么</b><span>只调整固定窗，不隐藏账单或手机小部件</span></div><div class="seg" role="group" aria-label="固定窗显示项"><button type="button" data-metrics-mode="both" class="is-active">都显示</button><button type="button" data-metrics-mode="time">只看下班</button><button type="button" data-metrics-mode="balance">只看结余</button></div></div>
+                <div class="setting-row"><div class="setting-copy"><b>金额隐身默认状态</b><span>固定窗、托盘提示与无障碍文案同时遮蔽</span></div><input type="checkbox" class="switch" data-setting="privacyDefault"></div>
+              </section>
+
+              <section class="settings-card">
+                <h3>密度与位置</h3>
+                <div class="density-choices">
+                  <button type="button" class="density-choice" data-density="s"><b>S · 数字条</b>只放两个答案<div class="density-sketch"></div></button>
+                  <button type="button" class="density-choice is-active" data-density="m"><b>M · 便签卡</b>默认，核心信息完整<div class="density-sketch"></div></button>
+                  <button type="button" class="density-choice" data-density="l"><b>L · 工位窗</b>加场景与分项<div class="density-sketch"></div></button>
+                </div>
+                <div class="setting-row"><div class="setting-copy"><b>置顶</b><span>不抢焦点，覆盖普通窗口</span></div><input type="checkbox" class="switch" data-setting="pinned" checked></div>
+                <div class="setting-row"><div class="setting-copy"><b>位置锁定</b><span>防止误拖；锁定后仍可右键</span></div><input type="checkbox" class="switch" data-setting="locked"></div>
+                <div class="setting-row"><div class="setting-copy"><b>纸面透明度</b><span>低于 85% 文字对比度不足</span></div><div class="slider-row"><input type="range" id="opacity-range" min="85" max="100" value="100"><span id="opacity-value">100%</span></div></div>
+              </section>
+
+              <section class="settings-card">
+                <h3>交互与启动</h3>
+                <div class="setting-row"><div class="setting-copy"><b>点击穿透</b><span>鼠标事件穿到下层；Ctrl+Alt+L 可解</span></div><input type="checkbox" class="switch" data-setting="clickThrough"></div>
+                <div class="setting-row"><div class="setting-copy"><b>开机启动</b><span>只写当前用户启动项，不需要管理员</span></div><input type="checkbox" class="switch" data-setting="autostart"></div>
+                <div class="setting-row"><div class="setting-copy"><b>全屏应用时自动隐藏</b><span>游戏、演示、全屏视频自动让位</span></div><input type="checkbox" class="switch" data-setting="fullscreenHide" checked></div>
+                <div class="setting-row"><div class="setting-copy"><b>减少动效</b><span>只更新数字，不做循环动画</span></div><input type="checkbox" class="switch" data-setting="lowMotion"></div>
+              </section>
+
+              <section class="settings-card">
+                <h3>老板键与隐私</h3>
+                <div class="setting-row"><div class="setting-copy"><b>完全隐身</b><span>主窗和固定窗一起隐藏，托盘保留</span></div><kbd>Ctrl+Alt+H</kbd></div>
+                <div class="setting-row"><div class="setting-copy"><b>金额隐身</b><span>只遮金额，倒计时继续</span></div><kbd>Ctrl+Alt+M</kbd></div>
+                <div class="setting-row"><div class="setting-copy"><b>托盘提示</b><span>是否显示倒计时，不显示金额</span></div><div class="seg" role="group" aria-label="托盘提示"><button type="button" class="is-active">只写名称</button><button type="button">显示倒计时</button></div></div>
+              </section>
+            </div>
+
+            <aside class="preview-panel">
+              <div class="preview-head"><h2>桌面效果</h2><span class="chip" id="desktop-preview-size">M</span></div>
+              <div class="mini-desktop" id="mini-desktop" data-size="m">
+                <div class="card preview-card card--m" id="desktop-preview-card"><div class="card-body" id="desktop-preview-body"></div></div>
+              </div>
+              <div class="hotkey-list">
+                <div class="hotkey-row"><span>完全隐身</span><kbd>Ctrl+Alt+H</kbd></div>
+                <div class="hotkey-row"><span>金额隐身</span><kbd>Ctrl+Alt+M</kbd></div>
+                <div class="hotkey-row"><span>点击穿透</span><kbd>Ctrl+Alt+L</kbd></div>
+                <div class="hotkey-row"><span>打开主窗</span><kbd>双击固定窗</kbd></div>
+              </div>
+              <p class="preview-note">原型里拖动固定窗、贴边、右键试试。</p>
+            </aside>
+          </div>
+        </section>
+
+        <!-- DATA -->
+        <section class="page" data-page="data" hidden>
+          <div class="page-head">
+            <div><h1>数据</h1><p>账本只在本机。行情请求只发送标的 ID，不发送金额。</p></div>
+            <div class="page-actions"><span class="chip good">本机账本 #<span id="data-rev">42</span></span></div>
+          </div>
+          <div class="data-grid">
+            <section class="data-card">
+              <h3>手机 ↔ 电脑</h3>
+              <p>v0.1 用版本化 <b>.fjob</b> 文件导入/导出；v0.2 再开局域网配对。不经过云端，不需要账号。</p>
+              <div class="data-actions">
+                <button type="button" class="btn primary" id="import-btn">导入手机账本</button>
+                <button type="button" class="btn" id="export-btn">导出本机账本</button>
+                <button type="button" class="btn ghost" id="sync-btn" disabled>局域网配对 · v0.2</button>
+              </div>
+              <div class="status-line"><span class="status-dot"></span>上次导入 <b id="last-import">11-10 14:20</b> · 来源 Android · 修订 #42</div>
+            </section>
+            <section class="data-card">
+              <h3>本机备份</h3>
+              <p>导入、迁移、清空前自动备份最近 5 份；恢复前再备份当前库。</p>
+              <div class="data-actions">
+                <button type="button" class="btn" id="backup-btn">立即备份</button>
+                <button type="button" class="btn ghost" id="restore-btn">恢复备份</button>
+              </div>
+              <div class="status-line">最近备份 <b>11-10 14:20</b> · 本机 · 约 128 KB</div>
+            </section>
+            <section class="data-card">
+              <h3>同步状态</h3>
+              <p>固定窗右下角的小圆点会显示：已同步 / 同步中 / 离线 / 冲突。冲突不会自动合并财务实体。</p>
+              <div class="status-line"><span class="status-dot"></span>已同步 · 手机为当前主账本</div>
+            </section>
+            <section class="data-card">
+              <h3>清空账本</h3>
+              <p>删除配置、草稿、行情缓存与固定窗快照，并写入 tombstone，防止旧快照复活。</p>
+              <div class="data-actions"><button type="button" class="btn danger" id="clear-btn">清空本机账本</button></div>
+            </section>
+          </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section class="page" data-page="settings" hidden>
+          <div class="page-head">
+            <div><h1>设置</h1><p>更新、诊断和关于。当前为 PC 预览版。</p></div>
+            <div class="page-actions"><span class="chip">Windows x64</span></div>
+          </div>
+          <div class="settings-grid">
+            <section class="data-card">
+              <h3>更新</h3>
+              <p>检查 GitHub Releases，国内镜像优先；下载后校验 SHA-256。PC 使用独立 <b>desktop-v*</b> 通道，不会误装手机 APK。</p>
+              <div class="data-actions"><button type="button" class="btn primary" id="check-update">检查更新</button><span class="pill" id="version-label">v0.1.0</span></div>
+              <div class="status-line" id="update-status">上次检查：刚刚 · 已是最新</div>
+            </section>
+            <section class="data-card">
+              <h3>诊断</h3>
+              <p>日志默认不含金额、持仓、房租、贷款。用户主动导出诊断包时再次脱敏。</p>
+              <div class="data-actions"><button type="button" class="btn ghost" id="open-logs">打开日志目录</button><button type="button" class="btn ghost" id="diagnose">导出诊断包</button></div>
+            </section>
+            <section class="data-card">
+              <h3>关于</h3>
+              <ul class="about-list">
+                <li><span>产品</span><b>今日又白干 · 工位后台</b></li>
+                <li><span>版本</span><b>0.1.0 · PC 预览</b></li>
+                <li><span>账本</span><b>本机 SQLite · 不上传</b></li>
+                <li><span>行情</span><b>只发送标的 ID</b></li>
+                <li><span>许可</span><b>开源许可与字体说明</b></li>
+              </ul>
+            </section>
+            <section class="data-card">
+              <h3>重新观看引导</h3>
+              <p>再看一遍固定窗的拖动、贴边、老板键和右键菜单。</p>
+              <div class="data-actions"><button type="button" class="btn" id="replay-tour">打开固定窗引导</button></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <!-- fixed card -->
+  <article class="card card--m" id="fixed-card" tabindex="0" aria-label="固定窗：距离下班还有与今日生存结余">
+    <div class="card-controls">
+      <button type="button" id="card-pin" aria-label="置顶" aria-pressed="true" title="置顶">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2l4 4-2.6.8-2.4 2.4-.7 3-3.5-3.5 3-.7 2.4-2.4z"/><path d="M5.5 10.5L2 14"/></svg>
+      </button>
+      <button type="button" id="card-close" aria-label="隐藏固定窗" title="隐藏到托盘">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </div>
+    <div class="card-body" id="card-body"></div>
+  </article>
+
+  <!-- context menu -->
+  <div class="menu" id="context-menu" hidden role="menu" aria-label="固定窗菜单">
+    <div class="menu-note">工位便签 · 右键菜单</div>
+    <button type="button" role="menuitem" data-menu="open">打开主窗</button>
+    <button type="button" role="menuitem" data-menu="pin">置顶 <span class="check" data-check="pin">✓</span></button>
+    <button type="button" role="menuitem" data-menu="privacy">金额隐身 <span class="check" data-check="privacy"></span></button>
+    <button type="button" role="menuitem" data-menu="through">点击穿透 <span class="check" data-check="through"></span></button>
+    <button type="button" role="menuitem" data-menu="lock">锁定位置 <span class="check" data-check="lock"></span></button>
+    <div class="menu-sep"></div>
+    <button type="button" role="menuitem" data-menu="settings">固定窗设置</button>
+    <button type="button" role="menuitem" data-menu="hide">隐藏到托盘</button>
+  </div>
+
+  <!-- tray menu -->
+  <div class="menu" id="tray-menu" hidden role="menu" aria-label="托盘菜单">
+    <div class="menu-note">今日又白干 · 工位便签</div>
+    <button type="button" role="menuitem" data-tray="open">显示主窗</button>
+    <button type="button" role="menuitem" data-tray="card">显示/隐藏固定窗 <span class="check" data-check="card">✓</span></button>
+    <button type="button" role="menuitem" data-tray="privacy">金额隐身 <span class="check" data-check="privacy"></span></button>
+    <button type="button" role="menuitem" data-tray="through">点击穿透 <span class="check" data-check="through"></span></button>
+    <div class="menu-sep"></div>
+    <button type="button" role="menuitem" class="danger" data-tray="quit">退出原型</button>
+  </div>
+
+  <!-- hidden badge -->
+  <div class="hidden-badge" id="hidden-badge" hidden>已隐身 · Ctrl+Alt+H 召回 <button type="button" id="restore-boss">现在恢复</button></div>
+
+  <!-- through badge -->
+  <div class="through-badge" id="through-badge" hidden>穿透中 · <button type="button" id="unlock-through">Ctrl+Alt+L 解锁</button></div>
+
+  <!-- modal / toast -->
+  <div class="modal-backdrop" id="modal-root" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- taskbar -->
+  <footer class="taskbar" aria-label="任务栏">
+    <button type="button" class="start" aria-label="开始"><i></i><i></i><i></i><i></i></button>
+    <button type="button" class="task-app is-active" id="task-app" title="今日又白干 · 工位便签；右键打开托盘菜单">
+      <span class="task-mark" aria-hidden="true">(－_－)</span><span class="task-dot"></span>
+    </button>
+    <span class="task-ghost" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h5l1.5 2H17v8H3z"/></svg></span>
+    <span class="task-ghost" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="14" height="12" rx="1"/><path d="M3 8h14"/></svg></span>
+    <div class="task-right">
+      <span class="task-sync"><span class="status-dot"></span><span id="task-sync-text">已同步</span></span>
+      <span class="task-clock" id="task-clock">14:36<br>2026/11/10</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+  const desktop = $("#desktop");
+  const card = $("#fixed-card");
+  const previewCard = $("#preview-card");
+  const previewStage = $("#preview-stage");
+  const desktopPreviewCard = $("#desktop-preview-card");
+  const miniDesktop = $("#mini-desktop");
+  const toastEl = $("#toast");
+  const modalRoot = $("#modal-root");
+  const contextMenu = $("#context-menu");
+  const trayMenu = $("#tray-menu");
+
+  const config = {
+    salary: 12000, days: 21,
+    start: "09:00", end: "18:00",
+    breakStart: "12:00", breakEnd: "13:00",
+    overnight: false,
+    housingMode: "mortgage", mortgage: 4800, mortgagePrincipal: 2800, rent: 0,
+    car: 1800, carPrincipal: 1500,
+    stockName: "000001 · 示例A股", stockQty: 1000, stockCost: 13, stockPrev: 13.0,
+    fundName: "000001 · 示例场外基金", fundQty: 5000, fundCost: 1.234, fundNav: 1.25, fundPrev: 1.234,
+    goldName: "Au99.99 · 上金所参考价", goldQty: 20, goldCost: 850, goldPrev: 900
+  };
+
+  const state = {
+    page: "today",
+    scenario: "work",
+    completeness: "complete",
+    density: "m",
+    privacy: false,
+    clickThrough: false,
+    pinned: true,
+    locked: false,
+    mainOpen: true,
+    cardVisible: true,
+    bossHidden: false,
+    demoOpen: false,
+    opacity: 100,
+    nightDim: 0,
+    metricsMode: "both",
+    autostart: false,
+    fullscreenHide: true,
+    lowMotion: false,
+    sync: "synced",
+    ledgerRev: 42,
+    lastImport: "11-10 14:20",
+    currentTime: 14 * 3600 + 36 * 60,
+    baseTime: 14 * 3600 + 36 * 60,
+    elapsed: 0,
+    scheduleHint: ""
+  };
+  let comfortUntil = 0;
+  let toastTimer = 0;
+  let drag = null;
+  let suppressCardClick = false;
+  let sceneUI = { scenario: "work", totalstate: "complete" };
+
+  const scenarioBase = {
+    work: 14 * 3600 + 36 * 60,
+    break: 12 * 3600 + 30 * 60,
+    before: 8 * 3600 + 45 * 60,
+    off: 18 * 3600 + 20 * 60,
+    rest: 10 * 3600,
+    unknown: 14 * 3600 + 36 * 60,
+    overnight: 23 * 3600 + 59 * 60 + 30
+  };
+
+  const icons = {
+    clock: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.6 1.7"/></svg>',
+    receipt: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h10v14l-2-1-2 1-2-1-2 1z"/><path d="M7.5 7h5M7.5 10h5M7.5 13H11"/></svg>'
+  };
+
+  function timeValue(str) {
+    const [h, m] = String(str).split(":").map(Number);
+    return h * 3600 + m * 60;
+  }
+  function clock(sec) {
+    const s = Math.max(0, Math.ceil(sec));
+    return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), Math.floor(s % 60)]
+      .map((n) => String(n).padStart(2, "0")).join(":");
+  }
+  function wallClock(sec) {
+    const s = ((sec % 86400) + 86400) % 86400;
+    return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), Math.floor(s % 60)]
+      .map((n) => String(n).padStart(2, "0")).join(":");
+  }
+  function number(n, d = 2) {
+    return Number(n).toLocaleString("zh-CN", { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function money(n, signed = false) {
+    return `${n < 0 ? "−" : signed ? "+" : ""}¥${number(Math.abs(n))}`;
+  }
+  function signedClass(n) {
+    if (n === null || n === undefined) return "is-muted";
+    if (n < 0) return "is-negative";
+    if (n > 0) return "is-positive";
+    return "";
+  }
+  function activeSchedule() {
+    if (state.scenario === "overnight") {
+      return { start: "22:00", end: "06:00", breakStart: "02:00", breakEnd: "02:30", overnight: true };
+    }
+    return { start: config.start, end: config.end, breakStart: config.breakStart, breakEnd: config.breakEnd, overnight: config.overnight };
+  }
+  function scheduleBounds() {
+    const sc = activeSchedule();
+    const start = timeValue(sc.start);
+    const end = timeValue(sc.end) + (sc.overnight ? 86400 : 0);
+    let bs = timeValue(sc.breakStart);
+    let be = timeValue(sc.breakEnd);
+    if (sc.overnight) {
+      if (bs < start) bs += 86400;
+      if (be <= bs) be += 86400;
+    }
+    return { sc, start, end, bs, be };
+  }
+  function endLabel() {
+    const { end } = scheduleBounds();
+    return end > 86400 ? `次日 ${clock(end - 86400).slice(0, 5)}` : clock(end).slice(0, 5);
+  }
+  function endPhrase() {
+    const label = endLabel();
+    return label.startsWith("次日") ? `预计${label} 下班` : `预计 ${label} 下班`;
+  }
+  function housingAmount() {
+    if (config.housingMode === "rent") return Math.max(0, Number(config.rent) || 0);
+    if (config.housingMode === "mortgage") return Math.max(0, Number(config.mortgage) || 0);
+    return 0;
+  }
+
+  function snapshot() {
+    const { start, end, bs, be } = scheduleBounds();
+    const time = state.currentTime;
+    const duration = Math.max(1, end - start - Math.max(0, be - bs));
+    let worked = 0;
+    if (state.scenario !== "rest" && state.scenario !== "unknown") {
+      const t = Math.max(0, Math.min(time, end));
+      worked = Math.max(0, t - start);
+      worked -= Math.max(0, Math.min(t, be) - Math.max(start, bs));
+      worked = Math.max(0, Math.min(worked, duration));
+    }
+    const valid = duration > 0 && config.days > 0;
+    const wage = valid ? (Number(config.salary) || 0) / (config.days * duration) * worked : 0;
+    const expenseTime = Math.min(Math.max(0, time), 86400);
+    const housing = housingAmount() / 30 * expenseTime / 86400;
+    const car = (Number(config.car) || 0) / 30 * expenseTime / 86400;
+    const debt = housing + car;
+    const stockPrice = 12.4;
+    const fundNav = 1.25;
+    const goldPrice = 913.5;
+    const stock = state.scenario === "rest" ? 0 : (stockPrice - config.stockPrev) * config.stockQty;
+    const fund = state.scenario === "rest" ? 0 : (fundNav - config.fundPrev) * config.fundQty;
+    const gold = state.scenario === "rest" ? 0 : (goldPrice - config.goldPrev) * config.goldQty;
+    const complete = state.completeness === "complete" && state.scenario !== "unknown";
+    const partial = state.completeness === "partial" && state.scenario !== "unknown";
+    const unavailable = state.completeness === "unavailable" || state.scenario === "unknown";
+    const total = unavailable ? null : wage + (partial ? 0 : stock) + fund + gold - debt;
+    const principal = (config.housingMode === "mortgage" && config.mortgagePrincipal !== null ? Number(config.mortgagePrincipal) : 0) + (Number(config.carPrincipal) || 0);
+    return {
+      time, start, end, bs, be, duration, worked, wage, stock, fund, gold,
+      housing, car, debt, total, stockPrice, fundNav, goldPrice,
+      complete, partial, unavailable,
+      principalAllocated: principal / 30 * expenseTime / 86400,
+      interestAllocated: debt - (config.housingMode === "rent" ? housing : 0) - principal / 30 * expenseTime / 86400
+    };
+  }
+
+  function isOnBreak(s) {
+    return s.time >= s.bs && s.time < s.be;
+  }
+
+  function timeInfo() {
+    const s = snapshot();
+    if (state.scenario === "rest") {
+      return { label: "今日排班", value: "今日休息", detail: "今天没有排班，好好休息。", status: "休息日", chip: "", progress: false };
+    }
+    if (state.scenario === "unknown") {
+      return { label: "排班状态", value: "排班待确认", detail: "请在“配置 → 收入与排班”中确认。", status: "待确认", chip: "warn", progress: false };
+    }
+    if (state.scenario === "off" || s.time >= s.end) {
+      return { label: "本班状态", value: "已下班", detail: `${endLabel()} 已下班 · 固定支出继续分摊`, status: "已下班", chip: "", progress: true };
+    }
+    if (s.time < s.start) {
+      return { label: "距离上班还有", value: clock(s.start - s.time), detail: `${clock(s.start).slice(0, 5)} 上班 · ${endPhrase()}`, status: "未开始", chip: "", progress: true };
+    }
+    const onBreak = isOnBreak(s);
+    return {
+      label: "距离下班还有", value: clock(s.end - s.time),
+      detail: `${endPhrase()} · ${onBreak ? "休息中，工资暂停" : "按排班计薪"}`,
+      status: onBreak ? "午休中" : "在岗中", chip: onBreak ? "" : "good", progress: true
+    };
+  }
+
+  function balanceInfo(s) {
+    if (s.unavailable) {
+      return { amount: "待配置", cls: "is-muted", tag: "不可计算", tagCls: "muted", note: "核心配置待确认，当前结余不可计算。" };
+    }
+    if (s.partial) {
+      return { amount: money(s.total), cls: "is-muted", tag: "部分小计", tagCls: "muted", note: "A股今日浮动待更新，当前仅显示已知小计。" };
+    }
+    const tag = s.total < 0 ? "努力回本" : s.total > 0 ? "暂时领先" : "白干持平";
+    const note = s.total < 0 ? "工资正在努力追赶上午的亏损。" : s.total > 0 ? "今天暂时领先，先小声开心一下。" : "今天暂时持平，生活还没收走什么。";
+    return { amount: money(s.total), cls: signedClass(s.total), tag, tagCls: s.total < 0 ? "" : "good", note };
+  }
+
+  function progressInfo(s) {
+    if (state.scenario === "rest" || state.scenario === "unknown") return null;
+    return { ratio: Math.round(100 * s.worked / s.duration), text: `今日计薪 ${number(s.worked / 3600, 1)} / ${number(s.duration / 3600, 1)} 小时` };
+  }
+
+  function formatAmount(s, n) {
+    if (state.privacy) return "¥••••";
+    return n === null || n === undefined ? "待更新" : money(n, true);
+  }
+
+  function cardBodyHTML(size) {
+    const s = snapshot();
+    const t = timeInfo();
+    const b = balanceInfo(s);
+    const p = progressInfo(s);
+    const amount = state.privacy ? "¥••••" : b.amount;
+    const cls = state.privacy ? "is-muted" : b.cls;
+    const fresh = s.unavailable ? "核心配置待确认" : `报价截至 ${wallClock(s.time).slice(0, 5)}${state.scenario === "work" ? "" : " · 演示冻结"} · 基金净值 11-07`;
+    if (size === "s") {
+      return `<div class="card-s">
+        <div class="card-s-row"><span class="card-s-label">${t.label}</span><span class="card-s-value">${t.value}</span><span class="card-s-tag">${t.status}</span></div>
+        <div class="card-s-row"><span class="card-s-amount ${cls}">${amount}</span><span class="card-s-tag">${state.privacy ? "金额隐身" : b.tag}</span></div>
+      </div>`;
+    }
+    const progress = p ? `<div class="card-progress"><i style="width:${p.ratio}%"></i></div><div class="card-progress-note"><span>${p.text}</span><span>${state.scenario === "break" ? "休息中，工资暂停" : "按排班计薪"}</span></div>` : "";
+    const scene = size === "l" ? `<div class="card-scene"><canvas class="card-scene-canvas" width="380" height="112" role="img" aria-label="紧凑工位场景：疲惫的小人坐在电脑前，旁边是房子和车"></canvas></div>
+      <div class="card-mini-breakdown">
+        <span>工资<b>${state.privacy ? "¥••••" : money(s.wage, true)}</b></span>
+        <span>投资<b>${state.privacy ? "¥••••" : money(s.stock + s.fund + s.gold, true)}</b></span>
+        <span>支出<b>${state.privacy ? "¥••••" : money(-s.debt)}</b></span>
+      </div>` : "";
+    return `<div class="card-time">
+        <div class="card-row"><span class="card-label">${icons.clock}${t.label}</span><span class="card-chip ${t.chip}">${t.status}</span></div>
+        <div class="card-countdown">${t.value}</div>
+        <div class="card-detail">${t.detail}</div>
+        ${progress}
+        <i class="clip a"></i><i class="clip b"></i>
+      </div>
+      <div class="card-balance">
+        <div class="card-row"><span class="card-label">${icons.receipt}今日生存结余</span><span class="card-tag ${b.tagCls}">${state.privacy ? "金额隐身" : b.tag}</span></div>
+        <div class="card-amount ${cls}">${amount}</div>
+        <div class="card-note">${b.note}</div>
+        <div class="card-freshness">${fresh}</div>
+        ${scene}
+      </div>`;
+  }
+
+  function updateCardClasses() {
+    const map = { s: "card--s", m: "card--m", l: "card--l" };
+    [card, previewCard, desktopPreviewCard].forEach((el) => {
+      if (!el) return;
+      el.classList.remove("card--s", "card--m", "card--l");
+      el.classList.add(map[state.density]);
+      el.classList.toggle("is-masked", state.privacy);
+      el.classList.toggle("is-dim", state.nightDim > 0);
+      el.style.setProperty("--dim", String(state.nightDim / 100));
+    });
+    card.classList.toggle("is-click-through", state.clickThrough);
+    card.classList.toggle("is-unpinned", !state.pinned);
+    card.style.opacity = String(state.opacity / 100);
+    previewStage.dataset.size = state.density;
+    miniDesktop.dataset.size = state.density;
+    $("#preview-size-label").textContent = state.density.toUpperCase();
+    $("#desktop-preview-size").textContent = state.density.toUpperCase();
+  }
+
+  function renderCards() {
+    const html = cardBodyHTML(state.density);
+    $("#card-body").innerHTML = html;
+    $("#preview-body").innerHTML = cardBodyHTML(state.density);
+    $("#desktop-preview-body").innerHTML = cardBodyHTML(state.density);
+  }
+
+  function renderMain() {
+    const s = snapshot();
+    const t = timeInfo();
+    const b = balanceInfo(s);
+    const p = progressInfo(s);
+    const dayOffset = Math.floor(s.time / 86400);
+    $("#main-date").textContent = `11月${10 + dayOffset}日 · ${dayOffset ? "周三" : "周二"} · ${wallClock(s.time)} · 演示数据`;
+    $("#titlebar-time").textContent = wallClock(s.time).slice(0, 5);
+    $("#main-time-label").textContent = t.label;
+    $("#main-countdown").textContent = t.value;
+    $("#main-detail").textContent = t.detail;
+    $("#main-status").textContent = t.status;
+    $("#main-status").className = `chip ${t.chip}`;
+    $("#main-stamp").textContent = state.scenario === "unknown" ? "排班待确认" : state.scenario === "rest" ? "休息也计费" : state.scenario === "off" ? "月供接班中" : state.scenario === "before" ? "还没上班" : "在岗求生中";
+    $("#main-amount").textContent = b.amount;
+    $("#main-amount").className = `metric-big ${b.cls}`;
+    $("#main-tag").textContent = b.tag;
+    $("#main-tag").className = `chip ${b.tagCls === "muted" ? "" : b.tagCls}`;
+    $("#main-note").textContent = b.note;
+    $("#main-freshness").textContent = s.unavailable ? "核心配置待确认" : `报价截至 ${wallClock(s.time).slice(0, 5)} · 基金净值 11-07`;
+    const progressBar = $("#main-progress").closest(".metric-progress");
+    const progressNote = $("#main-progress-text").parentElement;
+    if (p) {
+      $("#main-progress").style.width = `${p.ratio}%`;
+      $("#main-progress-text").textContent = p.text;
+      progressBar.style.visibility = "visible";
+      progressNote.style.visibility = "visible";
+    } else {
+      $("#main-progress").style.width = "0%";
+      progressBar.style.visibility = "hidden";
+      progressNote.style.visibility = "hidden";
+    }
+    $("#main-wage").textContent = money(s.wage, true);
+    $("#main-wage").className = `bd-amount ${state.privacy ? "" : "positive"}`;
+    $("#main-stock").textContent = s.unavailable ? "待配置" : s.partial ? "待更新" : money(s.stock, true);
+    $("#main-stock").className = `bd-amount ${!state.privacy && s.stock < 0 ? "negative" : !state.privacy && s.stock > 0 ? "positive" : ""}`;
+    $("#main-fund").textContent = money(s.fund, true);
+    $("#main-fund").className = `bd-amount ${s.fund < 0 ? "negative" : "positive"}`;
+    $("#main-gold").textContent = money(s.gold, true);
+    $("#main-gold").className = `bd-amount ${s.gold < 0 ? "negative" : "positive"}`;
+    $("#main-housing").textContent = money(-s.housing);
+    $("#main-car").textContent = money(-s.car);
+    $("#main-housing-note").textContent = config.housingMode === "rent" ? "房租 · 按自然日" : config.housingMode === "none" ? "暂无 · 已知 0" : "房贷 · 按自然日";
+    $("#main-total").textContent = b.amount;
+    $("#main-total").className = state.privacy ? "" : b.cls === "is-negative" ? "" : "";
+    $("#main-total").style.color = b.cls === "is-negative" ? "var(--bad)" : b.cls === "is-positive" ? "var(--good)" : "";
+    $("#main-scene-caption").textContent = state.scenario === "unknown" ? "排班还没准备好" : state.scenario === "rest" ? "工位空了 · 今天好好休息" : state.scenario === "off" ? "人下班了 · 固定支出继续分摊" : state.scenario === "before" ? "人还没到 · 账单先到" : state.scenario === "break" ? "午休暂停计薪 · 固定支出继续分摊" : "工位 0001 · 赚来的钱，流向房子和车";
+    $("#pat-btn").disabled = !(state.scenario === "work" || state.scenario === "break");
+    $("#pat-btn").textContent = state.scenario === "work" || state.scenario === "break" ? "拍拍他" : state.scenario === "rest" ? "今天不在岗" : state.scenario === "off" ? "他已下班" : "还没到工位";
+    $("#task-clock").innerHTML = `${wallClock(s.time).slice(0, 5)}<br>2026/11/${String(10 + Math.floor(s.time / 86400)).padStart(2, "0")}`;
+    $("#task-sync-text").textContent = state.sync === "synced" ? "已同步" : state.sync === "offline" ? "离线" : "同步中";
+    renderMonthStats();
+    renderBills();
+    renderAssets();
+    renderPreviewMeta();
+  }
+
+  function renderMonthStats() {
+    const { start, end, bs, be } = scheduleBounds();
+    const duration = Math.max(1, end - start - Math.max(0, be - bs));
+    const hours = config.days * duration / 3600;
+    $("#month-days").textContent = `${config.days} 天`;
+    $("#month-hours").textContent = `${number(hours, 1)} h`;
+    $("#month-rate").textContent = hours > 0 ? `¥${number((Number(config.salary) || 0) / hours, 2)}/h` : "—";
+  }
+
+  function renderBills() {
+    const s = snapshot();
+    const housing = housingAmount();
+    const housingLabel = config.housingMode === "rent" ? "本月房租" : config.housingMode === "mortgage" ? "住房按揭" : "住房支出";
+    $("#bill-housing-name").textContent = housingLabel;
+    $("#bill-housing").textContent = money(housing);
+    $("#bill-housing-today").textContent = money(s.housing);
+    $("#bill-housing-principal").textContent = config.housingMode === "mortgage" ? money(config.mortgagePrincipal) : "—";
+    $("#bill-housing-interest").textContent = config.housingMode === "mortgage" ? money(Math.max(0, housing - config.mortgagePrincipal)) : "—";
+    $("#bill-housing-status").textContent = config.housingMode === "none" ? "未配置" : "已确认";
+    $("#bill-housing-status").className = `pill ${config.housingMode === "none" ? "warn" : "good"}`;
+    $("#bill-car").textContent = money(config.car);
+    $("#bill-car-today").textContent = money(s.car);
+    $("#bill-car-principal").textContent = money(config.carPrincipal);
+    $("#bill-car-interest").textContent = money(Math.max(0, config.car - config.carPrincipal));
+    $("#bill-car-status").textContent = config.car > 0 ? "已确认" : "未配置";
+    $("#bill-car-status").className = `pill ${config.car > 0 ? "good" : "warn"}`;
+  }
+
+  const holdings = [
+    { id: "stock", kind: "A股", code: "000001", name: "示例A股", qty: 1000, unit: "股", cost: 13, prev: 13, price: 12.4, status: "正常", statusCls: "good" },
+    { id: "fund", kind: "基金", code: "000001", name: "示例场外基金", qty: 5000, unit: "份", cost: 1.234, prev: 1.234, price: 1.25, status: "净值 11-07", statusCls: "" },
+    { id: "gold", kind: "黄金", code: "Au99.99", name: "上金所参考价", qty: 20, unit: "克", cost: 850, prev: 900, price: 913.5, status: "参考估值", statusCls: "" }
+  ];
+
+  function renderAssets() {
+    let sumToday = 0, sumHeld = 0;
+    const rows = holdings.map((h) => {
+      const today = (h.price - h.prev) * h.qty;
+      const held = (h.price - h.cost) * h.qty;
+      sumToday += today; sumHeld += held;
+      return `<tr>
+        <td><span class="holding-name">${h.name}</span><span class="holding-code">${h.kind} · ${h.code}</span></td>
+        <td class="amount-cell">${number(h.qty, h.kind === "基金" ? 2 : h.kind === "黄金" ? 3 : 0)} ${h.unit}</td>
+        <td class="amount-cell">${money(h.cost, false)}</td>
+        <td class="amount-cell">${money(h.price, false)}</td>
+        <td class="amount-cell" style="color:${today < 0 ? "var(--bad)" : "var(--good)"}">${money(today, true)}</td>
+        <td class="amount-cell" style="color:${held < 0 ? "var(--bad)" : "var(--good)"}">${money(held, true)}</td>
+        <td><span class="pill ${h.statusCls}">${h.status}</span></td>
+        <td><div class="asset-actions"><button type="button" class="icon-btn" data-edit-holding="${h.id}" aria-label="编辑 ${h.name}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 11.5V13h1.5L12 5.5 10.5 4z"/><path d="M9.5 5l1.5 1.5"/></svg></button></div></td>
+      </tr>`;
+    }).join("");
+    $("#asset-rows").innerHTML = rows;
+    $("#asset-count").textContent = holdings.length;
+    $("#asset-today").textContent = money(sumToday, true);
+    $("#asset-today").className = sumToday < 0 ? "negative" : "positive";
+    $("#asset-held").textContent = money(sumHeld, true);
+    $("#asset-held").className = sumHeld < 0 ? "negative" : "positive";
+  }
+
+  function renderPreviewMeta() {
+    $("#preview-rev").textContent = `#${state.ledgerRev}`;
+    $("#ledger-rev").textContent = state.ledgerRev;
+    $("#data-rev").textContent = state.ledgerRev;
+    $("#last-import").textContent = state.lastImport;
+    $("#version-label").textContent = "v0.1.0";
+  }
+
+  function renderAll() {
+    updateCardClasses();
+    renderCards();
+    renderMain();
+    renderDemoActive();
+    syncSceneUI();
+  }
+
+  function syncSceneUI() {
+    sceneUI.scenario = state.scenario === "rest" ? "weekend" : state.scenario;
+    sceneUI.totalstate = state.completeness === "unavailable" || state.scenario === "unknown" ? "unavailable" : state.completeness;
+  }
+
+  function renderDemoActive() {
+    $$("[data-scenario]").forEach((b) => b.classList.toggle("is-active", b.dataset.scenario === state.scenario));
+    $$("[data-completeness]").forEach((b) => b.classList.toggle("is-active", b.dataset.completeness === state.completeness));
+    $$("[data-density]").forEach((b) => b.classList.toggle("is-active", b.dataset.density === state.density));
+    $$("[data-metrics-mode]").forEach((b) => b.classList.toggle("is-active", b.dataset.metricsMode === state.metricsMode));
+    $("#demo-main").textContent = state.mainOpen ? "隐藏主窗" : "显示主窗";
+    $("#demo-privacy").classList.toggle("is-active", state.privacy);
+    $("#demo-through").classList.toggle("is-active", state.clickThrough);
+    $("#demo-pin").classList.toggle("is-active", state.pinned);
+    $("#card-pin").setAttribute("aria-pressed", String(state.pinned));
+    $("#through-badge").hidden = !state.clickThrough || !state.cardVisible;
+    if (state.clickThrough && state.cardVisible) {
+      const r = card.getBoundingClientRect();
+      const d = desktop.getBoundingClientRect();
+      $("#through-badge").style.left = `${r.left - d.left}px`;
+      $("#through-badge").style.top = `${r.top - d.top - 26}px`;
+    }
+    $$("[data-setting]").forEach((input) => {
+      const key = input.dataset.setting;
+      if (key === "privacyDefault") input.checked = state.privacy;
+      else if (key in state) input.checked = Boolean(state[key]);
+    });
+    $("#opacity-range").value = String(state.opacity);
+    $("#opacity-value").textContent = `${state.opacity}%`;
+  }
+
+  /* ---------- canvas scenes ---------- */
+  function debtPalette() {
+    const styles = getComputedStyle(desktop);
+    const probe = document.createElement("span");
+    probe.style.display = "none";
+    desktop.appendChild(probe);
+    const palette = {};
+    for (const name of ["ink", "panel", "soft", "yellow", "rose", "muted", "good", "bad"]) {
+      probe.style.color = `var(--${name})`;
+      palette[name] = getComputedStyle(probe).color;
+    }
+    probe.remove();
+    return palette;
+  }
+
+  function drawDebtObject(ctx, type, p) {
+    const weight = 2.8;
+    function polygon(points, fill) {
+      ctx.beginPath(); points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath();
+      ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = p.ink; ctx.lineWidth = weight; ctx.stroke();
+    }
+    function line(points, color = p.ink, width = weight) {
+      ctx.beginPath(); points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+    }
+    function ellipse(x, y, rx, ry, fill, outline = true) {
+      ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fillStyle = fill; ctx.fill();
+      if (outline) { ctx.strokeStyle = p.ink; ctx.lineWidth = weight; ctx.stroke(); }
+    }
+    ctx.save(); ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ellipse(160, 149, 99, 7, p.soft, false);
+    if (type === "mortgage") {
+      polygon([[94, 61], [222, 62], [220, 145], [96, 147]], p.panel);
+      polygon([[190, 41], [189, 20], [205, 21], [207, 51]], p.yellow);
+      polygon([[78, 67], [152, 18], [237, 68], [221, 74], [152, 36], [96, 75]], p.rose);
+      polygon([[111, 82], [137, 81], [138, 105], [112, 106]], p.soft);
+      polygon([[175, 81], [202, 82], [200, 106], [175, 105]], p.yellow);
+      line([[124, 82], [124, 105]], p.ink, weight * .7);
+      line([[112, 94], [137, 93]], p.ink, weight * .7);
+      line([[188, 82], [188, 105]], p.ink, weight * .7);
+      line([[176, 94], [201, 94]], p.ink, weight * .7);
+      polygon([[145, 113], [169, 112], [171, 146], [145, 146]], p.yellow);
+      ellipse(163, 131, 1.7, 1.7, p.ink, false);
+      line([[88, 149], [229, 149]], p.ink, weight * .7);
+      line([[77, 146], [77, 128], [69, 122]], p.muted, weight * .7);
+      line([[77, 138], [87, 130]], p.muted, weight * .7);
+    } else {
+      ctx.beginPath(); ctx.moveTo(48, 101); ctx.quadraticCurveTo(48, 92, 76, 89); ctx.lineTo(101, 57);
+      ctx.quadraticCurveTo(107, 50, 122, 51); ctx.lineTo(185, 53); ctx.quadraticCurveTo(198, 53, 217, 88);
+      ctx.lineTo(249, 95); ctx.quadraticCurveTo(270, 98, 270, 114); ctx.lineTo(267, 130);
+      ctx.quadraticCurveTo(175, 135, 55, 131); ctx.quadraticCurveTo(45, 130, 48, 101); ctx.closePath();
+      ctx.fillStyle = p.rose; ctx.fill(); ctx.strokeStyle = p.ink; ctx.lineWidth = weight; ctx.stroke();
+      polygon([[87, 88], [110, 62], [145, 63], [145, 89]], p.panel);
+      polygon([[155, 63], [184, 64], [204, 90], [155, 89]], p.soft);
+      line([[151, 96], [151, 125]], p.ink, weight * .7);
+      line([[163, 101], [177, 101]], p.ink, weight * .8);
+      line([[63, 111], [70, 111]], p.ink, weight);
+      polygon([[252, 100], [268, 103], [268, 114], [254, 113]], p.yellow);
+      line([[263, 123], [275, 123]], p.ink, weight);
+      ellipse(94, 131, 19, 19, p.ink);
+      ellipse(94, 131, 9, 9, p.panel);
+      ellipse(227, 131, 19, 19, p.ink);
+      ellipse(227, 131, 9, 9, p.panel);
+      line([[55, 150], [270, 150]], p.muted, weight * .6);
+    }
+    ctx.restore();
+  }
+
+  function drawDebtCanvases() {
+    const p = debtPalette();
+    $$("[data-debt-art]").forEach((canvas) => {
+      if (!canvas.clientWidth || !canvas.offsetParent) return;
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      const w = canvas.clientWidth, h = w * 165 / 320;
+      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+        canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      }
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(canvas.width / 320, 0, 0, canvas.height / 165, 0, 0);
+      ctx.clearRect(0, 0, 320, 165);
+      drawDebtObject(ctx, canvas.dataset.debtArt, p);
+    });
+  }
+
+  function drawOffice(canvas, s, t) {
+    if (!canvas || !canvas.clientWidth || !canvas.offsetParent) return;
+    const w = canvas.clientWidth, h = w * 238 / 380, dpr = Math.min(devicePixelRatio || 1, 2);
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    }
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(canvas.width / 380, 0, 0, canvas.height / 238, 0, 0);
+    const p = debtPalette();
+    const ink = p.ink, paper = p.panel, soft = p.soft, yellow = p.yellow, rose = p.rose, muted = p.muted;
+    ctx.clearRect(0, 0, 380, 238); ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    function line(points, c = ink, width = 2) {
+      ctx.beginPath(); ctx.strokeStyle = c; ctx.lineWidth = width;
+      points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+    }
+    function box(x, y, wd, ht, fill, r = 2) {
+      ctx.beginPath(); ctx.roundRect(x, y, wd, ht, r); ctx.fillStyle = fill; ctx.fill();
+      ctx.strokeStyle = ink; ctx.lineWidth = 1.8; ctx.stroke();
+    }
+    function ellipse(x, y, rx, ry, fill, stroke = true) {
+      ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fillStyle = fill; ctx.fill();
+      if (stroke) { ctx.strokeStyle = ink; ctx.lineWidth = 1.8; ctx.stroke(); }
+    }
+    function text(str, x, y, size = 12, c = ink) {
+      ctx.fillStyle = c; ctx.font = `${size}px "Microsoft YaHei",sans-serif`; ctx.fillText(str, x, y);
+    }
+    ctx.fillStyle = soft; ctx.fillRect(0, 0, 380, 238);
+    ctx.fillStyle = paper; ctx.fillRect(0, 187, 380, 51);
+    line([[0, 187], [380, 187]], muted, 1);
+    const certain = sceneUI.totalstate === "complete" && sceneUI.scenario !== "unknown";
+    const rising = certain && s.total >= 0;
+    box(250, 17, 108, 91, paper, 7);
+    line([[304, 18], [304, 108]], muted, 1);
+    line([[250, 64], [358, 64]], muted, 1);
+    if (rising) {
+      ellipse(329, 40, 13, 13, yellow);
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4;
+        line([[329 + Math.cos(a) * 18, 40 + Math.sin(a) * 18], [329 + Math.cos(a) * 22, 40 + Math.sin(a) * 22]], muted, 1);
+      }
+    } else {
+      ellipse(280, 42, 17, 10, soft); ellipse(294, 37, 16, 13, soft); ellipse(307, 44, 18, 9, soft);
+      if (certain) for (let i = 0; i < 7; i++) {
+        const offset = (t * .025 + i * 8) % 45;
+        line([[263 + i * 12, 54 + offset], [259 + i * 12, 62 + offset]], muted, 1);
+      }
+    }
+    box(30, 21, 81, 66, yellow, 2);
+    line([[48, 22], [89, 22]], rose, 5);
+    text("上班致富", 41, 46, 14);
+    text("暂无进展", 41, 68, 12, muted);
+    box(124, 19, 42, 32, paper, 3);
+    text("11 / 10", 130, 40, 10);
+    ctx.save(); ctx.translate(-12, 109); ctx.scale(.34, .58); drawDebtObject(ctx, "mortgage", p); ctx.restore();
+    ctx.save(); ctx.translate(283, 158); ctx.scale(.33, .33); drawDebtObject(ctx, "car", p); ctx.restore();
+    text(config.housingMode === "rent" ? "房租" : config.housingMode === "none" ? "住房" : "房贷", 22, 221, 11);
+    text("车贷", 323, 221, 11);
+    const sc = activeSchedule();
+    const start = timeValue(sc.start), end = timeValue(sc.end) + (sc.overnight ? 86400 : 0);
+    const bs = timeValue(sc.breakStart) + (sc.overnight && timeValue(sc.breakStart) < start ? 86400 : 0);
+    const be = timeValue(sc.breakEnd) + (sc.overnight && timeValue(sc.breakEnd) < start ? 86400 : 0);
+    const resting = sceneUI.scenario === "weekend";
+    const present = !resting && sceneUI.scenario !== "unknown" && s.time >= start && s.time < end;
+    const onShift = present && !(s.time >= bs && s.time < be);
+    ellipse(186, 206, 75, 8, soft, false);
+    box(162, 146, 43, 47, rose, 8);
+    line([[182, 190], [182, 212]], ink, 4);
+    line([[162, 213], [205, 213]], ink, 3);
+    if (present) {
+      const bob = onShift ? Math.sin(t * .004) * 1.6 : 3;
+      ctx.save(); ctx.translate(0, bob);
+      ellipse(181, 143, 25, 35, paper);
+      line([[170, 169], [160, 198], [148, 199]], ink, 5);
+      line([[187, 171], [202, 196], [217, 196]], ink, 5);
+      ellipse(178, 96, 30, 35, paper);
+      ctx.fillStyle = ink; ctx.beginPath(); ctx.moveTo(149, 85);
+      ctx.bezierCurveTo(147, 56, 199, 48, 208, 85); ctx.lineTo(194, 75); ctx.lineTo(192, 86);
+      ctx.lineTo(180, 76); ctx.lineTo(170, 85); ctx.lineTo(162, 78); ctx.closePath(); ctx.fill();
+      line([[155, 69], [152, 58], [166, 65]], ink, 2);
+      line([[173, 61], [182, 51], [186, 61]], ink, 2);
+      const happy = performance.now() < comfortUntil || (certain && rising);
+      if (happy) {
+        line([[159, 98], [164, 95], [169, 98]]); line([[182, 98], [187, 95], [192, 98]]);
+      } else {
+        line([[157, 95], [169, 96]], ink, 2); line([[183, 96], [195, 95]], ink, 2);
+        ellipse(165, 101, 2, 3, ink, false); ellipse(187, 101, 2, 3, ink, false);
+        line([[158, 107], [169, 108]], muted, 1); line([[183, 108], [194, 107]], muted, 1);
+      }
+      line([[171, 117], [182, 117]], ink, 1.5);
+      line([[171, 130], [179, 138], [186, 129]], muted, 1);
+      line([[179, 138], [176, 157], [183, 154], [179, 138]], ink, 2);
+      const tap = onShift ? Math.sin(t * .025) * 2 : 0;
+      line([[158, 137], [146, 151], [169, 157 + tap]], ink, 4);
+      line([[199, 136], [214, 150], [201, 157 - tap]], ink, 4);
+      ctx.restore();
+    } else {
+      text("人呢？", 157, 112, 17, muted);
+      if (sceneUI.scenario === "unknown") text("排班待确认", 137, 132, 11, muted);
+      else if (!resting) text(s.time < start ? "还没到上班时间" : "他已下班", 137, 132, 11, muted);
+    }
+    box(91, 163, 209, 10, yellow, 2);
+    line([[102, 174], [99, 215]], ink, 4);
+    line([[287, 174], [291, 215]], ink, 4);
+    box(220, 113, 63, 43, paper, 4);
+    line([[250, 157], [250, 162]], ink, 3);
+    line([[232, 163], [269, 163]], ink, 2);
+    line(!certain ? [[227, 135], [277, 135]] : rising ? [[227, 144], [237, 143], [244, 135], [253, 138], [263, 125], [277, 121]] : [[227, 123], [238, 125], [246, 132], [254, 130], [264, 144], [277, 148]], !certain ? muted : rising ? p.good : p.bad, 2);
+    box(120, 147, 15, 15, paper, 3);
+    line([[136, 149], [141, 150], [141, 157], [136, 158]], ink, 1.5);
+    line([[124, 140], [122, 134], [125, 128]], muted, 1);
+    line([[131, 140], [133, 135], [131, 130]], muted, 1);
+    if (onShift) {
+      for (let i = 0; i < 5; i++) {
+        const phase = (t * .00014 + i / 5) % 1;
+        const side = i % 2 === 0;
+        const x = side ? 210 - phase * 165 : 210 + phase * 132;
+        const y = 153 - Math.sin(phase * Math.PI) * 38 + phase * (side ? -4 : 39);
+        ellipse(x, y, 6, 7, yellow);
+        text("¥", x - 3, y + 3, 9);
+      }
+    }
+    text(resting ? "贷款全勤奖" : onShift ? "收入运输中…" : "月供夜班中", 143, 233, 11, muted);
+  }
+
+  function drawCardScene(canvas, s, t) {
+    if (!canvas || !canvas.clientWidth || !canvas.offsetParent) return;
+    const w = canvas.clientWidth, h = canvas.clientHeight || 112, dpr = Math.min(devicePixelRatio || 1, 2);
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    }
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(canvas.width / 380, 0, 0, canvas.height / 112, 0, 0);
+    const p = debtPalette();
+    const ink = p.ink, panel = p.panel, soft = p.soft, yellow = p.yellow, rose = p.rose, muted = p.muted;
+    function line(points, color = ink, width = 1.8) {
+      ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = width;
+      points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+    }
+    function box(x, y, wd, ht, fill, r = 2) {
+      ctx.beginPath(); ctx.roundRect(x, y, wd, ht, r); ctx.fillStyle = fill; ctx.fill();
+      ctx.strokeStyle = ink; ctx.lineWidth = 1.6; ctx.stroke();
+    }
+    function ellipse(x, y, rx, ry, fill, stroke = true) {
+      ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fillStyle = fill; ctx.fill();
+      if (stroke) { ctx.strokeStyle = ink; ctx.lineWidth = 1.6; ctx.stroke(); }
+    }
+    function text(str, x, y, size = 8, color = muted) {
+      ctx.fillStyle = color; ctx.font = `${size}px "Microsoft YaHei",sans-serif`; ctx.fillText(str, x, y);
+    }
+    ctx.clearRect(0, 0, 380, 112);
+    ctx.fillStyle = soft; ctx.fillRect(0, 0, 380, 112);
+    ctx.fillStyle = panel; ctx.fillRect(0, 90, 380, 22);
+    line([[0, 90], [380, 90]], muted, 1);
+
+    // window with weather
+    box(278, 8, 78, 40, panel, 5);
+    ctx.strokeStyle = muted; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(317, 9); ctx.lineTo(317, 47); ctx.moveTo(279, 28); ctx.lineTo(355, 28); ctx.stroke();
+    const rising = sceneUI.totalstate === "complete" && s.total >= 0;
+    if (rising) {
+      ellipse(338, 20, 6, 6, yellow);
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4;
+        line([[338 + Math.cos(a) * 9, 20 + Math.sin(a) * 9], [338 + Math.cos(a) * 12, 20 + Math.sin(a) * 12]], muted, 1);
+      }
+    } else {
+      ellipse(299, 20, 12, 6, soft, false); ellipse(311, 17, 10, 8, soft, false);
+      if (sceneUI.totalstate === "complete") for (let i = 0; i < 5; i++) {
+        line([[289 + i * 12, 30 + (i % 2) * 4], [286 + i * 12, 36 + (i % 2) * 4]], muted, 1);
+      }
+    }
+    text("11 / 10", 22, 20, 7);
+
+    // house and car
+    ctx.save(); ctx.translate(2, 48); ctx.scale(.25, .25); drawDebtObject(ctx, "mortgage", p); ctx.restore();
+    ctx.save(); ctx.translate(294, 55); ctx.scale(.25, .25); drawDebtObject(ctx, "car", p); ctx.restore();
+
+    // chair behind the worker
+    box(158, 63, 50, 26, rose, 8);
+
+    // desk and legs
+    box(94, 84, 192, 7, yellow, 2);
+    line([[106, 91], [103, 108]], ink, 3);
+    line([[274, 91], [277, 108]], ink, 3);
+
+    // monitor
+    box(232, 47, 44, 28, panel, 3);
+    line([[254, 75], [254, 80]], ink, 1.6);
+    line([[244, 80], [264, 80]], ink, 1.6);
+    line(sceneUI.totalstate === "unknown" ? [[238, 60], [270, 60]] : rising ? [[238, 68], [247, 66], [254, 59], [262, 62], [270, 52]] : [[238, 54], [247, 56], [254, 63], [262, 61], [270, 70]], sceneUI.totalstate === "unknown" ? muted : rising ? p.good : p.bad, 1.8);
+
+    // worker
+    const onShift = state.scenario === "work" || state.scenario === "break";
+    ellipse(184, 70, 19, 23, panel);
+    line([[171, 61], [156, 78], [150, 78]], ink, 2);
+    line([[197, 61], [212, 78], [218, 78]], ink, 2);
+    ellipse(184, 37, 19, 21, panel);
+    ctx.fillStyle = ink; ctx.beginPath(); ctx.moveTo(165, 33);
+    ctx.bezierCurveTo(162, 15, 201, 12, 203, 34);
+    ctx.lineTo(196, 25); ctx.lineTo(192, 33); ctx.lineTo(184, 24); ctx.lineTo(176, 33); ctx.lineTo(170, 26); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = ink; ctx.lineWidth = 1.4;
+    if (onShift) {
+      if (state.scenario === "break") {
+        line([[174, 38], [180, 38]]); line([[188, 38], [194, 38]]);
+        line([[178, 45], [190, 45]]);
+      } else {
+        line([[174, 38], [179, 37], [180, 39]]); line([[188, 39], [189, 37], [194, 38]]);
+        line([[178, 45], [184, 47], [190, 45]]);
+      }
+    } else {
+      line([[174, 38], [180, 38]]); line([[188, 38], [194, 38]]);
+      line([[178, 46], [190, 46]]);
+    }
+    line([[184, 51], [184, 60]], ink, 1.4);
+    ctx.fillStyle = rose; ctx.beginPath(); ctx.moveTo(181, 53); ctx.lineTo(187, 53); ctx.lineTo(185, 62); ctx.lineTo(183, 62); ctx.closePath(); ctx.fill();
+    // mug and steam
+    box(136, 74, 11, 10, panel, 3);
+    line([[147, 76], [152, 77], [152, 82], [147, 83]], ink, 1.3);
+    line([[139, 71], [137, 66], [140, 62]], muted, 1);
+    line([[144, 71], [146, 67], [144, 63]], muted, 1);
+    // plant
+    box(104, 76, 10, 9, rose, 2);
+    line([[109, 76], [109, 66], [103, 61]], p.good, 1.6);
+    line([[109, 70], [115, 64]], p.good, 1.6);
+    // coins
+    if (onShift) {
+      for (let i = 0; i < 4; i++) {
+        const phase = (t * .0002 + i / 4) % 1;
+        const x = 216 - phase * 112;
+        const y = 80 - Math.sin(phase * Math.PI) * 16;
+        ellipse(x, y, 5, 6, yellow);
+        text("¥", x - 2, y + 2.5, 7, ink);
+      }
+    }
+    // caption
+    text(state.scenario === "rest" ? "工位空了 · 贷款还在全勤" : onShift ? "工位 0001 · 收入运输中" : "人下班了 · 固定支出继续", 20, 106, 8, muted);
+  }
+
+  function drawScenes() {
+    const s = snapshot();
+    const t = performance.now();
+    drawOffice($("#main-office"), s, t);
+    $$(".card-scene-canvas").forEach((canvas) => drawCardScene(canvas, s, t));
+    drawDebtCanvases();
+  }
+
+  /* ---------- ticking ---------- */
+  function tick() {
+    if (state.scenario === "work" || state.scenario === "break" || state.scenario === "before" || state.scenario === "overnight") {
+      state.currentTime += 1;
+      const s = snapshot();
+      if (state.scenario === "before" && state.currentTime >= s.start) state.scenario = "work";
+      else if (state.scenario === "work" && state.currentTime >= s.end) state.scenario = "off";
+      else if (state.scenario === "break" && state.currentTime >= s.be) state.scenario = "work";
+      else if (state.scenario === "overnight" && state.currentTime >= s.end) state.scenario = "off";
+    }
+    renderAll();
+  }
+
+  /* ---------- interactions ---------- */
+  function setScenario(name) {
+    state.scenario = name;
+    state.currentTime = scenarioBase[name] ?? scenarioBase.work;
+    state.elapsed = 0;
+    if (name !== "overnight") state.scheduleHint = "";
+    renderAll();
+  }
+  function setCompleteness(name) { state.completeness = name; renderAll(); }
+  const densitySize = { s: [220, 76], m: [320, 220], l: [420, 390] };
+  function setDensity(name) {
+    const d = desktop.getBoundingClientRect();
+    const [w0, h0] = densitySize[state.density] || densitySize.m;
+    const [w1, h1] = densitySize[name] || densitySize.m;
+    const anchorRight = card.offsetLeft + w0 / 2 > d.width / 2;
+    const anchorBottom = card.offsetTop + h0 / 2 > (d.height - 46) / 2;
+    const rightGap = d.width - card.offsetLeft - w0;
+    const bottomGap = d.height - 46 - card.offsetTop - h0;
+    const leftGap = card.offsetLeft;
+    const topGap = card.offsetTop;
+    state.density = name;
+    renderAll();
+    const left = anchorRight ? d.width - rightGap - w1 : leftGap;
+    const top = anchorBottom ? d.height - 46 - bottomGap - h1 : topGap;
+    card.style.left = `${left}px`;
+    card.style.top = `${top}px`;
+    card.dataset.left = card.style.left;
+    card.dataset.top = card.style.top;
+    requestAnimationFrame(clampCard);
+    setTimeout(clampCard, 240);
+  }
+  function togglePrivacy() {
+    state.privacy = !state.privacy;
+    renderAll();
+    toast(state.privacy ? "金额已隐身 · Ctrl+Alt+M 恢复" : "金额已恢复");
+  }
+  function toggleThrough() {
+    state.clickThrough = !state.clickThrough;
+    renderAll();
+    toast(state.clickThrough ? "已开启穿透 · Ctrl+Alt+L 解锁" : "已关闭穿透");
+  }
+  function togglePinned() {
+    state.pinned = !state.pinned;
+    renderAll();
+    toast(state.pinned ? "固定窗已置顶" : "固定窗已取消置顶");
+  }
+  function toggleMain() {
+    state.mainOpen = !state.mainOpen;
+    $("#main-window").classList.toggle("is-hidden", !state.mainOpen);
+    $("#task-app").classList.toggle("is-active", state.mainOpen);
+    renderAll();
+  }
+  function bossKey() {
+    state.bossHidden = !state.bossHidden;
+    if (state.bossHidden) {
+      state._mainWasOpen = state.mainOpen;
+      state._cardWasVisible = state.cardVisible;
+      state.mainOpen = false; state.cardVisible = false;
+    } else {
+      state.mainOpen = state._mainWasOpen ?? true;
+      state.cardVisible = state._cardWasVisible ?? true;
+    }
+    applyVisibility();
+    renderAll();
+    toast(state.bossHidden ? "已隐身 · Ctrl+Alt+H 召回" : "已恢复");
+  }
+  function applyVisibility() {
+    $("#main-window").classList.toggle("is-hidden", !state.mainOpen);
+    card.hidden = !state.cardVisible;
+    $("#hidden-badge").hidden = !state.bossHidden;
+    $(".demo-panel").style.display = state.bossHidden ? "none" : "";
+    $("#task-app").classList.toggle("is-active", state.mainOpen);
+  }
+  function toast(message) {
+    toastEl.textContent = message;
+    toastEl.classList.add("is-show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("is-show"), 2600);
+  }
+
+  function showMenu(menu, clientX, clientY) {
+    const d = desktop.getBoundingClientRect();
+    menu.hidden = false;
+    const rect = menu.getBoundingClientRect();
+    menu.style.left = `${Math.min(clientX - d.left, d.width - rect.width - 8)}px`;
+    menu.style.top = `${Math.min(clientY - d.top, d.height - 46 - rect.height - 8)}px`;
+  }
+  function closeMenus() { contextMenu.hidden = true; trayMenu.hidden = true; }
+
+  function syncChecks() {
+    $('[data-check="pin"]').textContent = state.pinned ? "✓" : "";
+    $('[data-check="privacy"]').textContent = state.privacy ? "✓" : "";
+    $('[data-check="through"]').textContent = state.clickThrough ? "✓" : "";
+    $('[data-check="lock"]').textContent = state.locked ? "✓" : "";
+    const checks = $$('[data-check="privacy"]');
+    checks.forEach((c) => c.textContent = state.privacy ? "✓" : "");
+    $$('[data-check="through"]').forEach((c) => c.textContent = state.clickThrough ? "✓" : "");
+    const cardCheck = $('[data-check="card"]');
+    if (cardCheck) cardCheck.textContent = state.cardVisible ? "✓" : "";
+  }
+
+  /* ---------- modal ---------- */
+  let modalActions = [];
+  function openModal(title, body, actions = []) {
+    modalActions = actions;
+    modalRoot.hidden = false;
+    modalRoot.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head"><h2 id="modal-title">${title}</h2><button type="button" class="icon-btn" data-modal-close aria-label="关闭"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+      <div class="modal-body">${body}</div>
+      <div class="modal-actions">${actions.map((a, i) => `<button type="button" class="btn ${a.kind || ""}" data-modal-action="${i}">${a.label}</button>`).join("")}</div>
+    </div>`;
+    $$("[data-modal-action]", modalRoot).forEach((btn, i) => btn.addEventListener("click", () => modalActions[i]?.onClick?.()));
+    $("[data-modal-close]", modalRoot).addEventListener("click", closeModal);
+    modalRoot.addEventListener("click", (e) => { if (e.target === modalRoot) closeModal(); }, { once: true });
+    const first = $("[data-modal-action]", modalRoot);
+    if (first) first.focus();
+  }
+  function closeModal() { modalRoot.hidden = true; modalRoot.innerHTML = ""; modalActions = []; }
+
+  function openImport() {
+    openModal("导入手机账本", `
+      <div class="file-row"><span class="file-icon">.fjob</span><div><b>fjob-ledger-20261110.fjob</b><span>128 KB · 导出于 2026-11-10 14:20 · Android 0.2.0</span></div></div>
+      <div class="summary-grid">
+        <div class="summary-item"><span>到手月薪</span><b>¥12,000.00</b></div>
+        <div class="summary-item"><span>本月排班</span><b>21 天 · 168 小时</b></div>
+        <div class="summary-item"><span>住房方式</span><b>房贷 · ¥4,800</b></div>
+        <div class="summary-item"><span>资产</span><b>A股 1 · 基金 1 · 黄金 1</b></div>
+      </div>
+      <label class="radio-row"><input type="radio" name="import-mode" value="replace" checked><span><b>替换本机账本</b><span>导入前自动备份当前库；原型不会真的写入。</span></span></label>
+      <label class="radio-row"><input type="radio" name="import-mode" value="merge"><span><b>合并</b><span>保留本机较新版本，冲突逐项确认；原型仅演示。</span></span></label>
+      <p class="warn">文件包含工资、持仓、房租、贷款等敏感信息。导入前请确认来源可信。</p>
+    `, [
+      { label: "取消", kind: "ghost", onClick: closeModal },
+      { label: "导入并替换", kind: "primary", onClick: () => { closeModal(); state.lastImport = "11-10 14:20"; const incoming = 42; if (incoming < state.ledgerRev) { renderAll(); toast(`文件修订 #${incoming} 较旧，已保留本机 #${state.ledgerRev}`); } else { state.ledgerRev = incoming; renderAll(); toast(`已导入手机账本 · 修订 #${incoming}`); } } }
+    ]);
+  }
+  function openExport() {
+    openModal("导出本机账本", `
+      <div class="file-row"><span class="file-icon">.fjob</span><div><b>fjob-ledger-20261110-pc.fjob</b><span>版本化 JSON · 含校验和 · 不含行情缓存</span></div></div>
+      <label class="check-row"><input type="checkbox" id="export-pass"> 用口令加密（AES-256-GCM）</label>
+      <p class="warn">导出文件包含工资、持仓、房租、贷款等敏感信息。请妥善保管，不要发到公开群聊。</p>
+    `, [
+      { label: "取消", kind: "ghost", onClick: closeModal },
+      { label: "导出", kind: "primary", onClick: () => { closeModal(); toast("已导出 fjob-ledger-20261110-pc.fjob（原型）"); } }
+    ]);
+  }
+  function openClear() {
+    openModal("清空本机账本？", `
+      <p>将删除配置、草稿、行情缓存和固定窗快照，并写入 tombstone，防止旧快照复活。</p>
+      <p class="warn">此操作不可撤销。建议先导出或备份。原型不会真的删除。</p>
+    `, [
+      { label: "取消", kind: "ghost", onClick: closeModal },
+      { label: "确认清空", kind: "danger", onClick: () => { closeModal(); toast("原型未执行删除；正式版会先备份再清空"); } }
+    ]);
+  }
+  function openHolding(id) {
+    const h = holdings.find((x) => x.id === id);
+    if (!h) return;
+    openModal(`编辑 ${h.kind} 持仓`, `
+      <div class="form-grid">
+        <label class="field">代码 / 品种<input id="edit-code" value="${h.code}"></label>
+        <label class="field">名称<input id="edit-name" value="${h.name}"></label>
+        <label class="field">持仓数量<input id="edit-qty" type="number" min="0" step="${h.kind === "A股" ? "1" : "0.0001"}" value="${h.qty}"></label>
+        <label class="field">每单位成本<input id="edit-cost" type="number" min="0" step="0.0001" value="${h.cost}"></label>
+      </div>
+      <p class="hint">${h.kind === "A股" ? "6 位代码自动识别市场；股数为非负整数。" : h.kind === "基金" ? "份额与成本支持四位小数；只支持境内场外开放式基金。" : "克重三位小数，成本两位小数；显示为参考估值。"}</p>
+    `, [
+      { label: "取消", kind: "ghost", onClick: closeModal },
+      { label: "保存", kind: "primary", onClick: () => {
+        h.code = $("#edit-code")?.value || h.code;
+        h.name = $("#edit-name")?.value || h.name;
+        h.qty = Math.max(0, Number($("#edit-qty")?.value) || 0);
+        h.cost = Math.max(0, Number($("#edit-cost")?.value) || 0);
+        closeModal(); renderAssets(); toast("持仓已更新（原型）");
+      } }
+    ]);
+  }
+  function openWelcome() {
+    openModal("把工位也拉进这场求生。", `
+      <p style="margin:0 0 6px">第一次打开，先决定这本账从哪里来。</p>
+      <div class="welcome-paths">
+        <button type="button" class="welcome-path" data-welcome="import"><span class="wp-num">1</span><span><b>从手机导入（推荐）</b><span>选择手机导出的 .fjob 文件；预览摘要后确认，避免重录。</span></span></button>
+        <button type="button" class="welcome-path" data-welcome="fresh"><span class="wp-num">2</span><span><b>从零开始</b><span>收入与排班 → 固定支出 → 资产（可跳过）→ 核对；约 3 步。</span></span></button>
+        <button type="button" class="welcome-path" data-welcome="demo"><span class="wp-num">3</span><span><b>先看看示例打工人</b><span>固定演示时钟、独立命名空间；不写入正式账本。</span></span></button>
+      </div>
+      <p class="warn" style="margin-top:10px">正式版首次启动会先写草稿，进程退出后可恢复；示例模式不会污染真实配置。</p>
+    `, [{ label: "稍后再说", kind: "ghost", onClick: closeModal }]);
+    $$("[data-welcome]", modalRoot).forEach((btn) => btn.addEventListener("click", () => {
+      const kind = btn.dataset.welcome;
+      closeModal();
+      if (kind === "import") { setTimeout(openImport, 60); return; }
+      if (kind === "fresh") { toast("从零开始：3 步引导；原型未实现完整流程"); return; }
+      toast("示例模式：固定时钟与隔离账本；当前原型即为示例");
+    }));
+  }
+  function openTour() {
+    openModal("固定窗引导", `
+      <div class="tour-step"><span class="tour-num">1</span><div><b>拖到顺手的位置</b><span>按住纸面空白处拖动；靠近屏幕边缘会自动吸附，位置按显示器记住。</span></div></div>
+      <div class="tour-step"><span class="tour-num">2</span><div><b>置顶但不抢焦点</b><span>默认置顶；点右上角图钉可取消。它不会把光标从你正在写的文档里抢走。</span></div></div>
+      <div class="tour-step"><span class="tour-num">3</span><div><b>老板路过时</b><span>Ctrl+Alt+M 只遮金额；Ctrl+Alt+H 连窗口一起隐身。再按一次恢复。</span></div></div>
+      <div class="tour-step"><span class="tour-num">4</span><div><b>右键是完整菜单</b><span>打开主窗、置顶、穿透、锁定、隐藏到托盘。穿透后按 Ctrl+Alt+L 解锁。</span></div></div>
+    `, [{ label: "知道了", kind: "primary", onClick: closeModal }]);
+  }
+
+  /* ---------- binding ---------- */
+  $("#demo-toggle").addEventListener("click", () => {
+    state.demoOpen = !state.demoOpen;
+    $("#demo-body").hidden = !state.demoOpen;
+    $("#demo-toggle").setAttribute("aria-expanded", String(state.demoOpen));
+  });
+  $$("[data-nav]").forEach((btn) => btn.addEventListener("click", () => {
+    state.page = btn.dataset.nav;
+    $$("[data-nav]").forEach((b) => { b.classList.toggle("is-active", b === btn); b.removeAttribute("aria-current"); });
+    btn.setAttribute("aria-current", "page");
+    $$(".page").forEach((p) => { p.hidden = p.dataset.page !== state.page; });
+    $(".content").scrollTop = 0;
+  }));
+  $$("[data-config-tab]").forEach((btn) => btn.addEventListener("click", () => {
+    const tab = btn.dataset.configTab;
+    $$("[data-config-tab]").forEach((b) => { b.classList.toggle("is-active", b === btn); b.setAttribute("aria-selected", String(b === btn)); });
+    $$("[data-config-pane]").forEach((p) => { p.hidden = p.dataset.configPane !== tab; });
+    $("#config-grid").dataset.tab = tab;
+  }));
+  $$("[data-scenario]").forEach((btn) => btn.addEventListener("click", () => setScenario(btn.dataset.scenario)));
+  $$("[data-completeness]").forEach((btn) => btn.addEventListener("click", () => setCompleteness(btn.dataset.completeness)));
+  $$("[data-density]").forEach((btn) => btn.addEventListener("click", () => setDensity(btn.dataset.density)));
+  $$("[data-metrics-mode]").forEach((btn) => btn.addEventListener("click", () => {
+    state.metricsMode = btn.dataset.metricsMode;
+    renderAll();
+    toast(`固定窗显示：${btn.textContent}`);
+  }));
+  $("#demo-main").addEventListener("click", toggleMain);
+  $("#demo-boss").addEventListener("click", bossKey);
+  $("#demo-privacy").addEventListener("click", togglePrivacy);
+  $("#demo-through").addEventListener("click", toggleThrough);
+  $("#demo-pin").addEventListener("click", togglePinned);
+  $("#demo-reset").addEventListener("click", () => {
+    state.scenario = "work"; state.completeness = "complete"; state.density = "m";
+    state.privacy = false; state.clickThrough = false; state.pinned = true; state.locked = false;
+    state.mainOpen = true; state.cardVisible = true; state.bossHidden = false;
+    state.currentTime = scenarioBase.work; state.nightDim = 0; state.opacity = 100;
+    applyVisibility(); renderAll(); toast("演示已重置");
+  });
+  $("#demo-tour").addEventListener("click", openTour);
+  $("#demo-welcome").addEventListener("click", openWelcome);
+  $("#win-close").addEventListener("click", () => { toggleMain(); toast("主窗已收到托盘 · 双击任务栏图标召回"); });
+  $("#win-min").addEventListener("click", () => { toggleMain(); toast("已最小化到托盘（原型）"); });
+  $("#win-max").addEventListener("click", () => toast("原型不改变窗口尺寸"));
+  $("#task-app").addEventListener("click", () => {
+    if (state.bossHidden) { bossKey(); return; }
+    toggleMain();
+  });
+  $("#task-app").addEventListener("contextmenu", (e) => { e.preventDefault(); syncChecks(); showMenu(trayMenu, e.clientX, e.clientY); });
+  $("#restore-boss").addEventListener("click", bossKey);
+  $("#unlock-through").addEventListener("click", toggleThrough);
+  $("#card-pin").addEventListener("click", togglePinned);
+  $("#card-close").addEventListener("click", () => { state.cardVisible = false; applyVisibility(); renderAll(); toast("固定窗已隐藏 · 右键托盘图标召回"); });
+  $("#pat-btn").addEventListener("click", () => { comfortUntil = performance.now() + 3200; toast("辛苦了。先喘口气。"); });
+  $("#refresh-btn").addEventListener("click", () => {
+    $("#refresh-btn").textContent = "刷新中…";
+    setTimeout(() => { $("#refresh-btn").textContent = "手动刷新"; toast("行情已刷新（原型）"); }, 700);
+  });
+  $("#open-calc").addEventListener("click", () => toast("统计口径：工资 + 投资今日浮动 − 固定支出已分摊；未知不当作 0"));
+  $("#reset-position").addEventListener("click", () => positionCard(true));
+  $("#opacity-range").addEventListener("input", (e) => { state.opacity = Number(e.target.value); $("#opacity-value").textContent = `${state.opacity}%`; updateCardClasses(); });
+  $$("[data-setting]").forEach((input) => input.addEventListener("change", () => {
+    const key = input.dataset.setting;
+    if (key === "privacyDefault") { togglePrivacy(); return; }
+    state[key] = input.checked;
+    renderAll();
+    if (key === "clickThrough") toast(input.checked ? "已开启穿透 · Ctrl+Alt+L 解锁" : "已关闭穿透");
+  }));
+  $("#import-btn").addEventListener("click", openImport);
+  $("#export-btn").addEventListener("click", openExport);
+  $("#backup-btn").addEventListener("click", () => toast("已备份到本机（原型）"));
+  $("#restore-btn").addEventListener("click", () => toast("恢复前会再备份当前库（原型）"));
+  $("#clear-btn").addEventListener("click", openClear);
+  $("#check-update").addEventListener("click", () => {
+    $("#update-status").textContent = "正在检查…";
+    setTimeout(() => { $("#update-status").textContent = "上次检查：刚刚 · 已是最新"; toast("已是最新版本 v0.1.0"); }, 700);
+  });
+  $("#open-logs").addEventListener("click", () => toast("日志目录：%APPDATA%\\FJOB\\logs（原型）"));
+  $("#diagnose").addEventListener("click", () => toast("诊断包已脱敏（原型）"));
+  $("#replay-tour").addEventListener("click", openTour);
+  $("#save-config").addEventListener("click", saveConfig);
+  $("#add-holding").addEventListener("click", () => openHolding("stock"));
+  $("#refresh-assets").addEventListener("click", () => toast("单标的报价已刷新（原型）"));
+
+  $$("[data-weekday]").forEach((btn) => btn.addEventListener("click", () => btn.classList.toggle("is-on")));
+  $("#overnight-toggle").addEventListener("change", (e) => {
+    config.overnight = e.target.checked;
+    $("#schedule-hint").textContent = config.overnight ? "跨夜班：下班时间按次日解释，午夜不重置本班倒计时。" : "当前为同日班次，午休不计薪。";
+    renderAll();
+  });
+  ["salary-input", "start-input", "end-input", "break-start", "break-end", "effective-input"].forEach((id) => {
+    const el = $(`#${id}`);
+    el.addEventListener("input", () => {
+      if (id === "salary-input") config.salary = Math.max(0, Number(el.value) || 0);
+      if (id === "start-input") config.start = el.value || config.start;
+      if (id === "end-input") config.end = el.value || config.end;
+      if (id === "break-start") config.breakStart = el.value || config.breakStart;
+      if (id === "break-end") config.breakEnd = el.value || config.breakEnd;
+      validateSchedule();
+      renderAll();
+    });
+  });
+  $$('input[name="housing-mode"]').forEach((input) => input.addEventListener("change", () => {
+    config.housingMode = input.value;
+    $("#mortgage-fields").hidden = input.value !== "mortgage";
+    $("#rent-fields").hidden = input.value !== "rent";
+    renderAll();
+  }));
+  ["mortgage-input", "mortgage-principal", "rent-input", "car-input", "car-principal"].forEach((id) => {
+    const el = $(`#${id}`);
+    el.addEventListener("input", () => {
+      const v = Math.max(0, Number(el.value) || 0);
+      if (id === "mortgage-input") config.mortgage = v;
+      if (id === "mortgage-principal") config.mortgagePrincipal = v;
+      if (id === "rent-input") config.rent = v;
+      if (id === "car-input") config.car = v;
+      if (id === "car-principal") config.carPrincipal = v;
+      validatePrincipal();
+      renderAll();
+    });
+  });
+  $("#car-enabled").addEventListener("change", (e) => {
+    $("#car-fields").hidden = !e.target.checked;
+    if (!e.target.checked) config.car = 0; else if (!config.car) config.car = 1800;
+    renderAll();
+  });
+  $("#copy-bill").addEventListener("click", () => toast("已复制上月账单，需确认后生效（原型）"));
+  $$("[data-edit-holding]").forEach((btn) => btn.addEventListener("click", () => openHolding(btn.dataset.editHolding)));
+  $("#asset-rows").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-edit-holding]");
+    if (btn) openHolding(btn.dataset.editHolding);
+  });
+
+  function validateSchedule() {
+    const start = timeValue(config.start), end = timeValue(config.end) + (config.overnight ? 86400 : 0);
+    const err = $("#config-error");
+    if (!config.overnight && end <= start) {
+      err.hidden = false; err.textContent = "结束时间早于开始时间；跨夜班请勾选“跨夜班”，或把结束时间改到次日。";
+      return false;
+    }
+    if (start === end - (config.overnight ? 86400 : 0)) {
+      err.hidden = false; err.textContent = "这个月没有计薪时段，先给工资安排一个出场时间。";
+      return false;
+    }
+    err.hidden = true; err.textContent = "";
+    return true;
+  }
+  function validatePrincipal() {
+    const err = $("#principal-error");
+    const bad = config.housingMode === "mortgage" && config.mortgagePrincipal > config.mortgage;
+    err.hidden = !bad;
+    err.textContent = bad ? "本金超过了本月月供，请核对账单。生活暂时还没学会这个算法。" : "";
+    $("#mortgage-principal").classList.toggle("is-error", bad);
+    return !bad;
+  }
+  function saveConfig() {
+    const ok = validateSchedule() && validatePrincipal();
+    if (!ok) { toast("配置还有需要核对的地方"); return; }
+    if ((Number(config.salary) || 0) > 0 && config.days <= 0) { toast("本月计薪天数为 0，先给工资安排一个出场时间"); return; }
+    state.ledgerRev += 1;
+    renderAll();
+    toast(`配置已保存 · 账本修订 #${state.ledgerRev} · 今天按新版本重算`);
+  }
+
+  /* ---------- card drag ---------- */
+  function positionCard(reset = false) {
+    const d = desktop.getBoundingClientRect();
+    const w = card.offsetWidth, h = card.offsetHeight;
+    const right = 28, bottom = 46 + 22;
+    if (reset || !card.dataset.left) {
+      card.style.left = `${d.width - right - w}px`;
+      card.style.top = `${d.height - bottom - h}px`;
+      card.dataset.left = card.style.left;
+      card.dataset.top = card.style.top;
+    } else {
+      card.style.left = card.dataset.left;
+      card.style.top = card.dataset.top;
+    }
+    clampCard();
+  }
+  function clampCard() {
+    const d = desktop.getBoundingClientRect();
+    const [w, h] = densitySize[state.density] || [card.offsetWidth, card.offsetHeight];
+    const left = Math.min(Math.max(8, card.offsetLeft), d.width - w - 8);
+    const top = Math.min(Math.max(8, card.offsetTop), d.height - 46 - h - 8);
+    card.style.left = `${left}px`;
+    card.style.top = `${top}px`;
+    card.dataset.left = card.style.left;
+    card.dataset.top = card.style.top;
+  }
+  card.addEventListener("pointerdown", (e) => {
+    if (state.locked || state.clickThrough) return;
+    if (e.target.closest("button")) return;
+    drag = { x: e.clientX, y: e.clientY, left: card.offsetLeft, top: card.offsetTop, moved: false };
+    card.classList.add("is-dragging");
+    card.setPointerCapture(e.pointerId);
+  });
+  card.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+    card.style.left = `${drag.left + dx}px`;
+    card.style.top = `${drag.top + dy}px`;
+  });
+  card.addEventListener("pointerup", (e) => {
+    if (!drag) return;
+    card.classList.remove("is-dragging");
+    const d = desktop.getBoundingClientRect();
+    const left = card.offsetLeft, top = card.offsetTop, w = card.offsetWidth, h = card.offsetHeight;
+    const snap = 16;
+    let nl = left, nt = top;
+    if (left < snap) nl = 8;
+    if (top < snap) nt = 8;
+    if (d.width - (left + w) < snap) nl = d.width - w - 8;
+    if (d.height - 46 - (top + h) < snap) nt = d.height - 46 - h - 8;
+    card.style.left = `${nl}px`; card.style.top = `${nt}px`;
+    card.dataset.left = card.style.left; card.dataset.top = card.style.top;
+    clampCard();
+    const wasMoved = drag.moved;
+    drag = null;
+    if (wasMoved) suppressCardClick = true;
+  });
+  card.addEventListener("click", (e) => {
+    if (e.target.closest("button")) return;
+    if (suppressCardClick) { suppressCardClick = false; return; }
+    if (state.clickThrough || state.locked) return;
+    toggleMain();
+  });
+  card.addEventListener("dblclick", (e) => {
+    if (e.target.closest("button")) return;
+    if (!state.mainOpen) toggleMain();
+  });
+  card.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    if (state.clickThrough) { toast("穿透中 · Ctrl+Alt+L 解锁后可操作"); return; }
+    syncChecks();
+    showMenu(contextMenu, e.clientX, e.clientY);
+  });
+
+  contextMenu.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-menu]");
+    if (!btn) return;
+    const action = btn.dataset.menu;
+    closeMenus();
+    if (action === "open") { if (!state.mainOpen) toggleMain(); }
+    if (action === "pin") togglePinned();
+    if (action === "privacy") togglePrivacy();
+    if (action === "through") toggleThrough();
+    if (action === "lock") { state.locked = !state.locked; renderAll(); toast(state.locked ? "已锁定位置" : "已解锁位置"); }
+    if (action === "settings") {
+      if (!state.mainOpen) toggleMain();
+      $$("[data-nav]").forEach((b) => b.classList.toggle("is-active", b.dataset.nav === "desktop"));
+      state.page = "desktop";
+      $$(".page").forEach((p) => { p.hidden = p.dataset.page !== "desktop"; });
+    }
+    if (action === "hide") { state.cardVisible = false; applyVisibility(); renderAll(); toast("固定窗已隐藏"); }
+  });
+  trayMenu.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-tray]");
+    if (!btn) return;
+    const action = btn.dataset.tray;
+    closeMenus();
+    if (action === "open") { if (!state.mainOpen) toggleMain(); }
+    if (action === "card") { state.cardVisible = !state.cardVisible; applyVisibility(); renderAll(); }
+    if (action === "privacy") togglePrivacy();
+    if (action === "through") toggleThrough();
+    if (action === "quit") toast("原型不真正退出；正式版会先确认再退出");
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".menu") && !e.target.closest("#task-app")) closeMenus();
+  });
+  document.addEventListener("contextmenu", (e) => {
+    if (!e.target.closest("#fixed-card")) closeMenus();
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { closeMenus(); if (!modalRoot.hidden) closeModal(); return; }
+    if (!e.ctrlKey || !e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === "h") { e.preventDefault(); bossKey(); }
+    if (k === "m") { e.preventDefault(); togglePrivacy(); }
+    if (k === "l") { e.preventDefault(); toggleThrough(); }
+  });
+
+  window.addEventListener("resize", () => { clampCard(); renderAll(); });
+
+  /* ---------- boot ---------- */
+  positionCard(true);
+  renderAll();
+  setInterval(tick, 1000);
+  setInterval(drawScenes, 120);
+  requestAnimationFrame(drawScenes);
+})();
+</script>
+</body>
+</html>
