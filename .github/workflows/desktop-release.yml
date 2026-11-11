@@ -2,6 +2,8 @@ name: desktop-release
 
 # PC 端发布通道：desktop-v* 标签触发，与手机 v* 通道互不干扰。
 # 产出安装包（Inno Setup）、便携 zip 与 SHA-256 校验和，并创建 Release。
+# 配置 WINDOWS_CERTIFICATE_BASE64 / WINDOWS_CERTIFICATE_PASSWORD 后自动
+# 用 Authenticode 签名（含 RFC3161 时间戳），消除 SmartScreen 的未知发布者提示。
 on:
   push:
     tags: ['desktop-v*']
@@ -31,6 +33,28 @@ jobs:
       - name: Build release
         working-directory: apps/desktop
         run: flutter build windows --release
+      - name: Sign app executable (optional)
+        working-directory: apps/desktop
+        shell: pwsh
+        env:
+          SIGN_CERT_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          SIGN_CERT_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrEmpty($env:SIGN_CERT_BASE64)) {
+            Write-Host "No WINDOWS_CERTIFICATE_BASE64 secret; skipping signing (SmartScreen will warn)."
+            exit 0
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP "fjob-signing.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:SIGN_CERT_BASE64))
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $signtool) { throw "signtool.exe not found" }
+          $target = "build/windows/x64/runner/Release/todayagain_desktop.exe"
+          & $signtool.FullName sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f $pfx /p $env:SIGN_CERT_PASSWORD $target
+          if ($LASTEXITCODE -ne 0) { throw "signing failed with $LASTEXITCODE" }
+          & $signtool.FullName verify /pa /v $target
+          if ($LASTEXITCODE -ne 0) { throw "signature verify failed with $LASTEXITCODE" }
+          Remove-Item $pfx -Force
       - name: Package portable zip
         working-directory: apps/desktop
         shell: pwsh
@@ -51,6 +75,30 @@ jobs:
           if (-not (Test-Path $iscc)) { throw "Inno Setup not found at $iscc" }
           & $iscc "/DAppVersion=$ver" "installer\fjob_setup.iss"
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed with $LASTEXITCODE" }
+      - name: Sign installer (optional)
+        working-directory: apps/desktop
+        shell: pwsh
+        env:
+          SIGN_CERT_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          SIGN_CERT_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrEmpty($env:SIGN_CERT_BASE64)) {
+            Write-Host "No WINDOWS_CERTIFICATE_BASE64 secret; skipping signing (SmartScreen will warn)."
+            exit 0
+          }
+          $tag = "${{ github.ref_name }}"
+          $ver = if ($tag -match '^desktop-v(.+)$') { $Matches[1] } else { "0.1.0" }
+          $pfx = Join-Path $env:RUNNER_TEMP "fjob-signing.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:SIGN_CERT_BASE64))
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $signtool) { throw "signtool.exe not found" }
+          $target = "build/installer/FJOB-Setup-$ver.exe"
+          & $signtool.FullName sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f $pfx /p $env:SIGN_CERT_PASSWORD $target
+          if ($LASTEXITCODE -ne 0) { throw "signing failed with $LASTEXITCODE" }
+          & $signtool.FullName verify /pa /v $target
+          if ($LASTEXITCODE -ne 0) { throw "signature verify failed with $LASTEXITCODE" }
+          Remove-Item $pfx -Force
       - name: Checksums
         working-directory: apps/desktop
         shell: pwsh

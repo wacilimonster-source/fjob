@@ -79,6 +79,14 @@ PC 端主窗五页改四页：导航删除「今日」，索引重排（0 配置
 - 真机验证：安装包下载 SHA-256 与 Release 一致；静默安装/卸载退出码 0 且卸载干净；应用内检查更新返回「已是最新版本（0.1.0）」。
 - 发布直链：`https://github.com/wacilimonster-source/fjob/releases/download/desktop-v0.1.0/FJOB-Setup-0.1.0.exe`。
 
+## 5.3 代码签名与 SmartScreen（PC5-07）
+
+- **现象**：浏览器下载的安装包带 Mark-of-the-Web，运行未签名的 .exe 时 Microsoft Defender SmartScreen 检查 Authenticode 签名与下载信誉；无签名 → 「未知发布者」，新文件哈希无信誉 → 「Windows 已保护你的电脑」。
+- **自签名无效**：仍提示未知发布者，还要求用户信任根证书，体验更差。
+- **彻底去掉需要受信任证书**：SignPath.io（开源项目免费，需仓库有 OSI 许可证——当前无 LICENSE）；Azure Trusted Signing（约 $9.99/月，需身份验证）；OV 证书（显示发布者，信誉需积累）；EV 证书（立即信誉）。微软商店分发（商店签名）也可绕过，但打包上架工作量大。
+- **已知细节**：应用内「检查更新」由程序自身下载写入，不带 MOTW，从应用内运行通常不触发提示；浏览器直链下载会触发。
+- **CI 已就绪**：`desktop-release` 配置 `WINDOWS_CERTIFICATE_BASE64` + `WINDOWS_CERTIFICATE_PASSWORD` 后自动对主程序与安装包做 SHA-256 + RFC3161 时间戳签名并 `signtool verify`；未配置时跳过（当前发布保持未签名）。
+
 ## 6. 未验证 / 外部依赖（发布门禁，继承 docs/20 §6 并更新）
 
 - 全屏应用自动隐藏：探针受「TopMost 全屏窗 ≠ 前台窗」与卡窗抢前台干扰，需真实全屏应用（游戏/视频）实测；睡眠/唤醒/改时同样未测。
