@@ -153,11 +153,12 @@
 
 范围变更（用户决定，2026-11-11）：PC 端**移除今日页**，主窗五页改四页（配置/桌面/数据/设置），默认落配置页；欢迎面板改为一次性 dismiss（`_welcomeDismissed`），`lib/pages/today_page.dart` 删除。今日页相关的 parity 走查与手机到分核对随之取消。
 
-产物（覆盖旧包，旧 SHA `6c4421fa…`、`5046fc2e…` 均作废）：
+发布（CI，2026-11-11）：`desktop-v0.1.0`（prerelease）由 `desktop-release` 工作流构建并发布：
 
-- `G:\game\nw\FJOB\apps\desktop\build\fjob-desktop-0.1.0-win-x64.zip`
-- 大小：13,731,005 B；SHA-256：`dc0836df897f79d7b7158d1a4ce0a591fda1d77f585f145fadb92cce637f1664`
-- 解压冒烟：临时目录解压启动，主窗 + 固定窗正常显示，退出后清理。
+- 安装包 `FJOB-Setup-0.1.0.exe`：11,755,126 B；SHA-256 `08df558d9c0e3e3b08a6138a3e95168ad5c79d260a31fb27274117c09dad1139`
+- 便携 zip `fjob-desktop-0.1.0-win-x64.zip`：14,045,061 B；SHA-256 `1d1b2f5c99aa8fa4d6d5998a293403c25dab3f17e379c1ddf42fc5e3fe165497`
+- `SHA256SUMS` 随 Release 提供；真机静默安装/卸载（退出码 0、卸载干净）与「检查更新 → 已是最新版本（0.1.0）」已验证。
+- 早期本地包 SHA `6c4421fa…`、`5046fc2e…`、`dc0836df…` 均作废。
 
 未验证：全屏应用自动隐藏（模拟器探针受焦点竞争干扰，需真实全屏应用实测）、托盘菜单逐项点击、200% 缩放/键盘全流程/Narrator、空闲内存 <150MB（上轮 168.7MB 缺口未复核）、配置/数据/设置页功能级走查、PC 与手机同账本到分一致的真机核对、真实行情来源展示许可、代码签名、Windows CI（需用户确认）。
 

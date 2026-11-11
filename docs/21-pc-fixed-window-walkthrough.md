@@ -71,6 +71,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File apps/desktop/build/pc20-wind
 
 PC 端主窗五页改四页：导航删除「今日」，索引重排（0 配置/1 桌面/2 数据/3 设置），默认落配置页；欢迎面板新增 `_welcomeDismissed` 一次性标志（「从零开始配置」与欢迎页同索引 0，必须靠标志脱离）；`lib/pages/today_page.dart` 删除，`main_window.dart` 移除对应 import/分支。今日页 parity（docs/20 §3.1）与 PC↔手机到分核对随之取消。回归：桌面 analyze 无问题、19 测试通过（欢迎导航 2 项在新索引下仍通过）；真机 `20-pc-57-four-pages.png` 四页导航 + 配置页 + 固定窗预览正常。
 
+## 5.2 发布：desktop-v0.1.0（CI，2026-11-11）
+
+- 新增 `.github/workflows/desktop-release.yml`（`desktop-v*` 标签触发）：Windows CI 构建 release、打便携 zip、Inno Setup 安装包、SHA256SUMS 并创建 Release；手机通道 `v*` 不受影响。
+- 安装包脚本 `apps/desktop/installer/fjob_setup.iss`：当前用户安装到 `%LOCALAPPDATA%\Programs\FJOB`，无需管理员；卸载只移除程序，`%APPDATA%\FJOB` 账本保留。
+- 设置页「检查更新」：desktop-v* 通道、镜像优先、SHA-256 校验（asset digest 优先，SHA256SUMS 回退）、下载后可运行安装程序；11 项单元测试覆盖通道隔离、校验和与下载校验。
+- 真机验证：安装包下载 SHA-256 与 Release 一致；静默安装/卸载退出码 0 且卸载干净；应用内检查更新返回「已是最新版本（0.1.0）」。
+- 发布直链：`https://github.com/wacilimonster-source/fjob/releases/download/desktop-v0.1.0/FJOB-Setup-0.1.0.exe`。
+
 ## 6. 未验证 / 外部依赖（发布门禁，继承 docs/20 §6 并更新）
 
 - 全屏应用自动隐藏：探针受「TopMost 全屏窗 ≠ 前台窗」与卡窗抢前台干扰，需真实全屏应用（游戏/视频）实测；睡眠/唤醒/改时同样未测。
