@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/deep_links.dart';
 import '../../app/providers.dart';
-import '../../app/theme.dart';
+import 'package:fjob_ui/fjob_ui.dart';
 import '../../features/assets/assets_page.dart';
 import '../../features/dashboard/dashboard_page.dart';
 import '../../features/expenses/expenses_page.dart';

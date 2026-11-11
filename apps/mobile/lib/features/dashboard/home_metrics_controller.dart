@@ -4,8 +4,8 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../data/home_metrics_preference_store.dart';
-import '../../domain/home_metrics.dart';
+import 'package:ledger_store/ledger_store.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 final homeMetricsPreferenceStoreProvider =
     FutureProvider<HomeMetricsPreferenceStore>((ref) async {

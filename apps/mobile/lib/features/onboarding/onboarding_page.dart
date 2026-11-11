@@ -7,12 +7,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../app/theme.dart';
-import '../../domain/format.dart';
-import '../../domain/setup_draft.dart';
+import 'package:fjob_ui/fjob_ui.dart';
+import 'package:ledger_model/ledger_model.dart';
 import '../assets/holding_editor.dart';
-import '../dashboard/office_scene.dart';
 import 'onboarding_controller.dart';
+import '../settings/ledger_transfer_page.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key, this.redo = false});
@@ -298,6 +297,12 @@ class _WelcomeStep extends StatelessWidget {
         TextButton(
           onPressed: onDemo,
           child: const Text('先替示例打工人焦虑一下'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).push<void>(
+            MaterialPageRoute(builder: (_) => const LedgerTransferPage()),
+          ),
+          child: const Text('已有账本？导入 .fjob'),
         ),
       ],
     );

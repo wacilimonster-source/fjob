@@ -10,8 +10,9 @@ import 'dart:math' as math;
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter/material.dart';
 
-import '../../app/theme.dart';
+import '../theme.dart';
 import 'scene_interaction_controller.dart';
+import 'scene_motion.dart';
 import 'worker_painter.dart';
 
 enum DebtArtType { house, car }
@@ -66,7 +67,7 @@ class _OfficeSceneState extends State<OfficeScene>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 8),
+    duration: SceneMotion.ambient,
   );
 
   @override
@@ -105,32 +106,15 @@ class _OfficeSceneState extends State<OfficeScene>
           ? Presence.atDesk
           : Presence.emptyDesk;
 
-  bool get _departing =>
-      widget.controller?.transient == TransientKind.departure;
-
-  String get _semanticsLabel {
-    final destinations = [
-      if (widget.showHousing) widget.housingLabel,
-      if (widget.showCar) widget.carLabel,
-    ];
-    if (widget.controller?.transient == TransientKind.pat) {
-      return '手绘办公室：人物被轻轻拍肩，抬眼回应';
-    }
-    if (_departing) return '手绘办公室：人物正在提包离开工位';
-    return switch (_presence) {
-      Presence.atDesk when _phase == DayPhase.breakTime =>
-        '手绘办公室：人物在午休中',
-      Presence.atDesk => destinations.isEmpty
-          ? '手绘办公室：打工人在工位上'
-          : '手绘办公室：打工人在工位上，硬币流向${destinations.join('和')}',
-      Presence.emptyDesk => switch (_phase) {
-          DayPhase.afterShift => '空工位，人物已下班',
-          DayPhase.beforeShift => '空工位，还没到岗',
-          DayPhase.restDay => '空工位，今天休息',
-          _ => '空工位，排班待确认',
-        },
-    };
-  }
+  String get _semanticsLabel => _sceneSemanticsLabel(
+        phase: _phase,
+        presence: _presence,
+        transient: widget.controller?.transient ?? TransientKind.idle,
+        destinations: [
+          if (widget.showHousing) widget.housingLabel,
+          if (widget.showCar) widget.carLabel,
+        ],
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -143,11 +127,10 @@ class _OfficeSceneState extends State<OfficeScene>
           : Listenable.merge([_controller, controller]),
       builder: (context, _) {
         controller?.reportAmbient(
-          timeMs: _controller.value * 8000,
+          timeMs: _controller.value * SceneMotion.ambient.inMilliseconds,
           animating: _controller.isAnimating,
         );
-        final presentation =
-            controller?.presentation ?? _steadyPresentation();
+        final presentation = controller?.presentation ?? _steadyPresentation();
         return Semantics(
           label: _semanticsLabel,
           container: true,
@@ -159,8 +142,7 @@ class _OfficeSceneState extends State<OfficeScene>
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
                 final height = width * 238 / 380;
-                final canPat =
-                    widget.interactive && presentation.canPat;
+                final canPat = widget.interactive && presentation.canPat;
                 return Stack(
                   children: [
                     Positioned.fill(
@@ -210,10 +192,86 @@ class _OfficeSceneState extends State<OfficeScene>
       progress: 0,
       canPat: false,
       reduceMotion: widget.reduceMotion,
-      ambientMs: animate ? _controller.value * 8000 : 0,
+      ambientMs:
+          animate ? _controller.value * SceneMotion.ambient.inMilliseconds : 0,
       animateAmbient: animate,
     );
   }
+}
+
+String _sceneSemanticsLabel({
+  required DayPhase phase,
+  required Presence presence,
+  required TransientKind transient,
+  required List<String> destinations,
+}) {
+  if (transient == TransientKind.pat) {
+    return '手绘办公室：人物被轻轻拍肩，抬眼回应';
+  }
+  if (transient == TransientKind.departure) {
+    return '手绘办公室：人物正在提包离开工位';
+  }
+  return switch (presence) {
+    Presence.atDesk when phase == DayPhase.breakTime => '手绘办公室：人物在午休中',
+    Presence.atDesk => destinations.isEmpty
+        ? '手绘办公室：打工人在工位上'
+        : '手绘办公室：打工人在工位上，硬币流向${destinations.join('和')}',
+    Presence.emptyDesk => switch (phase) {
+        DayPhase.afterShift => '空工位，人物已下班',
+        DayPhase.beforeShift => '空工位，还没到岗',
+        DayPhase.restDay => '空工位，今天休息',
+        _ => '空工位，排班待确认',
+      },
+  };
+}
+
+/// A 380×112 composition of the same office artwork for a fixed PC window.
+///
+/// The host supplies the shared presentation (including ambient time). There is
+/// no second interaction controller or animation clock in the compact scene.
+class CompactOfficeScene extends StatelessWidget {
+  const CompactOfficeScene({
+    super.key,
+    required this.presentation,
+    this.showHousing = true,
+    this.showCar = true,
+    this.housingLabel = '房贷',
+    this.carLabel = '车贷',
+  });
+
+  final ScenePresentation presentation;
+  final bool showHousing;
+  final bool showCar;
+  final String housingLabel;
+  final String carLabel;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        image: true,
+        label: _sceneSemanticsLabel(
+          phase: presentation.phase,
+          presence: presentation.presence,
+          transient: presentation.transient,
+          destinations: [
+            if (showHousing) housingLabel,
+            if (showCar) carLabel,
+          ],
+        ),
+        child: AspectRatio(
+          aspectRatio: 380 / 112,
+          child: CustomPaint(
+            painter: _OfficePainter(
+              palette: context.palette,
+              presentation: presentation,
+              showHousing: showHousing,
+              showCar: showCar,
+              housingLabel: housingLabel,
+              carLabel: carLabel,
+              compact: true,
+            ),
+          ),
+        ),
+      );
 }
 
 class _OfficePainter extends CustomPainter {
@@ -224,7 +282,11 @@ class _OfficePainter extends CustomPainter {
     required this.showCar,
     required this.housingLabel,
     required this.carLabel,
+    this.compact = false,
   });
+
+  // Only composition differs: no alternate worker, debt, coin or prop drawing.
+  final bool compact;
 
   final FjobPalette palette;
   final ScenePresentation presentation;
@@ -236,9 +298,10 @@ class _OfficePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
-    canvas.scale(size.width / 380, size.height / 238);
+    final sceneHeight = compact ? 112.0 : 238.0;
+    canvas.scale(size.width / 380, size.height / sceneHeight);
     // OUT-03：图层外使用场景边界裁剪，出场后不残留。
-    canvas.clipRect(const Rect.fromLTWH(0, 0, 380, 238));
+    canvas.clipRect(Rect.fromLTWH(0, 0, 380, sceneHeight));
     final ink = palette.ink;
     final paper = palette.panel;
     final soft = palette.soft;
@@ -284,12 +347,11 @@ class _OfficePainter extends CustomPainter {
 
     void ellipse(double x, double y, double rx, double ry, Color fill,
         {bool outline = true}) {
-      DebtArtPainter.paintOval(canvas, x, y, rx, ry, fill,
-          outline ? ink : null, 1.8);
+      DebtArtPainter.paintOval(
+          canvas, x, y, rx, ry, fill, outline ? ink : null, 1.8);
     }
 
-    void text(String value, double x, double y, double size,
-        {Color? color}) {
+    void text(String value, double x, double y, double size, {Color? color}) {
       final painter = TextPainter(
         text: TextSpan(
           text: value,
@@ -307,16 +369,24 @@ class _OfficePainter extends CustomPainter {
     final empty = !frame.present;
     final monitorAsleep = empty ||
         (presentation.transient == TransientKind.departure &&
-            presentation.progress * 2200 >= 560);
+            presentation.progress * SceneMotion.departure.inMilliseconds >=
+                SceneMotion.departureStandAtMs);
 
-    // Room.
+    // Room. Compact layout moves the floor; the palette stays identical.
+    final floorY = compact ? 101.0 : 187.0;
     paint.color = soft;
-    canvas.drawRect(const Rect.fromLTWH(0, 0, 380, 238), paint);
+    canvas.drawRect(Rect.fromLTWH(0, 0, 380, sceneHeight), paint);
     paint.color = paper;
-    canvas.drawRect(const Rect.fromLTWH(0, 187, 380, 51), paint);
-    line(const [Offset(0, 187), Offset(380, 187)], muted, 1);
+    canvas.drawRect(Rect.fromLTWH(0, floorY, 380, sceneHeight - floorY), paint);
+    line([Offset(0, floorY), Offset(380, floorY)], muted, 1);
 
-    // Window with weather.
+    // Window with weather; compact mode uniformly scales the same drawing.
+    canvas.save();
+    if (compact) {
+      canvas.translate(284, 5);
+      canvas.scale(0.65);
+      canvas.translate(-250, -17);
+    }
     box(const Rect.fromLTWH(250, 17, 108, 91), paper, 7);
     line(const [Offset(304, 18), Offset(304, 108)], muted, 1);
     line(const [Offset(250, 64), Offset(358, 64)], muted, 1);
@@ -335,7 +405,8 @@ class _OfficePainter extends CustomPainter {
         ellipse(294, 37, 16, 13, soft);
         ellipse(307, 44, 18, 9, soft);
         for (var index = 0; index < 7; index++) {
-          final offset = animate ? (timeMs * 0.025 + index * 8) % 45 : index * 6.0;
+          final offset =
+              animate ? (timeMs * 0.025 + index * 8) % 45 : index * 6.0;
           line([
             Offset(263 + index * 12, 54 + offset),
             Offset(259 + index * 12, 62 + offset),
@@ -348,55 +419,71 @@ class _OfficePainter extends CustomPainter {
         text('?', 288, 34, 14, color: muted);
     }
 
+    canvas.restore();
+
     // Sticky note: working copy, or the empty-desk status per phase.
-    box(const Rect.fromLTWH(30, 21, 81, 66), yellow, 2);
-    line(const [Offset(48, 22), Offset(89, 22)], rose, 5);
-    if (empty) {
-      final note = switch (phase) {
-        DayPhase.afterShift => '已下班',
-        DayPhase.beforeShift => '还没到岗',
-        DayPhase.restDay => '今日休息',
-        _ => '排班待确认',
-      };
-      text(note, 40, 46, note.length > 4 ? 11 : 14);
-      text('工位暂停营业', 40, 68, 11, color: muted);
-    } else {
-      text('上班致富', 41, 38, 14);
-      text('暂无进展', 41, 60, 12, color: muted);
+    if (!compact) {
+      box(const Rect.fromLTWH(30, 21, 81, 66), yellow, 2);
+      line(const [Offset(48, 22), Offset(89, 22)], rose, 5);
+      if (empty) {
+        final note = switch (phase) {
+          DayPhase.afterShift => '已下班',
+          DayPhase.beforeShift => '还没到岗',
+          DayPhase.restDay => '今日休息',
+          _ => '排班待确认',
+        };
+        text(note, 40, 46, note.length > 4 ? 11 : 14);
+        text('工位暂停营业', 40, 68, 11, color: muted);
+      } else {
+        text('上班致富', 41, 38, 14);
+        text('暂无进展', 41, 60, 12, color: muted);
+      }
+      box(const Rect.fromLTWH(124, 19, 36, 32), paper, 3);
+      text('0001', 130, 34, 10);
     }
-    box(const Rect.fromLTWH(124, 19, 36, 32), paper, 3);
-    text('0001', 130, 34, 10);
 
     // House and car, using the shared bill illustrations.
     if (showHousing) {
       canvas.save();
-      canvas.translate(-12, 109);
+      canvas.translate(-12, compact ? 0 : 109);
       canvas.scale(0.34, 0.58);
       DebtArtPainter(type: DebtArtType.house, palette: palette).paint(
         canvas,
         const Size(320, 165),
       );
       canvas.restore();
-      text(housingLabel, 22, 214, 11);
+      text(housingLabel, 22, compact ? 94 : 214, 11);
     }
     if (showCar) {
       canvas.save();
-      canvas.translate(283, 158);
+      canvas.translate(283, compact ? 43 : 158);
       canvas.scale(0.33, 0.33);
       DebtArtPainter(type: DebtArtType.car, palette: palette).paint(
         canvas,
         const Size(320, 165),
       );
       canvas.restore();
-      text(carLabel, 320, 214, 11);
+      text(carLabel, 320, compact ? 94 : 214, 11);
     }
 
+    void beginDeskComposition() {
+      canvas.save();
+      if (compact) {
+        // Uniform scaling preserves the worker's proportions and line weights.
+        // Clipping the bottom gives a half-body crop, never a squashed actor.
+        canvas.translate(36, -29);
+        canvas.scale(0.8);
+      }
+    }
+
+    beginDeskComposition();
     ellipse(186, 206, 75, 8, soft, outline: false);
 
     // Chair; it leans back on the empty desk and settles after the walk-out.
     final chairTilted = empty ||
         (presentation.transient == TransientKind.departure &&
-            presentation.progress * 2200 > 1900);
+            presentation.progress * SceneMotion.departure.inMilliseconds >
+                SceneMotion.departureExitAtMs);
     canvas.save();
     canvas.translate(182, 190);
     if (chairTilted) canvas.rotate(0.105);
@@ -423,40 +510,73 @@ class _OfficePainter extends CustomPainter {
     } else {
       final rising = mood == SceneMood.gain;
       final trace = rising
-          ? const [Offset(227, 144), Offset(237, 143), Offset(244, 135), Offset(253, 138), Offset(263, 125), Offset(277, 121)]
-          : const [Offset(227, 123), Offset(238, 125), Offset(246, 132), Offset(254, 130), Offset(264, 144), Offset(277, 148)];
+          ? const [
+              Offset(227, 144),
+              Offset(237, 143),
+              Offset(244, 135),
+              Offset(253, 138),
+              Offset(263, 125),
+              Offset(277, 121)
+            ]
+          : const [
+              Offset(227, 123),
+              Offset(238, 125),
+              Offset(246, 132),
+              Offset(254, 130),
+              Offset(264, 144),
+              Offset(277, 148)
+            ];
       line(trace, rising ? palette.positive : palette.negative, 2);
     }
 
     // Mug, with steam while the worker is around.
     box(const Rect.fromLTWH(120, 147, 15, 15), paper, 3);
-    line(const [Offset(136, 149), Offset(141, 150), Offset(141, 157), Offset(136, 158)], ink, 1.5);
+    line(const [
+      Offset(136, 149),
+      Offset(141, 150),
+      Offset(141, 157),
+      Offset(136, 158)
+    ], ink, 1.5);
     if (frame.present && presentation.transient != TransientKind.departure) {
       final drift = animate ? (timeMs * 0.02) % 6 : 0.0;
-      line([Offset(124, 140 - drift), const Offset(122, 134), const Offset(125, 128)], muted, 1);
-      line([Offset(131, 140 - drift), const Offset(133, 135), const Offset(131, 130)], muted, 1);
+      line([
+        Offset(124, 140 - drift),
+        const Offset(122, 134),
+        const Offset(125, 128)
+      ], muted, 1);
+      line([
+        Offset(131, 140 - drift),
+        const Offset(133, 135),
+        const Offset(131, 130)
+      ], muted, 1);
     }
+
+    canvas.restore(); // Desk composition.
 
     // Salary coins travelling to the visible destinations.
     final departureMs = presentation.transient == TransientKind.departure
-        ? presentation.progress * 2200
+        ? presentation.progress * SceneMotion.departure.inMilliseconds
         : null;
     final coinsActive = departureMs != null
-        ? departureMs < 180
+        ? departureMs < SceneMotion.departureCoinsFadeAtMs
         : phase == DayPhase.working && frame.present;
     if (coinsActive && (showHousing || showCar)) {
       final destinations = <List<double>>[
-        if (showHousing) const [45, 149],
-        if (showCar) const [342, 192],
+        if (showHousing) [45, compact ? 55 : 149],
+        if (showCar) [342, compact ? 86 : 192],
       ];
+      final originX = compact ? 204.0 : 210.0;
+      final originY = compact ? 93.0 : 153.0;
       for (var index = 0; index < 4; index++) {
         final a = ((animate ? timeMs * 0.00014 : 0) + index / 4) % 1;
         final target = destinations[index % destinations.length];
-        final x = 210 + (target[0] - 210) * a;
-        final y = 153 +
-            (target[1] - 153) * a -
-            math.sin(a * math.pi) * 38;
-        final alpha = departureMs == null ? 1.0 : (1 - departureMs / 180).clamp(0.0, 1.0);
+        final x = originX + (target[0] - originX) * a;
+        final y =
+            originY + (target[1] - originY) * a - math.sin(a * math.pi) * 38;
+        final alpha = departureMs == null
+            ? 1.0
+            : (1 - departureMs / SceneMotion.departureCoinsFadeAtMs)
+                .clamp(0.0, 1.0);
         canvas.save();
         canvas.scale(1);
         DebtArtPainter.paintOval(
@@ -475,6 +595,7 @@ class _OfficePainter extends CustomPainter {
     }
 
     // Walk-out in front of desk, house, car and coins.
+    beginDeskComposition();
     if (frame.present && !behindDesk) {
       worker.paint(canvas, frame);
       if (frame.walking) {
@@ -497,24 +618,27 @@ class _OfficePainter extends CustomPainter {
       }
     }
 
+    canvas.restore(); // Foreground worker composition.
+
     final hasDebt = showHousing || showCar;
-    text(
-      switch (presentation.transient) {
-        TransientKind.departure => '工位正在交还给空气',
-        _ => switch (phase) {
-            DayPhase.working => hasDebt ? '收入运输中…' : '计薪中',
-            DayPhase.breakTime => '午休暂停计薪',
-            DayPhase.afterShift => '今日工位，暂停营业。',
-            DayPhase.beforeShift => '工位就绪，等人来',
-            DayPhase.restDay => '今天工位休息',
-            DayPhase.unknown => '排班待确认',
-          },
-      },
-      143,
-      226,
-      11,
-      color: muted,
-    );
+    if (!compact)
+      text(
+        switch (presentation.transient) {
+          TransientKind.departure => '工位正在交还给空气',
+          _ => switch (phase) {
+              DayPhase.working => hasDebt ? '收入运输中…' : '计薪中',
+              DayPhase.breakTime => '午休暂停计薪',
+              DayPhase.afterShift => '今日工位，暂停营业。',
+              DayPhase.beforeShift => '工位就绪，等人来',
+              DayPhase.restDay => '今天工位休息',
+              DayPhase.unknown => '排班待确认',
+            },
+        },
+        143,
+        226,
+        11,
+        color: muted,
+      );
 
     canvas.restore();
   }
@@ -526,7 +650,8 @@ class _OfficePainter extends CustomPainter {
       oldDelegate.showHousing != showHousing ||
       oldDelegate.showCar != showCar ||
       oldDelegate.housingLabel != housingLabel ||
-      oldDelegate.carLabel != carLabel;
+      oldDelegate.carLabel != carLabel ||
+      oldDelegate.compact != compact;
 }
 
 /// Shared house/car doodle used by bills, cards and the office scene.
@@ -589,19 +714,52 @@ class DebtArtPainter extends CustomPainter {
     paintOval(canvas, 160, 149, 99, 7, soft, null, weight);
 
     if (type == DebtArtType.house) {
-      polygon(const [Offset(94, 61), Offset(222, 62), Offset(220, 145), Offset(96, 147)], panel);
-      polygon(const [Offset(190, 41), Offset(189, 20), Offset(205, 21), Offset(207, 51)], yellow);
-      polygon(const [Offset(78, 67), Offset(152, 18), Offset(237, 68), Offset(221, 74), Offset(152, 36), Offset(96, 75)], rose);
-      polygon(const [Offset(111, 82), Offset(137, 81), Offset(138, 105), Offset(112, 106)], soft);
-      polygon(const [Offset(175, 81), Offset(202, 82), Offset(200, 106), Offset(175, 105)], yellow);
+      polygon(const [
+        Offset(94, 61),
+        Offset(222, 62),
+        Offset(220, 145),
+        Offset(96, 147)
+      ], panel);
+      polygon(const [
+        Offset(190, 41),
+        Offset(189, 20),
+        Offset(205, 21),
+        Offset(207, 51)
+      ], yellow);
+      polygon(const [
+        Offset(78, 67),
+        Offset(152, 18),
+        Offset(237, 68),
+        Offset(221, 74),
+        Offset(152, 36),
+        Offset(96, 75)
+      ], rose);
+      polygon(const [
+        Offset(111, 82),
+        Offset(137, 81),
+        Offset(138, 105),
+        Offset(112, 106)
+      ], soft);
+      polygon(const [
+        Offset(175, 81),
+        Offset(202, 82),
+        Offset(200, 106),
+        Offset(175, 105)
+      ], yellow);
       line(const [Offset(124, 82), Offset(124, 105)], ink, weight * 0.7);
       line(const [Offset(112, 94), Offset(137, 93)], ink, weight * 0.7);
       line(const [Offset(188, 82), Offset(188, 105)], ink, weight * 0.7);
       line(const [Offset(176, 94), Offset(201, 94)], ink, weight * 0.7);
-      polygon(const [Offset(145, 113), Offset(169, 112), Offset(171, 146), Offset(145, 146)], yellow);
+      polygon(const [
+        Offset(145, 113),
+        Offset(169, 112),
+        Offset(171, 146),
+        Offset(145, 146)
+      ], yellow);
       ellipse(163, 131, 1.7, 1.7, ink, outline: false);
       line(const [Offset(88, 149), Offset(229, 149)], ink, weight * 0.7);
-      line(const [Offset(77, 146), Offset(77, 128), Offset(69, 122)], muted, weight * 0.7);
+      line(const [Offset(77, 146), Offset(77, 128), Offset(69, 122)], muted,
+          weight * 0.7);
       line(const [Offset(77, 138), Offset(87, 130)], muted, weight * 0.7);
     } else {
       final body = Path()
@@ -626,12 +784,27 @@ class DebtArtPainter extends CustomPainter {
           ..strokeJoin = StrokeJoin.round
           ..style = PaintingStyle.stroke,
       );
-      polygon(const [Offset(87, 88), Offset(110, 62), Offset(145, 63), Offset(145, 89)], panel);
-      polygon(const [Offset(155, 63), Offset(184, 64), Offset(204, 90), Offset(155, 89)], soft);
+      polygon(const [
+        Offset(87, 88),
+        Offset(110, 62),
+        Offset(145, 63),
+        Offset(145, 89)
+      ], panel);
+      polygon(const [
+        Offset(155, 63),
+        Offset(184, 64),
+        Offset(204, 90),
+        Offset(155, 89)
+      ], soft);
       line(const [Offset(151, 96), Offset(151, 125)], ink, weight * 0.7);
       line(const [Offset(163, 101), Offset(177, 101)], ink, weight * 0.8);
       line(const [Offset(63, 111), Offset(70, 111)], ink, weight);
-      polygon(const [Offset(252, 100), Offset(268, 103), Offset(268, 114), Offset(254, 113)], yellow);
+      polygon(const [
+        Offset(252, 100),
+        Offset(268, 103),
+        Offset(268, 114),
+        Offset(254, 113)
+      ], yellow);
       line(const [Offset(263, 123), Offset(275, 123)], ink, weight);
       ellipse(94, 131, 19, 19, ink);
       ellipse(94, 131, 9, 9, panel);
@@ -652,7 +825,8 @@ class DebtArtPainter extends CustomPainter {
     Color? outline,
     double weight,
   ) {
-    final rect = Rect.fromCenter(center: Offset(x, y), width: rx * 2, height: ry * 2);
+    final rect =
+        Rect.fromCenter(center: Offset(x, y), width: rx * 2, height: ry * 2);
     canvas.drawOval(rect, Paint()..color = fill);
     if (outline != null) {
       canvas.drawOval(

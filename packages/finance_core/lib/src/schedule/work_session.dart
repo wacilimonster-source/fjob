@@ -10,7 +10,6 @@ library;
 import '../dashboard/dashboard_calculator.dart' show DayPhase;
 import '../time/local_date.dart';
 import 'schedule_expander.dart';
-import 'schedule_model.dart';
 
 /// One full shift (all paid intervals of a single shift date), never clipped
 /// at midnight.

@@ -1,11 +1,9 @@
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:todayagain/data/app_database.dart';
-import 'package:todayagain/data/ledger_repository.dart';
-import 'package:todayagain/data/market_client.dart';
-import 'package:todayagain/data/quote_repository.dart';
-import 'package:todayagain/domain/instrument.dart';
+import 'package:ledger_store/ledger_store.dart';
+import 'package:market_data/market_data.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 import 'support/test_env.dart';
 

@@ -106,6 +106,27 @@ void main() {
       expect(result.latest!.notes, contains('固定浅色'));
     });
 
+    test('desktop releases never enter the Android update channel', () async {
+      final desktop = _release(
+        tag: 'desktop-v99.0.0',
+        url: 'https://example.com/fjob-desktop-99.0.0-win-x64.zip',
+        size: 10,
+        digest: 'a' * 64,
+      );
+      final service = serviceWith([
+        desktop,
+        _release(
+          tag: 'v0.1.10',
+          url: 'https://example.com/fjob-0.1.10-universal.apk',
+          size: 10,
+          digest: 'b' * 64,
+        ),
+      ]);
+      final result = await service.checkForUpdate('0.1.10');
+      expect(result.hasUpdate, isFalse);
+      expect(result.latest!.tag, 'v0.1.10');
+    });
+
     test('reports up to date when the installed version is current', () async {
       final service = serviceWith([
         _release(

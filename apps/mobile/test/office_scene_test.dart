@@ -4,10 +4,8 @@ library;
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:todayagain/app/theme.dart';
-import 'package:todayagain/domain/ledger.dart';
-import 'package:todayagain/features/dashboard/office_scene.dart';
-import 'package:todayagain/features/dashboard/scene_interaction_controller.dart';
+import 'package:fjob_ui/fjob_ui.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 final DateTime _wednesday = DateTime.utc(2026, 11, 4, 6, 36);
 

@@ -7,7 +7,7 @@ library;
 
 import 'package:sqflite_common/sqlite_api.dart';
 
-import '../domain/home_metrics.dart';
+import 'package:ledger_model/domain/home_metrics.dart';
 import 'app_database.dart';
 
 abstract interface class HomeMetricsPreferenceStore {

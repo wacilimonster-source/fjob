@@ -13,6 +13,14 @@ dependencies:
     sdk: flutter
   finance_core:
     path: ../../packages/finance_core
+  ledger_model:
+    path: ../../packages/ledger_model
+  ledger_store:
+    path: ../../packages/ledger_store
+  fjob_ui:
+    path: ../../packages/fjob_ui
+  market_data:
+    path: ../../packages/market_data
   flutter_riverpod: ^2.6.1
   http: ^1.6.0
   path_provider: ^2.1.5
@@ -20,6 +28,7 @@ dependencies:
   sqflite_common: ^2.5.4
   package_info_plus: ^10.2.2
   crypto: ^3.0.8
+  file_picker: 13.3.3
 
 dev_dependencies:
   flutter_test:

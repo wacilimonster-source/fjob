@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:todayagain/app/app.dart';
 import 'package:todayagain/app/clock.dart';
 import 'package:todayagain/app/providers.dart';
-import 'package:todayagain/app/theme.dart';
+import 'package:fjob_ui/fjob_ui.dart';
 import 'package:todayagain/features/dashboard/dashboard_page.dart';
 
 DateTime _shanghai(int day, int hour, int minute, [int second = 0, int ms = 0]) =>

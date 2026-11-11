@@ -8,8 +8,7 @@ import 'dart:io';
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todayagain/data/widget_snapshot.dart';
-import 'package:todayagain/domain/demo_ledger.dart';
-import 'package:todayagain/domain/ledger.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 void main() {
   test('dump widget payloads', () {

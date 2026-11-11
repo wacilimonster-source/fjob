@@ -1,6 +1,6 @@
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:todayagain/data/cn_market_calendar_2026.dart';
+import 'package:market_data/market_data.dart';
 
 void main() {
   test('statutory closures and make-up Saturdays stay closed', () {

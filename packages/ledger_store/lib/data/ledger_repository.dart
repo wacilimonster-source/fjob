@@ -7,10 +7,10 @@ import 'dart:math';
 import 'package:finance_core/finance_core.dart';
 import 'package:sqflite_common/sqlite_api.dart';
 
-import '../domain/ledger.dart';
-import '../domain/schedule_codec.dart';
-import '../domain/setup_draft.dart';
+import 'package:ledger_model/ledger_model.dart';
 import 'app_database.dart';
+
+part 'ledger_repository_bundle.dart';
 
 final class RevisionConflictException implements Exception {
   const RevisionConflictException(this.expected, this.actual);
@@ -46,8 +46,14 @@ final class LedgerRepository {
     return '$prefix-${DateTime.now().microsecondsSinceEpoch}-$suffix';
   }
 
-  Future<LedgerState> read({DateTime? nowUtc}) async {
-    final db = database.raw;
+  Future<LedgerState> read({DateTime? nowUtc}) => database.transaction(
+        (txn) => _read(txn, nowUtc: nowUtc),
+      );
+
+  Future<LedgerState> _read(DatabaseExecutor db, {
+    DateTime? nowUtc,
+    bool includeMarketData = true,
+  }) async {
     final now = (nowUtc ?? DateTime.now().toUtc()).toUtc();
     final settingsRows = await db.query('app_settings', where: 'id = 1');
     final settingsRow = settingsRows.isEmpty ? null : settingsRows.first;
@@ -175,7 +181,7 @@ final class LedgerRepository {
           ),
     ];
 
-    final quoteRows = await db.query('quote_cache');
+    final quoteRows = includeMarketData ? await db.query('quote_cache') : <Map<String, Object?>>[];
     final quotes = <String, Quote>{
       for (final row in quoteRows)
         if (LocalDate.tryParse(row['trading_date'] as String?) != null)
@@ -205,7 +211,7 @@ final class LedgerRepository {
           ),
     };
 
-    final fundRows = await db.query('fund_nav_cache');
+    final fundRows = includeMarketData ? await db.query('fund_nav_cache') : <Map<String, Object?>>[];
     final fundNavs = <String, FundNavSnapshot>{};
     for (final row in fundRows) {
       final instrumentId = row['instrument_id'] as String?;
@@ -250,11 +256,11 @@ final class LedgerRepository {
       );
     }
 
-    final calendarRows = await db.query(
+    final calendarRows = includeMarketData ? await db.query(
       'market_calendar_days',
       where: 'market = ?',
       whereArgs: ['SSE'],
-    );
+    ) : <Map<String, Object?>>[];
     final days = <LocalDate, MarketDayStatus>{};
     for (final row in calendarRows) {
       final date = LocalDate.tryParse(row['local_date'] as String?);
@@ -264,11 +270,11 @@ final class LedgerRepository {
         orElse: () => MarketDayStatus.unknown,
       );
     }
-    final fundCalendarRows = await db.query(
+    final fundCalendarRows = includeMarketData ? await db.query(
       'market_calendar_days',
       where: 'market = ?',
       whereArgs: ['FUND_CN'],
-    );
+    ) : <Map<String, Object?>>[];
     final fundDays = <LocalDate, MarketDayStatus>{};
     for (final row in fundCalendarRows) {
       final date = LocalDate.tryParse(row['local_date'] as String?);
@@ -278,15 +284,15 @@ final class LedgerRepository {
         orElse: () => MarketDayStatus.unknown,
       );
     }
-    final sgeRows = await db.query(
+    final sgeRows = includeMarketData ? await db.query(
       'market_calendar_days',
       where: 'market = ? AND local_date = ?',
       whereArgs: ['SGE', calendar.dateOf(now).toIsoString()],
-    );
+    ) : <Map<String, Object?>>[];
     final goldSessionActive = sgeRows.isNotEmpty &&
         sgeRows.first['status'] == MarketDayStatus.open.name;
 
-    final directoryRows = await db.query('instrument_directory');
+    final directoryRows = includeMarketData ? await db.query('instrument_directory') : <Map<String, Object?>>[];
     final instrumentNames = <String, String>{
       for (final row in directoryRows)
         if ((row['instrument_id'] as String?) != null &&
@@ -405,11 +411,15 @@ final class LedgerRepository {
     required DateTime nowUtc,
     bool sampleMode = false,
     bool replaceExisting = false,
+    int? expectedRevision,
   }) async {
     final now = nowUtc.toUtc();
     final effectiveFrom = calendar.startOfDayUtc(commit.effectiveDate);
     final billMonth = calendar.dateOf(now).firstOfMonth;
     await database.transaction((txn) async {
+      if (expectedRevision != null) {
+        await _checkRevision(txn, expectedRevision);
+      }
       final existing = await txn.query(
         'setup_commits',
         where: 'setup_session_id = ?',
@@ -942,6 +952,8 @@ final class LedgerRepository {
         'onboarding_drafts',
         'setup_commits',
         'widget_publish_jobs',
+        // Clearing financial data must also remove recoverable copies.
+        'ledger_backups',
         // HOME-DUAL-10: clearing the ledger also resets the local layout
         // preference; the next visit defaults to showing both cards.
         'ui_preferences',

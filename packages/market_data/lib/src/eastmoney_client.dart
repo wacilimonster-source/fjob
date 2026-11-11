@@ -10,8 +10,7 @@ import 'dart:convert';
 import 'package:finance_core/finance_core.dart';
 import 'package:http/http.dart' as http;
 
-import '../domain/instrument.dart';
-import '../domain/setup_draft.dart';
+import 'package:ledger_model/ledger_model.dart';
 import 'cn_market_calendar_2026.dart';
 import 'market_client.dart';
 
@@ -139,10 +138,9 @@ final class EastmoneyMarketClient implements MarketClient {
           continue;
         }
         final latest = rows.first;
-        final previous =
-            rows.length > 1 && rows[1].$1.compareTo(latest.$1) < 0
-                ? rows[1]
-                : null;
+        final previous = rows.length > 1 && rows[1].$1.compareTo(latest.$1) < 0
+            ? rows[1]
+            : null;
         final eventDetected = rows.any((row) => row.$3);
         navs[instrumentId] = FundNavSnapshot(
           instrumentId: instrumentId,
@@ -346,7 +344,8 @@ final class EastmoneyMarketClient implements MarketClient {
       );
     }
     final body = jsonDecode(utf8.decode(response.bodyBytes));
-    if (body is! Map) throw const FormatException('quote body is not an object');
+    if (body is! Map)
+      throw const FormatException('quote body is not an object');
     final data = body['data'];
     final diff = data is Map ? data['diff'] : null;
     final byCode = <String, Map<Object?, Object?>>{};
@@ -378,7 +377,8 @@ final class EastmoneyMarketClient implements MarketClient {
           ? Rational.parse((baselineRaw / 100).toStringAsFixed(2))
           : null;
       final quoteAt = stamp is num && stamp > 0
-          ? DateTime.fromMillisecondsSinceEpoch(stamp.toInt() * 1000, isUtc: true)
+          ? DateTime.fromMillisecondsSinceEpoch(stamp.toInt() * 1000,
+              isUtc: true)
           : now;
       final tradingDate = calendar.dateOf(quoteAt);
       final gold = instrumentId.startsWith('GOLD.');
@@ -411,9 +411,8 @@ final class EastmoneyMarketClient implements MarketClient {
     final local = calendar.localTimeOf(quoteAtUtc);
     if (local.weekday > 5) return MarketState.closed;
     final minute = local.hour * 60 + local.minute;
-    final sessions = gold
-        ? const [(540, 690), (810, 930)]
-        : const [(570, 690), (780, 900)];
+    final sessions =
+        gold ? const [(540, 690), (810, 930)] : const [(570, 690), (780, 900)];
     if (minute < sessions.first.$1) return MarketState.preopen;
     for (final session in sessions) {
       if (minute >= session.$1 && minute < session.$2) return MarketState.open;

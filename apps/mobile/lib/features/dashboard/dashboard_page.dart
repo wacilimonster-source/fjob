@@ -10,17 +10,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../app/theme.dart';
-import '../../domain/format.dart';
-import '../../domain/home_metrics.dart';
-import '../../domain/ledger.dart';
+import 'package:fjob_ui/fjob_ui.dart';
+import 'package:ledger_model/ledger_model.dart';
 import '../ledger/ledger_controller.dart';
 import '../settings/settings_page.dart';
 import '../shell/tabs.dart';
 import 'home_metrics_controller.dart';
-import 'home_metrics_model.dart';
-import 'office_scene.dart';
-import 'scene_interaction_controller.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -746,7 +741,7 @@ class _TimeMetricCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const _HandDrawnClockIcon(),
+                const HandDrawnClockIcon(),
                 const SizedBox(width: 7),
                 Expanded(
                   child: Text(
@@ -827,7 +822,7 @@ class _BalanceMetricCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const _HandDrawnBillIcon(),
+                const HandDrawnBillIcon(),
                 const SizedBox(width: 7),
                 Expanded(
                   child: Text(
@@ -1083,106 +1078,6 @@ class _PaperLink extends StatelessWidget {
       );
 }
 
-class _HandDrawnClockIcon extends StatelessWidget {
-  const _HandDrawnClockIcon();
-
-  @override
-  Widget build(BuildContext context) => const CustomPaint(
-        size: Size.square(17),
-        painter: _ClockIconPainter(),
-      );
-}
-
-class _ClockIconPainter extends CustomPainter {
-  const _ClockIconPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF586152)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.7
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * 0.4;
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(-0.06);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset.zero,
-        width: radius * 2.02,
-        height: radius * 1.96,
-      ),
-      paint,
-    );
-    canvas.drawLine(Offset.zero, Offset(0, -radius * 0.55), paint);
-    canvas.drawLine(
-      Offset.zero,
-      Offset(radius * 0.38, radius * 0.22),
-      paint,
-    );
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _ClockIconPainter oldDelegate) => false;
-}
-
-class _HandDrawnBillIcon extends StatelessWidget {
-  const _HandDrawnBillIcon();
-
-  @override
-  Widget build(BuildContext context) => const CustomPaint(
-        size: Size.square(17),
-        painter: _BillIconPainter(),
-      );
-}
-
-class _BillIconPainter extends CustomPainter {
-  const _BillIconPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF586152)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.7
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final left = size.width * 0.22;
-    final right = size.width * 0.78;
-    final top = size.height * 0.16;
-    final bottom = size.height * 0.84;
-    final path = Path()
-      ..moveTo(left, top)
-      ..lineTo(right, top + 0.4)
-      ..lineTo(right - 0.4, bottom - 2.2)
-      ..lineTo((left + right) / 2, bottom)
-      ..lineTo(left + 0.4, bottom - 2.2)
-      ..close();
-    canvas.drawPath(path, paint);
-    canvas.drawLine(
-      Offset(left + 2.6, size.height * 0.36),
-      Offset(right - 2.6, size.height * 0.36),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(left + 2.6, size.height * 0.52),
-      Offset(right - 2.6, size.height * 0.52),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(left + 2.6, size.height * 0.68),
-      Offset((left + right) / 2, size.height * 0.68),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _BillIconPainter oldDelegate) => false;
-}
 
 /// PAT-02 反馈区：预留最小高度，交互开始时不推动布局跳动。
 class _FeedbackArea extends StatelessWidget {

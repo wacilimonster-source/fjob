@@ -16,8 +16,19 @@
 8. [拍拍他与下班离场设计](docs/09-design-comfort-and-clock-out.md)。定义3.2秒拍肩回应、2.2秒离场、空工位、跨夜班、关键帧和可执行开发任务，状态为待实施。
 9. [国内基金持仓详细设计](docs/10-design-domestic-fund-holdings.md)与[开发交接任务](docs/11-handoff-domestic-fund-implementation.md)。定义场外基金的录入、日终净值、收益、兼容迁移和验收；M7-FUND 已实施，公开基金源仍为开发验证状态。
 10. [首页双核心指标设计与开发交接](docs/12-design-home-dual-metrics.md)。定义下班倒计时与今日生存结余的首屏布局、三种显示配置、时间边界和验收；M8-HOME 已实施，双卡、单项显示与本地偏好已有自动化测试和模拟器截图。
+11. [PC 伴生端设计方案](docs/13-design-pc-companion.md)。定义 Windows PC 端的竞品参考、固定窗、配置管理、同步路线与技术选型；决策已确认，生产未实施。
+12. [PC 伴生端详细产品设计与交互原型](docs/14-design-pc-detailed.md)。定义主窗五页、固定窗 S/M/L、状态矩阵、配置实时预览、文案、数据映射和 PC-D01–D22 验收；状态为设计交付，生产未实施。
+13. [PC 伴生端实施交接与素材复用计划](docs/15-handoff-pc-implementation.md)。定义共享 painter/动效抽取、M9-PC0 窗口技术验证清单、任务拆分与风险；素材复用为硬约束。
+14. [PC 端开发任务清单](docs/16-pc-development-plan.md)。定义 M9-PC0–PC7 的交付物、验收、依赖与当前状态。
+15. [PC0 窗口技术验证报告](docs/17-pc0-spike-report.md)。记录官方 windowing 失败、desktop_multi_window 回退、固定窗 DPI 修复与核心通过结论。
+16. [后续 Agent 任务指引](docs/18-next-agent-task-guide.md)。可直接复制的交接提示词，覆盖 PC1 共享层/`.fjob`、PC2 主窗、已知坑与命令。
+17. [PC 端开发交接说明](docs/19-pc-handoff.md)。记录 PC0/PC1 已完成状态、架构决策与已知坑。
+18. [PC 端走查与修复交接](docs/20-pc-walkthrough-handoff.md)。记录首次运行实测发现的问题与修复（WAL、导入、双引擎）。
+19. [PC 固定窗走查与修复记录](docs/21-pc-fixed-window-walkthrough.md)。记录固定窗真机走查、视觉层级、位置记忆与检查更新。
 
 [打开交互原型](prototype/index.html)。可直接用浏览器打开，首次进入体验引导，进入后底部可重新走流程。`prototype/source.html` 为可编辑源片段，`index.html` 为独立浏览器版本。
+
+[打开 PC 端交互原型](prototype/pc.html)。含主窗、固定窗三档、老板键、金额隐身、点击穿透、配置实时预览和演示状态；推荐 1440×900，可离线打开。
 
 [打开动画原型](prototype/animation.html)，可播放拍肩、下班离场和中途下班，暂停并定位关键帧。源文件、时间轴JSON和13张关键帧的使用方法见[动画交接说明](prototype/ANIMATION-README.md)。
 

@@ -14,9 +14,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../app/theme.dart';
-import '../../domain/instrument.dart';
-import '../../domain/setup_draft.dart';
+import 'package:fjob_ui/fjob_ui.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 Future<HoldingDraft?> showHoldingEditor(
   BuildContext context, {

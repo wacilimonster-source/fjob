@@ -8,14 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../data/app_database.dart';
-import '../data/ledger_repository.dart';
-import '../data/eastmoney_client.dart';
-import '../data/market_client.dart';
-import '../data/quote_repository.dart';
+import 'package:ledger_store/ledger_store.dart';
+import 'package:market_data/market_data.dart';
 import '../data/widget_bridge.dart';
-import '../domain/demo_ledger.dart';
-import '../domain/ledger.dart';
+import 'package:ledger_model/ledger_model.dart';
 import '../features/ledger/ledger_controller.dart';
 import 'clock.dart';
 

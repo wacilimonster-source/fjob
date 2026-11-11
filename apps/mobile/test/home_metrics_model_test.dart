@@ -7,8 +7,7 @@ library;
 
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:todayagain/domain/ledger.dart';
-import 'package:todayagain/features/dashboard/home_metrics_model.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 void main() {
   final calendar = BusinessCalendar.shanghai;

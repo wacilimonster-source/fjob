@@ -6,8 +6,8 @@ library;
 
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:todayagain/domain/ledger.dart';
-import 'package:todayagain/features/dashboard/scene_interaction_controller.dart';
+import 'package:ledger_model/ledger_model.dart';
+import 'package:fjob_ui/fjob_ui.dart';
 
 final DateTime _wednesday = DateTime.utc(2026, 11, 4, 6, 36); // 周三 14:36
 

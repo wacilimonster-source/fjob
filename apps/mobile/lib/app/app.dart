@@ -10,7 +10,7 @@ import '../features/onboarding/onboarding_controller.dart';
 import '../features/onboarding/onboarding_page.dart';
 import '../features/shell/app_shell.dart';
 import 'providers.dart';
-import 'theme.dart';
+import 'package:fjob_ui/fjob_ui.dart';
 
 class FjobApp extends ConsumerWidget {
   const FjobApp({super.key});

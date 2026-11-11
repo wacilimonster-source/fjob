@@ -2,6 +2,8 @@
 ///
 /// Presence follows the *whole* shift (docs/09 §7.1); wage math keeps using
 /// the natural-day timeline, so these tests only assert phase and sessions.
+library;
+
 import 'package:finance_core/finance_core.dart';
 import 'package:test/test.dart';
 

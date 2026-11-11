@@ -6,9 +6,9 @@ import 'dart:convert';
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter/services.dart';
 
-import '../domain/ledger.dart';
-import 'ledger_repository.dart';
-import 'market_client.dart';
+import 'package:ledger_model/ledger_model.dart';
+import 'package:ledger_store/ledger_store.dart';
+import 'package:market_data/market_data.dart';
 import 'widget_snapshot.dart';
 
 abstract interface class WidgetBridge {

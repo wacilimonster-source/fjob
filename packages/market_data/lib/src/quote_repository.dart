@@ -3,8 +3,8 @@ library;
 
 import 'package:finance_core/finance_core.dart';
 
-import '../domain/setup_draft.dart';
-import 'ledger_repository.dart';
+import 'package:ledger_model/ledger_model.dart';
+import 'package:ledger_store/ledger_store.dart';
 import 'market_client.dart';
 
 final class QuoteRefreshOutcome {

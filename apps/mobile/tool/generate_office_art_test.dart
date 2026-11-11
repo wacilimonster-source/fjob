@@ -13,8 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:todayagain/app/theme.dart';
-import 'package:todayagain/features/dashboard/office_scene.dart';
+import 'package:fjob_ui/fjob_ui.dart';
 
 Future<void> _loadFont() async {
   final candidates = [

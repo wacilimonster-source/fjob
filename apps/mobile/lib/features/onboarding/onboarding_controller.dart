@@ -7,7 +7,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../domain/setup_draft.dart';
+import 'package:ledger_model/ledger_model.dart';
 import '../ledger/ledger_controller.dart';
 
 final onboardingControllerProvider =

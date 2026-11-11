@@ -9,8 +9,7 @@ library;
 import 'package:finance_core/finance_core.dart';
 
 const String cnMarketCalendarVersion = 'CN-A-2026-v1';
-const String cnMarketCalendarSource =
-    '2026 交易日由东方财富历史行情推导并核对法定休市安排';
+const String cnMarketCalendarSource = '2026 交易日由东方财富历史行情推导并核对法定休市安排';
 const String cnMarketCalendarCoverage = '2026-01-01 ~ 2026-12-31';
 
 const Set<String> _closures2026 = <String>{
@@ -43,9 +42,10 @@ MarketCalendar buildCnMarketCalendar({
   var date = from;
   while (date <= to) {
     if (date.year == 2026) {
-      days[date] = date.weekday > 5 || _closures2026.contains(date.toIsoString())
-          ? MarketDayStatus.closed
-          : MarketDayStatus.open;
+      days[date] =
+          date.weekday > 5 || _closures2026.contains(date.toIsoString())
+              ? MarketDayStatus.closed
+              : MarketDayStatus.open;
     } else {
       days[date] = MarketDayStatus.unknown;
     }

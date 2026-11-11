@@ -1,7 +1,7 @@
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todayagain/app/providers.dart';
-import 'package:todayagain/domain/setup_draft.dart';
+import 'package:ledger_model/ledger_model.dart';
 import 'package:todayagain/features/ledger/ledger_controller.dart';
 import 'package:todayagain/features/onboarding/onboarding_controller.dart';
 

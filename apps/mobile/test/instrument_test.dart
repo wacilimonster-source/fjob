@@ -1,8 +1,7 @@
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:todayagain/data/market_client.dart';
-import 'package:todayagain/domain/instrument.dart';
-import 'package:todayagain/domain/setup_draft.dart';
+import 'package:market_data/market_data.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 void main() {
   test('marketForCode follows A-share prefixes and rejects B shares', () {

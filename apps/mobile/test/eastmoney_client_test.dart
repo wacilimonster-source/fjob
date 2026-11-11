@@ -4,9 +4,8 @@ import 'package:finance_core/finance_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:todayagain/data/eastmoney_client.dart';
-import 'package:todayagain/data/market_client.dart';
-import 'package:todayagain/domain/setup_draft.dart';
+import 'package:market_data/market_data.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 void main() {
   final calendar = BusinessCalendar.shanghai;

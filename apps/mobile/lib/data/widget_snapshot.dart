@@ -7,7 +7,7 @@ library;
 
 import 'package:finance_core/finance_core.dart';
 
-import '../domain/ledger.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 abstract final class WidgetCaps {
   /// Dart emits v2; the native side still accepts and renders v1 snapshots.

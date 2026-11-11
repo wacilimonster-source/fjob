@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:finance_core/finance_core.dart';
 import 'package:sqflite_common/sqlite_api.dart';
+import 'package:uuid/uuid.dart';
 
 /// Opens the local ledger database.
 ///
@@ -15,7 +16,7 @@ import 'package:sqflite_common/sqlite_api.dart';
 final class AppDatabase {
   AppDatabase._(this._db, this.schemaVersion);
 
-  static const int currentSchemaVersion = 5;
+  static const int currentSchemaVersion = 6;
 
   static Future<AppDatabase> open({
     required DatabaseFactory factory,
@@ -26,8 +27,17 @@ final class AppDatabase {
       path,
       options: OpenDatabaseOptions(
         version: currentSchemaVersion,
+        // The PC main and card engines open the same file from separate Flutter
+        // engines; a shared single instance would nest their transactions on
+        // one connection (SQLITE_MISUSE). Give each opener its own connection.
+        singleInstance: false,
         onConfigure: (db) async {
           await db.execute('PRAGMA foreign_keys = ON');
+          // The PC main window writes while the card engine reads the same file
+          // on a second connection; WAL keeps readers from blocking the writer
+          // and busy_timeout absorbs brief writer contention.
+          await db.execute('PRAGMA journal_mode = WAL');
+          await db.execute('PRAGMA busy_timeout = 5000');
         },
         onCreate: (db, version) async {
           for (final statement in _schemaV1) {
@@ -47,6 +57,7 @@ final class AppDatabase {
           // A pre-versioned database also reports user_version 0, so sqflite
           // routes it through onCreate rather than onUpgrade.
           await _migrateLegacyConfig(db, calendar);
+          await _createLedgerMetadata(db);
         },
         onUpgrade: (db, oldVersion, newVersion) async {
           if (oldVersion < 1) {
@@ -66,6 +77,9 @@ final class AppDatabase {
           if (oldVersion < 5) {
             await db.execute(_uiPreferencesSql);
           }
+          if (oldVersion < 6) {
+            await _createLedgerMetadata(db);
+          }
         },
       ),
     );
@@ -81,6 +95,34 @@ final class AppDatabase {
       _db.transaction(action);
 
   Future<void> close() => _db.close();
+
+  static Future<void> _createLedgerMetadata(DatabaseExecutor db) async {
+    // Idempotent: a database may already carry these tables if a prior open
+    // created them at the current version before user_version was rolled back.
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS ledger_metadata (
+        id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+        ledger_id TEXT NOT NULL UNIQUE
+      )
+    ''');
+    await db.execute(
+      "INSERT OR IGNORE INTO ledger_metadata (id, ledger_id) VALUES (1, '${const Uuid().v4()}')",
+    );
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS ledger_backups (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        created_at TEXT NOT NULL,
+        ledger_id TEXT NOT NULL,
+        ledger_revision INTEGER NOT NULL,
+        bundle_json TEXT NOT NULL
+      )
+    ''');
+  }
+
+  /// Stable across process restarts and schema migrations; unrelated to the
+  /// per-device presentation preference table or any device identifier.
+  Future<String> get ledgerId async =>
+      (await _db.query('ledger_metadata', where: 'id = 1')).single['ledger_id']! as String;
 
   static const String _instrumentDirectorySql = '''
     CREATE TABLE instrument_directory (

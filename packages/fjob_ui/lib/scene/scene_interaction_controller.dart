@@ -9,7 +9,9 @@ import 'package:finance_core/finance_core.dart';
 import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../domain/ledger.dart';
+import 'package:ledger_model/ledger_model.dart' show AppTone;
+
+import 'scene_motion.dart';
 
 /// 场景情绪：独立于瞬态，由盈亏与完整性决定。
 enum SceneMood { gain, loss, unknown }
@@ -102,7 +104,8 @@ abstract final class PatResponses {
     required bool onBreak,
     required int index,
   }) {
-    final pool = (onBreak ? breakTime : working)[tone] ?? working[AppTone.gentle]!;
+    final pool =
+        (onBreak ? breakTime : working)[tone] ?? working[AppTone.gentle]!;
     return pool[index % pool.length];
   }
 }
@@ -129,19 +132,19 @@ final class SceneInteractionController extends ChangeNotifier {
   }
 
   /// PAT-03 拍肩总时长。
-  static const Duration patDuration = Duration(milliseconds: 3200);
+  static const Duration patDuration = SceneMotion.pat;
 
   /// MOTION-01 减少动效下的静态回应保留时长。
-  static const Duration patReducedDuration = Duration(milliseconds: 2400);
+  static const Duration patReducedDuration = SceneMotion.patReduced;
 
   /// OUT-02 离场总时长。
-  static const Duration departureDuration = Duration(milliseconds: 2200);
+  static const Duration departureDuration = SceneMotion.departure;
 
   /// OUT-01 首次观察到结束的容错窗口；只决定是否播放过渡。
-  static const Duration departureWindow = Duration(milliseconds: 2000);
+  static const Duration departureWindow = SceneMotion.departureWindow;
 
   /// PAT-03 420ms 起反馈区切换为完整回应。
-  static const int responseAtMs = 420;
+  static const int responseAtMs = SceneMotion.responseAtMs;
 
   final AnimationController _patController;
   final AnimationController _departureController;
@@ -193,7 +196,8 @@ final class SceneInteractionController extends ChangeNotifier {
 
   /// 拍肩已进行的毫秒数（含减少动效保留段）。
   double get patElapsedMs =>
-      _patElapsedBaseMs + _patController.value * _patController.duration!.inMilliseconds;
+      _patElapsedBaseMs +
+      _patController.value * _patController.duration!.inMilliseconds;
 
   bool get canPat =>
       _visible && _kind == TransientKind.idle && presence == Presence.atDesk;
@@ -218,7 +222,7 @@ final class SceneInteractionController extends ChangeNotifier {
         );
       case TransientKind.departure:
         if (_departureController.value * departureDuration.inMilliseconds <
-            560) {
+            SceneMotion.departureStandAtMs) {
           return '他把手从键盘上拿开了。';
         }
         return '今日工位，暂停营业。';
@@ -284,8 +288,7 @@ final class SceneInteractionController extends ChangeNotifier {
         namespace != _namespace || scheduleStamp != _scheduleStamp;
     final clockJump = _lastReconcileNow != null &&
         (nowUtc.isBefore(_lastReconcileNow!) ||
-            nowUtc.difference(_lastReconcileNow!) >
-                const Duration(seconds: 5));
+            nowUtc.difference(_lastReconcileNow!) > const Duration(seconds: 5));
     _lastReconcileNow = nowUtc;
     _namespace = namespace;
     _scheduleStamp = scheduleStamp;

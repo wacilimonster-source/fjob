@@ -3,12 +3,8 @@ import 'dart:io';
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:todayagain/data/app_database.dart';
-import 'package:todayagain/data/home_metrics_preference_store.dart';
-import 'package:todayagain/data/ledger_repository.dart';
-import 'package:todayagain/domain/home_metrics.dart';
-import 'package:todayagain/domain/ledger.dart';
-import 'package:todayagain/domain/setup_draft.dart';
+import 'package:ledger_store/ledger_store.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 import 'support/test_env.dart';
 

@@ -1,0 +1,12 @@
+name: ledger_model
+description: Shared pure Dart ledger configuration and portable FJOB bundles.
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: ^3.6.0
+dependencies:
+  finance_core:
+    path: ../finance_core
+  crypto: ^3.0.6
+dev_dependencies:
+  test: ^1.25.0

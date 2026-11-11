@@ -1,0 +1,19 @@
+name: fjob_ui
+description: Shared paper palette, hand-drawn scenes and motion for FJOB.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  finance_core:
+    path: ../finance_core
+  ledger_model:
+    path: ../ledger_model
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

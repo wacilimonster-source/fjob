@@ -1,7 +1,6 @@
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:todayagain/domain/ledger.dart';
-import 'package:todayagain/domain/setup_draft.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 void main() {
   SetupDraft fresh() =>

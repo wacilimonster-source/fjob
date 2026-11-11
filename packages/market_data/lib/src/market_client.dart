@@ -1,13 +1,13 @@
 /// Market data clients: deterministic fixture quotes and the gateway adapter.
 library;
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:finance_core/finance_core.dart';
 import 'package:http/http.dart' as http;
-
-import '../domain/instrument.dart';
-import '../domain/setup_draft.dart';
+import 'package:http_parser/http_parser.dart' show parseHttpDate;
+import 'package:ledger_model/ledger_model.dart';
 
 abstract final class AppConfig {
   static const String appName = '今日又白干';
@@ -70,7 +70,8 @@ abstract interface class MarketClient {
   /// the directory at all; a non-null result may still be unsupported/unknown.
   Future<FundInfo?> fetchFundInfo(String code);
 
-  Future<QuoteBatch> fetchQuotes(List<String> instrumentIds, {DateTime? nowUtc});
+  Future<QuoteBatch> fetchQuotes(List<String> instrumentIds,
+      {DateTime? nowUtc});
 
   /// Date-only fund NAVs. Requests carry only instrument IDs.
   Future<FundNavBatch> fetchFundNavs(
@@ -246,9 +247,8 @@ final class FixtureMarketClient implements MarketClient {
         previousNavCny: supported ? Rational.parse('1.2256') : null,
         previousNavDate: supported ? previousDate : null,
         actionStatus: FundActionStatus.none,
-        fundCalendar: supported
-            ? FundCalendarKind.mainland
-            : FundCalendarKind.unknown,
+        fundCalendar:
+            supported ? FundCalendarKind.mainland : FundCalendarKind.unknown,
         eligibility: info.eligibility,
         fetchedAtUtc: now,
         publishedAtUtc: null,
@@ -335,9 +335,8 @@ final class FixtureMarketClient implements MarketClient {
     final days = <LocalDate, MarketDayStatus>{};
     var date = from;
     while (date <= to) {
-      days[date] = date.weekday <= 5
-          ? MarketDayStatus.open
-          : MarketDayStatus.closed;
+      days[date] =
+          date.weekday <= 5 ? MarketDayStatus.open : MarketDayStatus.closed;
       date = date.addDays(1);
     }
     return MarketCalendar(
@@ -371,11 +370,155 @@ final class GatewayMarketClient implements MarketClient {
     required this.baseUrl,
     this.client,
     this.calendar,
-  });
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
 
   final String baseUrl;
   final http.Client? client;
   final BusinessCalendar? calendar;
+
+  /// Transport time is independent of the ledger's optional `nowUtc` input.
+  final DateTime Function() _clock;
+  DateTime? _retryAtUtc;
+  MarketUnavailableException? _blockedError;
+  int _transientFailures = 0;
+
+  /// The gateway contract limits each batch to 30 distinct identifiers.
+  static const int maxBatchSize = 30;
+
+  static void _validateBatch(List<String> ids) {
+    if (ids.length > maxBatchSize || ids.toSet().length != ids.length) {
+      throw ArgumentError('行情批次最多包含 30 个不重复标的。');
+    }
+    if (ids.any((id) => id.isEmpty || id.length > 64)) {
+      throw ArgumentError('行情标的 ID 长度必须为 1 至 64。');
+    }
+  }
+
+  /// All endpoints share a source-level circuit breaker. No in-call retries:
+  /// polling/manual refresh may try again after the deadline, but cannot bypass
+  /// it. 401/403 disables this client for its lifetime; recreate only after
+  /// correcting the source configuration, not as an automatic fallback.
+  Future<http.Response> _request(
+    Future<http.Response> Function(http.Client) send,
+    String failureLabel,
+  ) async {
+    final blocked = _blockedError;
+    if (blocked != null &&
+        (_retryAtUtc == null || _clock().toUtc().isBefore(_retryAtUtc!))) {
+      throw blocked;
+    }
+    final httpClient = client ?? http.Client();
+    try {
+      final response =
+          await send(httpClient).timeout(const Duration(seconds: 8));
+      final status = response.statusCode;
+      if (status == 401 || status == 403) {
+        final error = MarketUnavailableException(
+          '行情来源不可用（$status），请检查来源访问权限与配置。',
+          statusCode: status,
+        );
+        _blockedError = error;
+        _retryAtUtc = null;
+        throw error;
+      }
+      if (status == 429) {
+        final now = _clock().toUtc();
+        final retryAfter = response.headers.entries
+            .where((entry) => entry.key.toLowerCase() == 'retry-after')
+            .map((entry) => entry.value)
+            .firstOrNull;
+        final deadline = _retryAfter(retryAfter, now);
+        throw _defer(
+          '请求太频繁，行情先歇一下。',
+          deadline,
+          statusCode: status,
+        );
+      }
+      if (status >= 500) {
+        throw _transientFailure('$failureLabel（$status）。', statusCode: status);
+      }
+      if (status >= 400) {
+        throw MarketUnavailableException(
+          '$failureLabel（$status）。',
+          statusCode: status,
+        );
+      }
+      // An older in-flight success must not erase another request's denial or
+      // Retry-After. Expired retryable failures can be cleared safely.
+      if (_retryAtUtc == null && _blockedError == null ||
+          _retryAtUtc != null && !_clock().toUtc().isBefore(_retryAtUtc!)) {
+        _blockedError = null;
+        _retryAtUtc = null;
+        _transientFailures = 0;
+      }
+      return response;
+    } on TimeoutException {
+      throw _transientFailure('$failureLabel（请求超时）。');
+    } on http.ClientException {
+      throw _transientFailure('$failureLabel（网络连接失败）。');
+    } finally {
+      // An injected client belongs to the caller; locally-created clients must
+      // not leak sockets on success, denial or timeout.
+      if (client == null) httpClient.close();
+    }
+  }
+
+  MarketUnavailableException _transientFailure(
+    String message, {
+    int? statusCode,
+  }) {
+    final seconds = (15 * (1 << _transientFailures)).clamp(15, 300);
+    if (_transientFailures < 5) _transientFailures++;
+    return _defer(
+      message,
+      _clock().toUtc().add(Duration(seconds: seconds)),
+      statusCode: statusCode,
+    );
+  }
+
+  MarketUnavailableException _defer(
+    String message,
+    DateTime deadline, {
+    int? statusCode,
+  }) {
+    // Parallel failures may extend a cooldown, never shorten it or undo a
+    // permanent access denial.
+    if (_blockedError != null && _retryAtUtc == null) return _blockedError!;
+    if (_retryAtUtc != null && _retryAtUtc!.isAfter(deadline)) {
+      return _blockedError!;
+    }
+    _retryAtUtc = deadline;
+    return _blockedError = MarketUnavailableException(
+      message,
+      retryable: true,
+      statusCode: statusCode,
+      retryAtUtc: deadline,
+    );
+  }
+
+  static DateTime _retryAfter(String? value, DateTime now) {
+    final text = value?.trim();
+    final seconds = int.tryParse(text ?? '');
+    if (seconds != null && seconds >= 0) {
+      // Guard untrusted integer overflow without shortening a valid long wait.
+      final maxSeconds =
+          (8640000000000000 - now.millisecondsSinceEpoch) ~/ 1000;
+      if (seconds <= maxSeconds) {
+        return now.add(Duration(seconds: seconds == 0 ? 1 : seconds));
+      }
+      return DateTime.fromMillisecondsSinceEpoch(8640000000000000, isUtc: true);
+    }
+    if (text != null) {
+      try {
+        final date = parseHttpDate(text).toUtc();
+        if (date.isAfter(now)) return date;
+      } on FormatException {
+        // Missing, invalid or past headers use the conservative fallback.
+      }
+    }
+    return now.add(const Duration(minutes: 1));
+  }
 
   @override
   String get sourceLabel => '行情网关';
@@ -385,21 +528,14 @@ final class GatewayMarketClient implements MarketClient {
 
   @override
   Future<List<InstrumentInfo>> searchInstruments(String query) async {
-    final httpClient = client ?? http.Client();
     final uri = Uri.parse('$baseUrl/v1/instruments/search').replace(
       queryParameters: {'q': query.trim(), 'limit': '10'},
     );
-    final response = await httpClient
-        .get(uri)
-        .timeout(const Duration(seconds: 8));
-    if (response.statusCode >= 400) {
-      throw MarketUnavailableException(
-        '证券目录暂时不可用（${response.statusCode}）。',
-        retryable: response.statusCode >= 500,
-      );
-    }
+    final response =
+        await _request((httpClient) => httpClient.get(uri), '证券目录暂时不可用');
     final body = jsonDecode(response.body);
-    if (body is! Map) throw const FormatException('search body is not an object');
+    if (body is! Map)
+      throw const FormatException('search body is not an object');
     final items = body['items'];
     if (items is! List) return const <InstrumentInfo>[];
     final result = <InstrumentInfo>[];
@@ -431,21 +567,14 @@ final class GatewayMarketClient implements MarketClient {
 
   @override
   Future<FundInfo?> fetchFundInfo(String code) async {
-    final httpClient = client ?? http.Client();
     final uri = Uri.parse('$baseUrl/v1/instruments/search').replace(
       queryParameters: {'q': code, 'kind': 'fund', 'limit': '10'},
     );
-    final response = await httpClient
-        .get(uri)
-        .timeout(const Duration(seconds: 8));
-    if (response.statusCode >= 400) {
-      throw MarketUnavailableException(
-        '基金目录暂时不可用（${response.statusCode}）。',
-        retryable: response.statusCode >= 500,
-      );
-    }
+    final response =
+        await _request((httpClient) => httpClient.get(uri), '基金目录暂时不可用');
     final body = jsonDecode(response.body);
-    if (body is! Map) throw const FormatException('fund search body is not an object');
+    if (body is! Map)
+      throw const FormatException('fund search body is not an object');
     final items = body['items'];
     if (items is! List) return null;
     for (final item in items) {
@@ -469,6 +598,7 @@ final class GatewayMarketClient implements MarketClient {
     List<String> instrumentIds, {
     DateTime? nowUtc,
   }) async {
+    _validateBatch(instrumentIds);
     final now = nowUtc ?? DateTime.now().toUtc();
     if (instrumentIds.isEmpty) {
       return FundNavBatch(
@@ -478,25 +608,17 @@ final class GatewayMarketClient implements MarketClient {
         refreshAfterSeconds: 1800,
       );
     }
-    final httpClient = client ?? http.Client();
-    final response = await httpClient
-        .post(
-          Uri.parse('$baseUrl/v1/quotes/batch'),
-          headers: const {'content-type': 'application/json'},
-          body: jsonEncode({'instrumentIds': instrumentIds}),
-        )
-        .timeout(const Duration(seconds: 8));
-    if (response.statusCode == 429) {
-      throw MarketUnavailableException('请求太频繁，行情先歇一下。', retryable: true);
-    }
-    if (response.statusCode >= 400) {
-      throw MarketUnavailableException(
-        '基金净值网关返回 ${response.statusCode}。',
-        retryable: response.statusCode >= 500,
-      );
-    }
+    final response = await _request(
+      (httpClient) => httpClient.post(
+        Uri.parse('$baseUrl/v1/quotes/batch'),
+        headers: const {'content-type': 'application/json'},
+        body: jsonEncode({'instrumentIds': instrumentIds}),
+      ),
+      '基金净值网关暂时不可用',
+    );
     final body = jsonDecode(response.body);
-    if (body is! Map) throw const FormatException('gateway body is not an object');
+    if (body is! Map)
+      throw const FormatException('gateway body is not an object');
     final navs = <String, FundNavSnapshot>{};
     final errors = <String, String>{};
     final items = body['items'];
@@ -504,7 +626,8 @@ final class GatewayMarketClient implements MarketClient {
       for (final item in items) {
         if (item is! Map) continue;
         final instrumentId = item['instrumentId'];
-        if (instrumentId is! String) continue;
+        if (instrumentId is! String || !instrumentIds.contains(instrumentId))
+          continue;
         if (item['error'] is Map) {
           final error = item['error'] as Map;
           errors[instrumentId] = (error['message'] as String?) ?? '净值获取失败';
@@ -521,15 +644,22 @@ final class GatewayMarketClient implements MarketClient {
         }
       }
     }
+    for (final id in instrumentIds) {
+      if (!navs.containsKey(id) && !errors.containsKey(id)) {
+        errors[id] = '网关未返回该基金净值';
+      }
+    }
     return FundNavBatch(
       navs: navs,
       errors: errors,
       serverTime: DateTime.tryParse('${body['serverTime']}')?.toUtc() ?? now,
-      refreshAfterSeconds: (body['refreshAfterSeconds'] as num?)?.toInt() ?? 1800,
+      refreshAfterSeconds:
+          (body['refreshAfterSeconds'] as num?)?.toInt() ?? 1800,
     );
   }
 
   static FundNavSnapshot _parseFundNav(Map<Object?, Object?> item) {
+    _rejectFixture(item);
     final instrumentId = item['instrumentId']! as String;
     final nav = _rational(item['navCny']);
     final navDate = LocalDate.tryParse(item['navDate'] as String?);
@@ -592,6 +722,7 @@ final class GatewayMarketClient implements MarketClient {
     List<String> instrumentIds, {
     DateTime? nowUtc,
   }) async {
+    _validateBatch(instrumentIds);
     if (instrumentIds.isEmpty) {
       return QuoteBatch(
         quotes: const {},
@@ -600,25 +731,17 @@ final class GatewayMarketClient implements MarketClient {
         refreshAfterSeconds: 15,
       );
     }
-    final httpClient = client ?? http.Client();
-    final response = await httpClient
-        .post(
-          Uri.parse('$baseUrl/v1/quotes/batch'),
-          headers: const {'content-type': 'application/json'},
-          body: jsonEncode({'instrumentIds': instrumentIds}),
-        )
-        .timeout(const Duration(seconds: 8));
-    if (response.statusCode == 429) {
-      throw MarketUnavailableException('请求太频繁，行情先歇一下。', retryable: true);
-    }
-    if (response.statusCode >= 400) {
-      throw MarketUnavailableException(
-        '行情网关返回 ${response.statusCode}。',
-        retryable: response.statusCode >= 500,
-      );
-    }
+    final response = await _request(
+      (httpClient) => httpClient.post(
+        Uri.parse('$baseUrl/v1/quotes/batch'),
+        headers: const {'content-type': 'application/json'},
+        body: jsonEncode({'instrumentIds': instrumentIds}),
+      ),
+      '行情网关暂时不可用',
+    );
     final body = jsonDecode(response.body);
-    if (body is! Map) throw const FormatException('gateway body is not an object');
+    if (body is! Map)
+      throw const FormatException('gateway body is not an object');
     final quotes = <String, Quote>{};
     final errors = <String, String>{};
     final items = body['items'];
@@ -626,7 +749,8 @@ final class GatewayMarketClient implements MarketClient {
       for (final item in items) {
         if (item is! Map) continue;
         final instrumentId = item['instrumentId'];
-        if (instrumentId is! String) continue;
+        if (instrumentId is! String || !instrumentIds.contains(instrumentId))
+          continue;
         if (item['error'] is Map) {
           final error = item['error'] as Map;
           errors[instrumentId] = (error['message'] as String?) ?? '报价失败';
@@ -639,6 +763,11 @@ final class GatewayMarketClient implements MarketClient {
         }
       }
     }
+    for (final id in instrumentIds) {
+      if (!quotes.containsKey(id) && !errors.containsKey(id)) {
+        errors[id] = '网关未返回该标的报价';
+      }
+    }
     return QuoteBatch(
       quotes: quotes,
       errors: errors,
@@ -649,6 +778,7 @@ final class GatewayMarketClient implements MarketClient {
   }
 
   static Quote _parseQuote(Map<Object?, Object?> item) {
+    _rejectFixture(item);
     final instrumentId = item['instrumentId']! as String;
     final price = _rational(item['priceCny']);
     if (price == null) throw const FormatException('missing priceCny');
@@ -696,23 +826,16 @@ final class GatewayMarketClient implements MarketClient {
     required LocalDate from,
     required LocalDate to,
   }) async {
-    final httpClient = client ?? http.Client();
     final uri = Uri.parse('$baseUrl/v1/calendars').replace(queryParameters: {
       'market': market,
       'from': from.toIsoString(),
       'to': to.toIsoString(),
     });
-    final response = await httpClient
-        .get(uri)
-        .timeout(const Duration(seconds: 8));
-    if (response.statusCode >= 400) {
-      throw MarketUnavailableException(
-        '交易日历暂时不可用（${response.statusCode}）。',
-        retryable: response.statusCode >= 500,
-      );
-    }
+    final response =
+        await _request((httpClient) => httpClient.get(uri), '交易日历暂时不可用');
     final body = jsonDecode(response.body);
-    if (body is! Map) throw const FormatException('calendar body is not an object');
+    if (body is! Map)
+      throw const FormatException('calendar body is not an object');
     final days = <LocalDate, MarketDayStatus>{};
     final rawDays = body['days'];
     if (rawDays is List) {
@@ -735,15 +858,30 @@ final class GatewayMarketClient implements MarketClient {
     );
   }
 
+  static void _rejectFixture(Map<Object?, Object?> item) {
+    if (item['quality'] == 'fixture' || item['source'] == 'fixture') {
+      throw const FormatException('模拟行情不得用于真实账本');
+    }
+  }
+
   static Rational? _rational(Object? value) =>
       value is String ? Rational.tryParse(value) : null;
 }
 
 final class MarketUnavailableException implements Exception {
-  const MarketUnavailableException(this.message, {this.retryable = false});
+  const MarketUnavailableException(
+    this.message, {
+    this.retryable = false,
+    this.statusCode,
+    this.retryAtUtc,
+  });
 
   final String message;
   final bool retryable;
+  final int? statusCode;
+
+  /// Null for permanent access denial or errors without a scheduled retry.
+  final DateTime? retryAtUtc;
 
   @override
   String toString() => message;

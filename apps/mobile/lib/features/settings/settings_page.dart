@@ -6,14 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../app/theme.dart';
-import '../../data/cn_market_calendar_2026.dart';
-import '../../data/eastmoney_client.dart';
-import '../../data/market_client.dart';
-import '../../domain/ledger.dart';
+import 'package:fjob_ui/fjob_ui.dart';
+import 'package:market_data/market_data.dart';
+import 'package:ledger_model/ledger_model.dart';
 import '../ledger/ledger_controller.dart';
 import '../onboarding/onboarding_controller.dart';
 import 'update_controller.dart';
+import 'ledger_transfer_page.dart';
 
 const String appVersion = '0.1.2';
 
@@ -101,6 +100,16 @@ class SettingsPage extends ConsumerWidget {
           ),
           const Divider(height: 24),
           const SectionLabel('数据'),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('手机与电脑交换账本'),
+            subtitle: const Text('导入 / 导出 .fjob，导入前自动备份。'),
+            trailing: const Icon(Icons.swap_horiz),
+            enabled: !sample && !busy,
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(builder: (_) => const LedgerTransferPage()),
+            ),
+          ),
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('重新走一遍入职引导'),

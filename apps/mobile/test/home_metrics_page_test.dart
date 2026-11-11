@@ -10,11 +10,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todayagain/app/clock.dart';
 import 'package:todayagain/app/providers.dart';
-import 'package:todayagain/app/theme.dart';
-import 'package:todayagain/data/home_metrics_preference_store.dart';
-import 'package:todayagain/domain/demo_ledger.dart';
-import 'package:todayagain/domain/home_metrics.dart';
-import 'package:todayagain/domain/ledger.dart';
+import 'package:fjob_ui/fjob_ui.dart';
+import 'package:ledger_store/ledger_store.dart';
+import 'package:ledger_model/ledger_model.dart';
 import 'package:todayagain/features/dashboard/dashboard_page.dart';
 import 'package:todayagain/features/dashboard/home_metrics_controller.dart';
 

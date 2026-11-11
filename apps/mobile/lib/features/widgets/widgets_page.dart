@@ -6,9 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../app/theme.dart';
-import '../../domain/format.dart';
-import '../dashboard/office_scene.dart';
+import 'package:fjob_ui/fjob_ui.dart';
+import 'package:ledger_model/ledger_model.dart';
 import '../ledger/ledger_controller.dart';
 
 enum WidgetPreviewSize { small, medium, large }

@@ -14,7 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todayagain/app/clock.dart';
 import 'package:todayagain/app/providers.dart';
-import 'package:todayagain/app/theme.dart';
+import 'package:fjob_ui/fjob_ui.dart';
 import 'package:todayagain/features/dashboard/dashboard_page.dart';
 
 Future<void> _loadFont() async {

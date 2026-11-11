@@ -1,0 +1,16 @@
+name: ledger_store
+description: Platform-independent SQLite ledger storage and atomic bundle imports.
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: ^3.6.0
+dependencies:
+  finance_core:
+    path: ../finance_core
+  ledger_model:
+    path: ../ledger_model
+  sqflite_common: ^2.5.6
+  uuid: ^4.5.1
+dev_dependencies:
+  test: ^1.25.0
+  sqflite_common_ffi: ^2.3.6

@@ -13,7 +13,7 @@ import 'package:sqlite3/open.dart';
 import 'package:todayagain/app/clock.dart';
 import 'package:todayagain/app/providers.dart';
 import 'package:todayagain/data/widget_bridge.dart';
-import 'package:todayagain/domain/setup_draft.dart';
+import 'package:ledger_model/ledger_model.dart';
 
 final DateTime fixedNow = DateTime.utc(2026, 11, 4, 6, 36);
 

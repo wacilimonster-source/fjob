@@ -5,11 +5,10 @@ import 'dart:async';
 
 import 'package:finance_core/finance_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ledger_model/ledger_model.dart';
+import 'package:ledger_store/ledger_store.dart';
 
 import '../../app/providers.dart';
-import '../../data/ledger_repository.dart';
-import '../../domain/ledger.dart';
-import '../../domain/setup_draft.dart';
 import '../dashboard/home_metrics_controller.dart';
 
 final ledgerControllerProvider =
@@ -236,6 +235,23 @@ final class LedgerController extends AsyncNotifier<LedgerState> {
         nowUtc: ref.read(clockProvider).nowUtc(),
       );
       state = AsyncData(next);
+    });
+    await publishWidgets();
+  }
+
+  Future<void> importBundle(
+    LedgerBundle bundle, {
+    required int expectedRevision,
+    required LedgerImportMode mode,
+  }) async {
+    final repository = await _repository;
+    await _mutate(() async {
+      state = AsyncData(await repository.importBundle(
+        bundle,
+        expectedRevision: expectedRevision,
+        mode: mode,
+        nowUtc: ref.read(clockProvider).nowUtc(),
+      ));
     });
     await publishWidgets();
   }

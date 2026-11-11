@@ -17,8 +17,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:todayagain/app/app.dart';
 import 'package:todayagain/app/clock.dart';
 import 'package:todayagain/app/providers.dart';
-import 'package:todayagain/app/theme.dart';
-import 'package:todayagain/domain/setup_draft.dart';
+import 'package:fjob_ui/fjob_ui.dart';
+import 'package:ledger_model/ledger_model.dart';
 import 'package:todayagain/features/onboarding/onboarding_controller.dart';
 import 'package:todayagain/features/onboarding/onboarding_page.dart';
 

@@ -90,6 +90,14 @@ extension PaletteContext on BuildContext {
   FjobPalette get palette => Theme.of(this).extension<FjobPalette>()!;
 }
 
+/// Shared font choices; hosts may change layout sizes, not font identity.
+abstract final class FjobTypography {
+  static const String bodyFamily = 'Microsoft YaHei';
+  static const String moneyFamily = 'Consolas';
+  static const List<String> moneyFallback = ['monospace'];
+  static const List<FontFeature> moneyFeatures = [FontFeature.tabularFigures()];
+}
+
 abstract final class FjobTheme {
   static ThemeData light() => _build(Brightness.light, FjobPalette.light);
 
@@ -97,7 +105,7 @@ abstract final class FjobTheme {
     final base = ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      fontFamily: 'Microsoft YaHei',
+      fontFamily: FjobTypography.bodyFamily,
       scaffoldBackgroundColor: palette.paper,
       canvasColor: palette.paper,
       dividerColor: palette.line,
@@ -109,7 +117,7 @@ abstract final class FjobTheme {
         fontWeight: FontWeight.w700,
         letterSpacing: -1.4,
         color: palette.ink,
-        fontFeatures: const [FontFeature.tabularFigures()],
+        fontFeatures: FjobTypography.moneyFeatures,
       ),
       headlineMedium: TextStyle(
         fontSize: 25,
@@ -131,7 +139,7 @@ abstract final class FjobTheme {
       ),
     );
     return base.copyWith(
-      textTheme: textTheme.apply(fontFamily: 'Microsoft YaHei'),
+      textTheme: textTheme.apply(fontFamily: FjobTypography.bodyFamily),
       extensions: <ThemeExtension<dynamic>>[palette],
       colorScheme: ColorScheme.fromSeed(
         seedColor: palette.positive,
@@ -153,11 +161,13 @@ abstract final class FjobTheme {
           side: BorderSide(color: palette.ink, width: 1.5),
         ),
       ),
-      dividerTheme: DividerThemeData(color: palette.line, space: 1, thickness: 1),
+      dividerTheme:
+          DividerThemeData(color: palette.line, space: 1, thickness: 1),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: palette.paper,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: palette.line),
@@ -183,7 +193,7 @@ abstract final class FjobTheme {
           foregroundColor: palette.ink,
           minimumSize: const Size.fromHeight(48),
           textStyle: const TextStyle(
-            fontFamily: 'Microsoft YaHei',
+            fontFamily: FjobTypography.bodyFamily,
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -198,7 +208,8 @@ abstract final class FjobTheme {
           foregroundColor: palette.ink,
           minimumSize: const Size(44, 44),
           side: BorderSide(color: palette.line),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -321,13 +332,13 @@ class MoneyText extends StatelessWidget {
   Widget build(BuildContext context) => Text(
         text,
         style: TextStyle(
-          fontFamily: 'Consolas',
-          fontFamilyFallback: const ['monospace'],
+          fontFamily: FjobTypography.moneyFamily,
+          fontFamilyFallback: FjobTypography.moneyFallback,
           fontSize: size ?? 15,
           fontWeight: weight,
           letterSpacing: -0.2,
           color: color ?? context.palette.ink,
-          fontFeatures: const [FontFeature.tabularFigures()],
+          fontFeatures: FjobTypography.moneyFeatures,
         ),
       );
 }

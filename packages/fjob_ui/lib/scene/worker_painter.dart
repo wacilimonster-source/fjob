@@ -10,9 +10,10 @@ import 'dart:ui' as ui;
 
 import 'package:finance_core/finance_core.dart' show DayPhase;
 
-import '../../app/theme.dart';
+import '../theme.dart';
 import 'office_scene.dart' show DebtArtPainter;
 import 'scene_interaction_controller.dart';
+import 'scene_motion.dart';
 
 /// 一帧内角色的全部姿态参数。
 final class WorkerFrame {
@@ -92,8 +93,8 @@ final class WorkerFrame {
     switch (presentation.transient) {
       case TransientKind.pat:
         final reduced = presentation.reduceMotion;
-        final t =
-            presentation.progress * (reduced ? 2400 : SceneInteractionController.patDuration.inMilliseconds);
+        final t = presentation.progress *
+            (reduced ? SceneMotion.patReduced : SceneMotion.pat).inMilliseconds;
         if (reduced) {
           // MOTION-01：立即静态抬眼、腮红与放松肩膀，无路径移动。
           return WorkerFrame(
@@ -114,8 +115,10 @@ final class WorkerFrame {
             animate: false,
           );
         }
-        final relief =
-            _segment(t, 520, 900) * (1 - _segment(t, 2400, 3200));
+        final relief = _segment(t, 520, 900) *
+            (1 -
+                _segment(t, SceneMotion.patRecoveryAtMs,
+                    SceneMotion.pat.inMilliseconds.toDouble()));
         final compression = 2.5 * math.exp(-math.pow((t - 210) / 53, 2)) +
             1.7 * math.exp(-math.pow((t - 410) / 53, 2));
         final handAlpha = _segment(t, 0, 120) * (1 - _segment(t, 520, 720));
@@ -124,7 +127,7 @@ final class WorkerFrame {
           seated: true,
           // PAT-03：0—2400ms 停手，2400ms 起恢复敲键盘。
           typing: presentation.phase == DayPhase.working &&
-              t >= 2400 &&
+              t >= SceneMotion.patRecoveryAtMs &&
               animate,
           relief: relief,
           compression: compression,
@@ -140,13 +143,14 @@ final class WorkerFrame {
           animate: animate,
         );
       case TransientKind.departure:
-        final t = presentation.progress *
-            SceneInteractionController.departureDuration.inMilliseconds;
-        final stand = _segment(t, 560, 860);
-        final walk = _segment(t, 860, 1900);
+        final t = presentation.progress * SceneMotion.departure.inMilliseconds;
+        final stand = _segment(
+            t, SceneMotion.departureStandAtMs, SceneMotion.departureWalkAtMs);
+        final walk = _segment(
+            t, SceneMotion.departureWalkAtMs, SceneMotion.departureExitAtMs);
         return WorkerFrame(
           present: walk < 1,
-          seated: t < 560,
+          seated: t < SceneMotion.departureStandAtMs,
           typing: false,
           relief: 0,
           compression: 0,
@@ -155,7 +159,7 @@ final class WorkerFrame {
           walk: walk,
           actorX: 181 + 239 * walk,
           localMs: t,
-          showBag: t >= 560,
+          showBag: t >= SceneMotion.departureStandAtMs,
           showHand: false,
           mood: mood,
           ambientMs: ambientMs,
@@ -165,9 +169,7 @@ final class WorkerFrame {
         return WorkerFrame(
           present: atDesk,
           seated: true,
-          typing: atDesk &&
-              presentation.phase == DayPhase.working &&
-              animate,
+          typing: atDesk && presentation.phase == DayPhase.working && animate,
           relief: 0,
           compression: 0,
           handAlpha: 0,
@@ -216,14 +218,18 @@ final class WorkerPainter {
 
     void oval(double x, double y, double rx, double ry, ui.Color fill,
         {bool outline = true}) {
-      DebtArtPainter.paintOval(canvas, x, y, rx, ry, fill,
-          outline ? ink : null, 1.8);
+      DebtArtPainter.paintOval(
+          canvas, x, y, rx, ry, fill, outline ? ink : null, 1.8);
     }
 
     final walking = frame.walking;
     final step = walking
         ? math.sin(
-              ((frame.localMs - 860) * math.pi * 2 * 2.5) / 1000,
+              ((frame.localMs - SceneMotion.departureWalkAtMs) *
+                      math.pi *
+                      2 *
+                      2.5) /
+                  1000,
             ) *
             11
         : 0.0;
@@ -409,11 +415,8 @@ final class WorkerPainter {
 
     final enter = segment(0, 160);
     final leave = segment(520, 720);
-    final x =
-        ui.lerpDouble(235, 210, enter)! + 25 * leave;
-    final y = ui.lerpDouble(106, 132, enter)! -
-        26 * leave +
-        frame.compression;
+    final x = ui.lerpDouble(235, 210, enter)! + 25 * leave;
+    final y = ui.lerpDouble(106, 132, enter)! - 26 * leave + frame.compression;
 
     canvas.save();
     canvas.translate(x, y);
@@ -451,10 +454,10 @@ final class WorkerPainter {
         ..color = palette.muted
         ..strokeWidth = 1.5
         ..strokeCap = ui.StrokeCap.round;
-      canvas.drawLine(const ui.Offset(210, 132), const ui.Offset(215, 128),
-          tick);
-      canvas.drawLine(const ui.Offset(211, 140), const ui.Offset(217, 140),
-          tick);
+      canvas.drawLine(
+          const ui.Offset(210, 132), const ui.Offset(215, 128), tick);
+      canvas.drawLine(
+          const ui.Offset(211, 140), const ui.Offset(217, 140), tick);
     }
   }
 }

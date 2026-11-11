@@ -7,8 +7,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todayagain/app/providers.dart';
-import 'package:todayagain/data/home_metrics_preference_store.dart';
-import 'package:todayagain/domain/home_metrics.dart';
+import 'package:ledger_store/ledger_store.dart';
+import 'package:ledger_model/ledger_model.dart';
 import 'package:todayagain/features/dashboard/home_metrics_controller.dart';
 
 final class _FakeStore implements HomeMetricsPreferenceStore {

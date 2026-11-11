@@ -11,8 +11,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todayagain/app/providers.dart';
-import 'package:todayagain/app/theme.dart';
-import 'package:todayagain/data/market_client.dart';
+import 'package:fjob_ui/fjob_ui.dart';
+import 'package:market_data/market_data.dart';
 import 'package:todayagain/features/assets/holding_editor.dart';
 
 Future<void> _loadFonts() async {

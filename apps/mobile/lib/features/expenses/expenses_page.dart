@@ -7,10 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../app/theme.dart';
-import '../../domain/format.dart';
-import '../../domain/ledger.dart';
-import '../dashboard/office_scene.dart';
+import 'package:fjob_ui/fjob_ui.dart';
+import 'package:ledger_model/ledger_model.dart';
 import '../ledger/ledger_controller.dart';
 
 class ExpensesPage extends ConsumerWidget {
