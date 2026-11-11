@@ -38,8 +38,46 @@
       "path_provider": "2.1.5",
       "test_dev": "1.33.0",
       "sqflite_common_ffi_dev": "2.3.7+1",
-      "sqlite3_dev": "2.9.4"
+      "sqlite3_dev": "2.9.4",
+      "file_picker": "13.3.3"
     }
+  },
+  "windows": {
+    "status": "PC v0.1.0 released via CI (desktop-v0.1.0, prerelease): Inno Setup installer + portable zip + SHA256SUMS attached; in-app update checker queries the desktop-v* channel with SHA-256 verification; four-page main window (today page removed); real-device fixed-window walkthrough done; PC4 online parity, code signing, tray menu automation and 200%/Narrator checks remain pending",
+    "portableZip": "fjob-desktop-0.1.0-win-x64.zip (CI build)",
+    "portableZipSha256": "1d1b2f5c99aa8fa4d6d5998a293403c25dab3f17e379c1ddf42fc5e3fe165497",
+    "buildTools": "Visual Studio generate tools 2022 17.14.37",
+    "windowsSdk": "10.0.26100",
+    "dataDirectory": "%APPDATA%\\FJOB",
+    "sqliteLibrary": "winsqlite3.dll (system, no bundled native lib)",
+    "windowStack": {
+      "desktop_multi_window": "0.3.1",
+      "window_manager": "0.5.1",
+      "tray_manager": "0.5.2",
+      "screen_retriever": "0.2.2",
+      "win32": "6.4.0",
+      "hotkey_manager": "0.3.0",
+      "windows_single_instance": "1.2.0"
+    },
+    "sharedPackages": {
+      "ledger_model": "pure Dart domain + .fjob bundle",
+      "ledger_store": "sqflite_common schema v6 + bundle import/export/backups",
+      "fjob_ui": "Flutter palette/theme/icons/scene/CompactOfficeScene/SceneMotion",
+      "market_data": "pure Dart market clients + quote repository + freshness"
+    },
+    "commands": {
+      "desktopAnalyze": "cd apps/desktop && flutter analyze",
+      "desktopTests": "cd apps/desktop && flutter test",
+      "desktopBuild": "cd apps/desktop && flutter build windows --release",
+      "sharedModelTests": "cd packages/ledger_model && dart test",
+      "sharedStoreTests": "cd packages/ledger_store && dart test",
+      "sharedUiTests": "cd packages/fjob_ui && flutter test",
+      "sharedMarketTests": "cd packages/market_data && dart test",
+      "desktopRelease": "push tag desktop-v* -> desktop-release workflow (installer + zip + checksums + release)"
+    },
+    "release": "https://github.com/wacilimonster-source/fjob/releases/tag/desktop-v0.1.0",
+    "installer": "FJOB-Setup-0.1.0.exe",
+    "installerSha256": "08df558d9c0e3e3b08a6138a3e95168ad5c79d260a31fb27274117c09dad1139"
   },
   "ios": {
     "deploymentTarget": "16.0",
