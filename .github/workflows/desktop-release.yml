@@ -82,20 +82,20 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          if ($tag -notmatch '^desktop-v') {
+          if ($tag -notmatch '^desktop-v(?<ver>.+)$') {
             Write-Host "workflow_dispatch without a desktop-v tag; artifacts only."
             exit 0
           }
-          $ver = $Matches[1]
+          $ver = $Matches['ver']
           $installer = "apps/desktop/build/installer/FJOB-Setup-$ver.exe"
           $zip = "apps/desktop/build/fjob-desktop-$ver-win-x64.zip"
           $notes = "docs/releases/$tag.md"
-          $args = @(
+          $ghArgs = @(
             "release", "create", $tag,
             $installer, $zip, "apps/desktop/build/SHA256SUMS",
             "--title", "今日又白干 PC $tag",
             "--prerelease"
           )
-          if (Test-Path $notes) { $args += @("--notes-file", $notes) }
-          else { $args += "--generate-notes" }
-          gh @args
+          if (Test-Path $notes) { $ghArgs += @("--notes-file", $notes) }
+          else { $ghArgs += "--generate-notes" }
+          gh @ghArgs
