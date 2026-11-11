@@ -1,0 +1,48 @@
+name: todayagain_desktop
+description: "今日又白干 PC 伴生端：工位固定窗与配置台。"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  desktop_multi_window: ^0.3.1
+  ffi: 2.2.0
+  flutter:
+    sdk: flutter
+  hotkey_manager: ^0.3.0
+  screen_retriever: 0.2.2
+  tray_manager: 0.5.2
+  win32: 6.4.0
+  window_manager: 0.5.1
+  windows_single_instance: ^1.2.0
+  finance_core:
+    path: ../../packages/finance_core
+  ledger_model:
+    path: ../../packages/ledger_model
+  ledger_store:
+    path: ../../packages/ledger_store
+  fjob_ui:
+    path: ../../packages/fjob_ui
+  market_data:
+    path: ../../packages/market_data
+  flutter_riverpod: ^2.6.1
+  sqflite_common: ^2.5.6
+  sqflite_common_ffi: ^2.3.6
+  sqlite3: ^2.4.0
+  path_provider: ^2.1.5
+  file_picker: 13.3.3
+  http: ^1.6.0
+  crypto: ^3.0.8
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/tray_icon.png
