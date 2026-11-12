@@ -11,7 +11,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../desktop_preferences.dart';
 import 'ledger_controller.dart';
 
-const String desktopAppVersion = '0.1.2';
+const String desktopAppVersion = '0.1.3';
 
 abstract interface class Clock {
   DateTime nowUtc();

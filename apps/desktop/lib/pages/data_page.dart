@@ -6,11 +6,13 @@ import 'package:finance_core/finance_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fjob_ui/fjob_ui.dart';
+import 'package:lan_transfer/lan_transfer.dart';
 import 'package:ledger_model/ledger_model.dart';
 import 'package:ledger_store/ledger_store.dart';
 
 import '../state/ledger_controller.dart';
 import '../state/providers.dart';
+import '../widgets/lan_input_dialog.dart';
 
 class DataPage extends ConsumerStatefulWidget {
   const DataPage({super.key});
@@ -59,6 +61,8 @@ class _DataPageState extends ConsumerState<DataPage> {
     } on FormatException {
       _fail('这个账本包无法读取（格式、字段或校验和不正确），当前账本没有变化。');
     } on LedgerActionException catch (e) {
+      _fail(e.message);
+    } on LanTransferException catch (e) {
       _fail(e.message);
     } on Object {
       _fail('操作未完成，当前账本未被部分写入；请重试。');
@@ -138,6 +142,85 @@ class _DataPageState extends ConsumerState<DataPage> {
     }
   });
 
+  Future<void> _receiveOverLan() => _run(() async {
+    final input = await _askLanInput(
+      title: '从手机接收账本',
+      actionLabel: '连接并接收',
+      hint: '在手机端选择「发送到电脑」，把屏幕上的地址和配对码填到这里。',
+    );
+    if (input == null) return;
+    final client = LanTransferClient();
+    try {
+      final payload = await client.pull(
+        address: input.address,
+        code: input.code,
+      );
+      if (payload.bytes.length > LedgerBundle.maxBytes) {
+        throw const FormatException('文件过大');
+      }
+      final bundle = LedgerBundle.decode(utf8.decode(payload.bytes));
+      final currentRevision =
+          ref.read(effectiveLedgerProvider).value?.settings.ledgerRevision ?? 0;
+      if (!mounted) return;
+      final mode = await showDialog<LedgerImportMode>(
+        context: context,
+        builder: (context) => _ImportDialog(
+          bundle: bundle,
+          fileName: payload.fileName,
+          currentRevision: currentRevision,
+        ),
+      );
+      if (mode == null) return;
+      await ref
+          .read(ledgerControllerProvider.notifier)
+          .importBundle(bundle, mode: mode);
+      if (mounted) {
+        setState(() => _message = '已从手机接收并导入账本；导入前的账本已备份。');
+      }
+    } finally {
+      client.close();
+    }
+  });
+
+  Future<void> _sendOverLan() => _run(() async {
+    final input = await _askLanInput(
+      title: '发送账本到手机',
+      actionLabel: '连接并发送',
+      hint: '在手机端选择「从电脑接收」，把屏幕上的地址和配对码填到这里。',
+    );
+    if (input == null) return;
+    final bundle = await ref
+        .read(ledgerControllerProvider.notifier)
+        .exportBundle();
+    final bytes = Uint8List.fromList(utf8.encode(bundle.encode()));
+    final fileName =
+        'fjob-${bundle.exportedAt.toIso8601String().substring(0, 10)}.fjob';
+    final client = LanTransferClient();
+    try {
+      await client.push(
+        address: input.address,
+        code: input.code,
+        fileName: fileName,
+        bytes: bytes,
+      );
+      if (mounted) {
+        setState(() => _message = '账本已发送到手机，请在手机上确认导入。');
+      }
+    } finally {
+      client.close();
+    }
+  });
+
+  Future<LanInput?> _askLanInput({
+    required String title,
+    required String actionLabel,
+    required String hint,
+  }) => showDialog<LanInput>(
+    context: context,
+    builder: (context) =>
+        LanInputDialog(title: title, actionLabel: actionLabel, hint: hint),
+  );
+
   Future<void> _clear() => _run(() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -175,7 +258,7 @@ class _DataPageState extends ConsumerState<DataPage> {
         ),
         const SizedBox(height: 4),
         Text(
-          '手机 ↔ 电脑通过 .fjob 文件手动交换同一本账；两端不会自动同步。',
+          '手机 ↔ 电脑通过 .fjob 文件或同一 Wi-Fi 直传交换同一本账；两端不会自动同步。',
           style: TextStyle(fontSize: 12, color: palette.muted),
         ),
         const SizedBox(height: 16),
@@ -213,6 +296,45 @@ class _DataPageState extends ConsumerState<DataPage> {
                   color: palette.muted,
                   height: 1.6,
                 ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        PaperCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SectionLabel('同一 Wi-Fi 直传'),
+              const SizedBox(height: 10),
+              Text(
+                '手机打开「发送到电脑/从电脑接收」并显示地址与配对码；'
+                '账本加密直传，不经过互联网。',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: palette.muted,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _busy || sample ? null : _receiveOverLan,
+                      icon: const Icon(Icons.download_outlined),
+                      label: const Text('从手机接收'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _busy || sample ? null : _sendOverLan,
+                      icon: const Icon(Icons.upload_outlined),
+                      label: const Text('发送到手机'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

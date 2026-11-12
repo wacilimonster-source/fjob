@@ -28,6 +28,27 @@ jobs:
         working-directory: packages/finance_core
         run: dart test
 
+  lan_transfer:
+    name: LAN transfer protocol
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+      - name: Resolve
+        working-directory: packages/lan_transfer
+        run: dart pub get
+      - name: Analyze
+        working-directory: packages/lan_transfer
+        run: dart analyze
+      - name: Encrypted loopback tests
+        working-directory: packages/lan_transfer
+        run: dart test
+
+
   flutter:
     name: app analyze and tests
     runs-on: ubuntu-latest

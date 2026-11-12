@@ -14,7 +14,7 @@ import '../onboarding/onboarding_controller.dart';
 import 'update_controller.dart';
 import 'ledger_transfer_page.dart';
 
-const String appVersion = '0.1.12';
+const String appVersion = '0.1.13';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});

@@ -1,10 +1,10 @@
 ; 今日又白干 PC 伴生端安装包。
 ; 当前用户安装（%LOCALAPPDATA%\Programs\FJOB），无需管理员；卸载只移除程序，
 ; 账本数据保留在 %APPDATA%\FJOB。
-; 版本号可由 CI 覆盖：ISCC.exe /DAppVersion=0.1.2 fjob_setup.iss
+; 版本号可由 CI 覆盖：ISCC.exe /DAppVersion=0.1.3 fjob_setup.iss
 
 #ifndef AppVersion
-  #define AppVersion "0.1.2"
+  #define AppVersion "0.1.3"
 #endif
 
 #define AppName "今日又白干"

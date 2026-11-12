@@ -56,8 +56,16 @@ void main() {
       child: MaterialApp(theme: FjobTheme.light(), home: const LedgerTransferPage()),
     ));
     await tester.pump();
-    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed, isNull);
-    expect(tester.widget<OutlinedButton>(find.byType(OutlinedButton)).onPressed, isNull);
+    for (final button in tester.widgetList<FilledButton>(
+      find.byType(FilledButton),
+    )) {
+      expect(button.onPressed, isNull);
+    }
+    for (final button in tester.widgetList<OutlinedButton>(
+      find.byType(OutlinedButton),
+    )) {
+      expect(button.onPressed, isNull);
+    }
     expect(find.text('示例模式不允许导入或导出正式账本。'), findsOneWidget);
   });
 

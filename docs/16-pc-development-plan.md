@@ -208,7 +208,7 @@ PC 端“完整”指同时满足以下条件：
 | PC3 固定窗 | **真机走查完成**（docs/21）：S/M/L、显示项、金额隐身、老板键、穿透、锁定、拖拽+位置记忆、右键菜单、双击开主窗、透明度、贴角定位、125% DPI 无裁切；视觉层级按用户要求落地（下班时间主核心、结余次核心）；全屏自动隐藏未实测；托盘图标改为多尺寸 ICO、右键新增最小化并从托盘召回（docs/23） |
 | PC4 行情与完整性 | 单元层 65 通过；真机行情（断网/缓存/部分/陈旧）观察未做 |
 | PC5 打包更新 CI | 便携 zip、安装包、更新器与 `desktop-release` CI 已落地；诊断日志未做；`desktop-v0.1.1` 已由 CI 重打并附 SHA-256（docs/06 §3.3） |
-| PC6 局域网同步 | 未开始（v0.2） |
+| PC6 局域网同步 | 一次性对码互传已落地（docs/25）：手机宿主、PC 加入、AES-GCM、单次会话；完整持久配对/双向合并/冲突 UI 仍待 v0.2 |
 | PC7 可访问性性能 | 空闲 CPU 0.524% 达标；内存 168.7MB 超标未复核；200%/键盘/Narrator 未测；桌面页预览可见性已修（docs/22） |
 
 PC0 实测报告：[docs/17-pc0-spike-report.md](17-pc0-spike-report.md)。PC 交接与走查记录：[docs/19-pc-handoff.md](19-pc-handoff.md)、[docs/20-pc-walkthrough-handoff.md](20-pc-walkthrough-handoff.md)、[docs/21-pc-fixed-window-walkthrough.md](21-pc-fixed-window-walkthrough.md)、[docs/22-pc-experience-polish-walkthrough.md](22-pc-experience-polish-walkthrough.md)。
