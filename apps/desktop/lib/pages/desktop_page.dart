@@ -36,17 +36,28 @@ class DesktopPage extends ConsumerWidget {
     final ledger = ref.watch(effectiveLedgerProvider).value;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+      // 标题区自带左右留白；分栏区（LayoutBuilder）拿到整幅 832 逻辑宽，
+      // 与配置页 _tabWithPreview 的几何完全一致，800 的阈值在默认窗口
+      // （1000 逻辑宽）就能左右分栏，预览不再被挤到折叠线以下。
+      padding: const EdgeInsets.only(bottom: 24),
       children: [
-        Text(
-          '桌面',
-          style: Theme.of(context).textTheme.headlineMedium
-              ?.copyWith(fontSize: 22),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '所有设置即时预览、即时保存；只写本机显示偏好，不提升账本修订、不触发行情。',
-          style: TextStyle(fontSize: 12, color: palette.muted),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '桌面',
+                style: Theme.of(context).textTheme.headlineMedium
+                    ?.copyWith(fontSize: 22),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '所有设置即时预览、即时保存；只写本机显示偏好，不提升账本修订、不触发行情。',
+                style: TextStyle(fontSize: 12, color: palette.muted),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         LayoutBuilder(
@@ -216,18 +227,31 @@ class DesktopPage extends ConsumerWidget {
                 ],
               ),
             );
-            if (constraints.maxWidth >= 860) {
+            if (constraints.maxWidth >= 800) {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: settings),
-                  const SizedBox(width: 14),
-                  SizedBox(width: 320, child: preview),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(22, 0, 14, 24),
+                      child: settings,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 300,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 0, 22, 24),
+                      child: preview,
+                    ),
+                  ),
                 ],
               );
             }
-            return Column(
-              children: [settings, const SizedBox(height: 14), preview],
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 24),
+              child: Column(
+                children: [settings, const SizedBox(height: 14), preview],
+              ),
             );
           },
         ),

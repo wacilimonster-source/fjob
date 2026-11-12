@@ -107,6 +107,10 @@ class DesktopController extends ChangeNotifier {
         await showMain();
       case 'hideCard':
         await hideCard();
+      case 'minimizeCard':
+        await minimizeCard();
+      case 'cardMinimized':
+        _markCardHidden();
       case 'savePosition':
         final args = call.arguments;
         if (args is Map) {
@@ -214,15 +218,57 @@ class DesktopController extends ChangeNotifier {
     await ensureCard();
     final controller = _cardWindow;
     if (controller == null) return;
+    var shown = false;
     try {
-      await controller.show();
-      cardVisible = true;
-      _wasCardVisible = true;
-      _log('固定窗已显示');
-      notifyListeners();
+      // Let the card engine show itself: window_manager restores first when the
+      // window is minimized. WindowController.show() only sends SW_SHOW, which
+      // leaves a minimized window minimized.
+      await controller.invokeMethod<void>('show');
+      shown = true;
     } catch (_) {
-      _log('显示固定窗失败，请重试');
+      // Fall back to the native window handle below.
     }
+    if (!shown) {
+      try {
+        await controller.show();
+        shown = true;
+      } catch (_) {
+        // Reported below.
+      }
+    }
+    if (!shown) {
+      _log('显示固定窗失败，请重试');
+      return;
+    }
+    cardVisible = true;
+    _wasCardVisible = true;
+    _log('固定窗已显示');
+    notifyListeners();
+  }
+
+  /// Minimize the fixed card without hiding it: the tray and the desktop page
+  /// can bring it back through [showCard], which restores the window. A fixed
+  /// card lives outside the taskbar, so minimize is its "temporarily out of
+  /// the way" state.
+  Future<void> minimizeCard() async {
+    final controller = _cardWindow;
+    if (controller == null) return;
+    try {
+      await controller.invokeMethod<void>('minimize');
+      _markCardHidden();
+    } catch (_) {
+      _log('最小化固定窗失败，请重试');
+    }
+  }
+
+  /// Keep [cardVisible] truthful when the card is minimized by the OS
+  /// (Win+Down, title-bar menu) or by [minimizeCard].
+  void _markCardHidden() {
+    if (!cardVisible) return;
+    cardVisible = false;
+    _wasCardVisible = false;
+    _log('固定窗已最小化');
+    notifyListeners();
   }
 
   Future<void> hideCard() async {

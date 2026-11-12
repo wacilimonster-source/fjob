@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
@@ -175,13 +176,26 @@ class TrayService with TrayListener {
   Future<void> init() async {
     try {
       trayManager.addListener(this);
-      await trayManager.setIcon('assets/tray_icon.png', iconSize: 20);
+      // Windows must receive an .ico: tray_manager loads the file with
+      // LoadImage(IMAGE_ICON, LR_LOADFROMFILE), which returns NULL for PNG and
+      // leaves the notification area blank.
+      final icon = Platform.isWindows
+          ? 'assets/tray_icon.ico'
+          : 'assets/tray_icon.png';
+      await trayManager.setIcon(icon, iconSize: 20);
       await trayManager.setToolTip('今日又白干 · 工位便签');
       await _refreshMenu();
       _initialized = true;
+      desktop.addListener(_onDesktopChanged);
     } catch (_) {
       // Tray availability varies; the main window remains usable.
     }
+  }
+
+  /// Keep checkbox states and the card label in sync with state changes made
+  /// from the main window, hotkeys, the card itself, or OS minimize.
+  void _onDesktopChanged() {
+    if (_initialized) unawaited(_refreshMenu());
   }
 
   Future<void> _refreshMenu() async {
@@ -230,21 +244,22 @@ class TrayService with TrayListener {
       case 'show_main':
         unawaited(desktop.showMain());
       case 'toggle_card':
-        unawaited(desktop.toggleCard().then((_) => _refreshMenu()));
+        unawaited(desktop.toggleCard());
       case 'topmost':
-        unawaited(desktop.toggleTopmost().then((_) => _refreshMenu()));
+        unawaited(desktop.toggleTopmost());
       case 'privacy':
-        unawaited(desktop.togglePrivacy().then((_) => _refreshMenu()));
+        unawaited(desktop.togglePrivacy());
       case 'through':
-        unawaited(desktop.toggleClickThrough().then((_) => _refreshMenu()));
+        unawaited(desktop.toggleClickThrough());
       case 'quit':
         unawaited(trayManager.destroy().whenComplete(() => desktop.quit()));
     }
   }
 
   void dispose() {
+    desktop.removeListener(_onDesktopChanged);
+    trayManager.removeListener(this);
     if (_initialized) {
-      trayManager.removeListener(this);
       unawaited(trayManager.destroy());
     }
   }

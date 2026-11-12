@@ -1667,13 +1667,19 @@ class _ConfigPageState extends ConsumerState<ConfigPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          // IntrinsicWidth 给按钮一个有界的紧宽度：无界宽的 FilledButton.icon
+          // 在 TabBarView 页重排时会以无限宽参与伸缩计算，把同一行的
+          // Expanded 拖成负数可用空间，整页布局作废（表头、空状态全部
+          // 不可见）。收窄到按钮自身固有宽度后，视觉不变且不再发散。
           Row(
             children: <Widget>[
               const Expanded(child: SectionLabel('资产持仓')),
-              FilledButton.icon(
-                onPressed: canSave ? () => _openHoldingEditor(ledger) : null,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('添加持仓'),
+              IntrinsicWidth(
+                child: FilledButton.icon(
+                  onPressed: canSave ? () => _openHoldingEditor(ledger) : null,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('添加持仓'),
+                ),
               ),
             ],
           ),
@@ -1710,7 +1716,9 @@ class _ConfigPageState extends ConsumerState<ConfigPage>
             )
           else
             _hScrollTable(
-              minWidth: 880,
+              // 780：默认窗口（1000 逻辑宽 - 导航 168 - 页边距 44 = 788）
+              // 一屏放下全部列，操作列不再需要横向滚动；更窄时仍可滚动。
+              minWidth: 780,
               children: <Widget>[
                 _assetHeader(palette),
                 for (final Holding holding in holdings) ...<Widget>[
@@ -1745,7 +1753,7 @@ class _ConfigPageState extends ConsumerState<ConfigPage>
           Expanded(flex: 2, child: Text('今日', style: style)),
           Expanded(flex: 2, child: Text('持有', style: style)),
           Expanded(flex: 2, child: Text('状态', style: style)),
-          SizedBox(width: 88, child: Text('操作', style: style)),
+          SizedBox(width: 100, child: Text('操作', style: style)),
         ],
       ),
     );
@@ -1813,7 +1821,7 @@ class _ConfigPageState extends ConsumerState<ConfigPage>
             ),
           ),
           SizedBox(
-            width: 88,
+            width: 100,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
@@ -1983,7 +1991,7 @@ class _ConfigPageState extends ConsumerState<ConfigPage>
           Expanded(flex: 2, child: Text('本金', style: style)),
           Expanded(flex: 2, child: Text('利息', style: style)),
           Expanded(flex: 2, child: Text('状态', style: style)),
-          SizedBox(width: 92, child: Text('操作', style: style)),
+          SizedBox(width: 100, child: Text('操作', style: style)),
         ],
       ),
     );
@@ -2081,7 +2089,7 @@ class _ConfigPageState extends ConsumerState<ConfigPage>
             ),
           ),
           SizedBox(
-            width: 92,
+            width: 100,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
@@ -2121,8 +2129,11 @@ class _ConfigPageState extends ConsumerState<ConfigPage>
             : constraints.maxWidth;
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minWidth: width),
+          // SizedBox(而非 ConstrainedBox(minWidth)) 给出有界紧约束：横向滚动
+          // 容器本身会传无限宽度，ConstrainedBox 只抬高下限，stretch 的列会
+          // 塌缩成文字自然宽并互相粘连，整页布局直接作废。
+          child: SizedBox(
+            width: width,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: children,

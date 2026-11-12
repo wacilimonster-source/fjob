@@ -204,16 +204,16 @@ PC 端“完整”指同时满足以下条件：
 | PC0 工程 | 已创建 `apps/desktop`；构建成功 |
 | PC0 窗口实测 | **核心通过**：主窗/固定窗/老板键/穿透/托盘/单实例/125% DPI 完整显示；剩余全屏/睡眠/多显示器/性能待 PC4–PC7 |
 | 共享包抽取（PC1） | **完成**：ledger_model 77、ledger_store 13、fjob_ui 35、market_data 65 测试通过；手机 176+1 通过无回归 |
-| PC2 主窗/账本 | 主体完成；**今日页已按用户决定移除**（五页改四页，默认落配置页，欢迎面板一次性 dismiss）；配置四子页/数据页/设置页功能级走查未做 |
-| PC3 固定窗 | **真机走查完成**（docs/21）：S/M/L、显示项、金额隐身、老板键、穿透、锁定、拖拽+位置记忆、右键菜单、双击开主窗、透明度、贴角定位、125% DPI 无裁切；视觉层级按用户要求落地（下班时间主核心、结余次核心）；全屏自动隐藏未实测 |
+| PC2 主窗/账本 | 主体完成；**今日页已按用户决定移除**（五页改四页，默认落配置页，欢迎面板一次性 dismiss）；资产/账单表格布局已修复并加回归（docs/22）：默认窗口下全部列一屏可见，表头与「添加持仓」按钮恢复可见；配置四子页编辑→保存→预览联动、数据页/设置页功能级走查未做 |
+| PC3 固定窗 | **真机走查完成**（docs/21）：S/M/L、显示项、金额隐身、老板键、穿透、锁定、拖拽+位置记忆、右键菜单、双击开主窗、透明度、贴角定位、125% DPI 无裁切；视觉层级按用户要求落地（下班时间主核心、结余次核心）；全屏自动隐藏未实测；托盘图标改为多尺寸 ICO、右键新增最小化并从托盘召回（docs/23） |
 | PC4 行情与完整性 | 单元层 65 通过；真机行情（断网/缓存/部分/陈旧）观察未做 |
-| PC5 打包更新 CI | 便携 zip 已重打（修复后构建，SHA 见 docs/06 §3.3）；更新器/诊断日志/CI 未做 |
+| PC5 打包更新 CI | 便携 zip、安装包、更新器与 `desktop-release` CI 已落地；诊断日志未做；`desktop-v0.1.1` 发布时重打并附 SHA-256 |
 | PC6 局域网同步 | 未开始（v0.2） |
-| PC7 可访问性性能 | 空闲 CPU 0.524% 达标；内存 168.7MB 超标未复核；200%/键盘/Narrator 未测 |
+| PC7 可访问性性能 | 空闲 CPU 0.524% 达标；内存 168.7MB 超标未复核；200%/键盘/Narrator 未测；桌面页预览可见性已修（docs/22） |
 
-PC0 实测报告：[docs/17-pc0-spike-report.md](17-pc0-spike-report.md)。PC 交接与走查记录：[docs/19-pc-handoff.md](19-pc-handoff.md)、[docs/20-pc-walkthrough-handoff.md](20-pc-walkthrough-handoff.md)、[docs/21-pc-fixed-window-walkthrough.md](21-pc-fixed-window-walkthrough.md)。
+PC0 实测报告：[docs/17-pc0-spike-report.md](17-pc0-spike-report.md)。PC 交接与走查记录：[docs/19-pc-handoff.md](19-pc-handoff.md)、[docs/20-pc-walkthrough-handoff.md](20-pc-walkthrough-handoff.md)、[docs/21-pc-fixed-window-walkthrough.md](21-pc-fixed-window-walkthrough.md)、[docs/22-pc-experience-polish-walkthrough.md](22-pc-experience-polish-walkthrough.md)。
 
-下一步：完成 PC2/PC4/PC5 剩余走查与实现（配置四子页、数据往返、真机行情、更新器），再做 PC7 验收；PC6 待用户排期。
+下一步：完成 PC2/PC4/PC5 剩余走查与实现（配置四子页编辑→保存联动、数据往返、真机行情、更新器），再做 PC7 验收；PC6 待用户排期。
 
 ## 12. 风险与降级
 

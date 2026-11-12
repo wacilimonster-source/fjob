@@ -25,6 +25,8 @@
 17. [PC 端开发交接说明](docs/19-pc-handoff.md)。记录 PC0/PC1 已完成状态、架构决策与已知坑。
 18. [PC 端走查与修复交接](docs/20-pc-walkthrough-handoff.md)。记录首次运行实测发现的问题与修复（WAL、导入、双引擎）。
 19. [PC 固定窗走查与修复记录](docs/21-pc-fixed-window-walkthrough.md)。记录固定窗真机走查、视觉层级、位置记忆与检查更新。
+20. [PC 体验打磨走查与修复说明](docs/22-pc-experience-polish-walkthrough.md)。记录配置页表格布局作废、桌面页预览折叠的根因与最小修复，及无界宽度的关键教训。
+21. [PC 托盘图标与小窗最小化修复](docs/23-pc-tray-and-card-minimize.md)。记录 PNG 无法作为 Windows 托盘图标、固定窗最小化/恢复路径的根因与实测。
 
 [打开交互原型](prototype/index.html)。可直接用浏览器打开，首次进入体验引导，进入后底部可重新走流程。`prototype/source.html` 为可编辑源片段，`index.html` 为独立浏览器版本。
 

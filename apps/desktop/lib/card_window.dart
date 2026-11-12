@@ -129,6 +129,14 @@ class _CardAppState extends State<CardApp> with wm.WindowListener {
     unawaited(_reportPosition());
   }
 
+  /// The OS can minimize the card too (Win+Down or the system menu); tell the
+  /// main engine so the tray label switches to "显示固定窗" and can restore it.
+  @override
+  void onWindowMinimize() {
+    if (!mounted) return;
+    _callMain('cardMinimized');
+  }
+
   Future<void> _reportPosition() async {
     try {
       final offset = await wm.windowManager.getPosition();
@@ -253,7 +261,12 @@ class _CardAppState extends State<CardApp> with wm.WindowListener {
         await _placeBottomRight(cardSize(_density));
         return true;
       case 'show':
+        // window_manager.show() restores the window first when it is
+        // minimized, so the tray can bring a minimized card back.
         await wm.windowManager.show();
+        return true;
+      case 'minimize':
+        await wm.windowManager.minimize();
         return true;
       case 'hide':
         await wm.windowManager.hide();
@@ -414,6 +427,7 @@ class _CardAppState extends State<CardApp> with wm.WindowListener {
       position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1),
       items: [
         const PopupMenuItem(value: 'open', child: Text('打开主窗')),
+        const PopupMenuItem(value: 'minimize', child: Text('最小化')),
         PopupMenuItem(value: 'privacy', child: Text(_privacy ? '显示金额' : '金额隐身')),
         PopupMenuItem(value: 'through', child: Text(_clickThrough ? '关闭穿透' : '点击穿透')),
         const PopupMenuItem(value: 'hide', child: Text('隐藏到托盘')),
@@ -422,6 +436,8 @@ class _CardAppState extends State<CardApp> with wm.WindowListener {
     switch (selected) {
       case 'open':
         _callMain('openMain');
+      case 'minimize':
+        _callMain('minimizeCard');
       case 'privacy':
         _callMain('togglePrivacy');
       case 'through':
