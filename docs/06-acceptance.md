@@ -175,7 +175,15 @@
 - 下载后与 GitHub asset digest、`SHA256SUMS`、本地 SHA-256 三方一致；PC 安装包/exe 为 `NotSigned`（未配置 Secrets）。
 - 手机端在 Android 16 模拟器完成 release APK 的 `.fjob` 导入 + `下载/FJOB` 兜底导出；PC 端在临时 APPDATA 实跑手动保存工资+排班后固定窗显示金额。
 
-未验证：全屏应用自动隐藏（模拟器探针受焦点竞争干扰，需真实全屏应用实测）、托盘菜单逐项点击、200% 缩放/键盘全流程/Narrator、空闲内存 <150MB（上轮 168.7MB 缺口未复核）、配置/数据/设置页功能级走查、PC 与手机同账本到分一致的真机核对、真实行情来源展示许可、代码签名（未配置 Secrets）、`v0.1.12` 手机真机覆盖安装与应用内更新、`desktop-v0.1.2` 真机安装/卸载与更新器复测。
+发布（CI，2026-11-12）：`v0.1.13` 与 `desktop-v0.1.3`（prerelease）分别由 `android-release` run #16、`desktop-release` run #5 构建，新增同一 Wi-Fi 对码互传：
+
+- 手机 APK `fjob-0.1.13-universal.apk`：59,939,547 B；SHA-256 `fcc05840f8f37ee8d63f3cb64526e8caeae99b7dd2a73338a6971b9ba9950a91`；`aapt2` 显示 versionName `0.1.13` / versionCode `1016`。
+- PC 安装包 `FJOB-Setup-0.1.3.exe`：11,798,548 B；SHA-256 `1b7019738adbabc8b2d702349463e770df185cc4793b093a7e171b4c3746717c`
+- PC 便携 zip `fjob-desktop-0.1.3-win-x64.zip`：14,103,286 B；SHA-256 `78911000700208bb626115baa1caca2a4e0801a8d0e50c0eb6e0059c6d5d9ece`；exe FileVersion `0.1.3+4`。
+- 下载后与 GitHub asset digest、`SHA256SUMS`、本地 SHA-256 三方一致；PC 安装包/exe 为 `NotSigned`。
+- Android 16 模拟器 + `adb forward` 完成手机→电脑（拉取 2,055 B，parity 解出金额）与电脑→手机（推送 2,055 B，手机导入预览确认）；PC 数据页 LAN 表单/客户端与共享包 11 项回环测试通过。
+
+未验证：全屏应用自动隐藏（模拟器探针受焦点竞争干扰，需真实全屏应用实测）、托盘菜单逐项点击、200% 缩放/键盘全流程/Narrator、空闲内存 <150MB（上轮 168.7MB 缺口未复核）、配置/数据/设置页功能级走查、PC 与手机同账本到分一致的真机核对、真实行情来源展示许可、代码签名（未配置 Secrets）、`v0.1.13`/`desktop-v0.1.3` 真实双设备 Wi-Fi 互传与真机安装/更新器复测。
 
 ## 4. 原型的简化边界
 

@@ -80,3 +80,9 @@
 - 手机屏幕熄灭或系统杀后台会中断会话；传输期间需保持页面在前台。
 - 完整局域网同步（配对持久化、双向合并、冲突 UI）仍按 PC6/v0.2 规划；本版仅一次性账本互传。
 - 200% 缩放、多显示器、Narrator 未复测。
+
+## 7. 发版
+
+- 手机 `v0.1.13`：`fjob-0.1.13-universal.apk` 59,939,547 B / SHA-256 `fcc05840f8f37ee8d63f3cb64526e8caeae99b7dd2a73338a6971b9ba9950a91`；versionName `0.1.13` / versionCode `1016`。
+- PC `desktop-v0.1.3`：`FJOB-Setup-0.1.3.exe` 11,798,548 B / `1b7019738adbabc8b2d702349463e770df185cc4793b093a7e171b4c3746717c`；`fjob-desktop-0.1.3-win-x64.zip` 14,103,286 B / `78911000700208bb626115baa1caca2a4e0801a8d0e50c0eb6e0059c6d5d9ece`；exe `0.1.3+4`。
+- `android-release` #16、`desktop-release` #5、`ci` #36 成功；产物与 `SHA256SUMS`/GitHub digest 三方一致。
