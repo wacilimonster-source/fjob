@@ -92,8 +92,9 @@ bool get isConfigured =>
 
 ## 5. 发版
 
-- 手机：`v0.1.12`，含导出兜底与共享 `isConfigured` 修正。
-- PC：`desktop-v0.1.2`，含手动配置可用性修正。
+- 手机 `v0.1.12`：`fjob-0.1.12-universal.apk` 59,513,955 B / SHA-256 `8b0c40bb…`；`android-release` run #15。
+- PC `desktop-v0.1.2`：`FJOB-Setup-0.1.2.exe` 11,764,052 B / `44e00e4c…`；`fjob-desktop-0.1.2-win-x64.zip` 14,053,624 B / `e8794baa…`；`desktop-release` run #4。
+- 产物下载后与 GitHub asset digest、`SHA256SUMS`、本地 SHA-256 三方一致；详见 docs/06 §3.3。
 
 ## 6. 未验证 / 外部依赖
 

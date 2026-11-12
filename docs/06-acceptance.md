@@ -167,7 +167,15 @@
 - `SHA256SUMS` 随 Release 提供；下载后与 GitHub asset digest、本地 SHA-256 三方一致；便携 exe FileVersion `0.1.1+2`，包内 `data/flutter_assets/assets/tray_icon.ico` 存在。
 - 未配置签名 Secrets：安装包与 exe 均为 `NotSigned`；本版未做真机静默安装/卸载与「检查更新 → 0.1.1」复测。
 
-未验证：全屏应用自动隐藏（模拟器探针受焦点竞争干扰，需真实全屏应用实测）、托盘菜单逐项点击、200% 缩放/键盘全流程/Narrator、空闲内存 <150MB（上轮 168.7MB 缺口未复核）、配置/数据/设置页功能级走查、PC 与手机同账本到分一致的真机核对、真实行情来源展示许可、代码签名（未配置 Secrets）、`desktop-v0.1.1` 的真机安装/卸载与更新器复测。
+发布（CI，2026-11-12）：`v0.1.12` 与 `desktop-v0.1.2`（prerelease）分别由 `android-release` run #15、`desktop-release` run #4 构建：
+
+- 手机 APK `fjob-0.1.12-universal.apk`：59,513,955 B；SHA-256 `8b0c40bb92e7c2799aecd67ac4e603f333fa247c9bfaae2a99d47fa12badc27e`；`aapt2` 显示 versionName `0.1.12` / versionCode `1015`。
+- PC 安装包 `FJOB-Setup-0.1.2.exe`：11,764,052 B；SHA-256 `44e00e4c4044d8d9c1abf302ea6a0c5f745ef0b5f61295ab127217f8afcba408`
+- PC 便携 zip `fjob-desktop-0.1.2-win-x64.zip`：14,053,624 B；SHA-256 `e8794baa567e67f05c1eedd05c2cf46eed1d4961b2a8ec330a508f98a24265ad`；exe FileVersion `0.1.2+3`，包内 `data/flutter_assets/assets/tray_icon.ico` 存在。
+- 下载后与 GitHub asset digest、`SHA256SUMS`、本地 SHA-256 三方一致；PC 安装包/exe 为 `NotSigned`（未配置 Secrets）。
+- 手机端在 Android 16 模拟器完成 release APK 的 `.fjob` 导入 + `下载/FJOB` 兜底导出；PC 端在临时 APPDATA 实跑手动保存工资+排班后固定窗显示金额。
+
+未验证：全屏应用自动隐藏（模拟器探针受焦点竞争干扰，需真实全屏应用实测）、托盘菜单逐项点击、200% 缩放/键盘全流程/Narrator、空闲内存 <150MB（上轮 168.7MB 缺口未复核）、配置/数据/设置页功能级走查、PC 与手机同账本到分一致的真机核对、真实行情来源展示许可、代码签名（未配置 Secrets）、`v0.1.12` 手机真机覆盖安装与应用内更新、`desktop-v0.1.2` 真机安装/卸载与更新器复测。
 
 ## 4. 原型的简化边界
 
