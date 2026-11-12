@@ -70,7 +70,7 @@
 - 「PC 固定窗与手机同账本到分一致」真机核对仍未做；200% 缩放/键盘全流程/Narrator 未测；内存 <150MB 缺口未复核。
 - 全屏自动隐藏、睡眠/唤醒/改时未实测（探针不可靠，沿用 docs/21 结论）。
 - 真实行情来源稳定性与公开展示许可（Eastmoney developmentOnly）；代码签名、Windows CI 真机联跑、PC6 局域网同步、macOS。
-- 本轮改动已随 release 重构建真机验证，但**便携 zip 与安装包尚未重打包**（沿用 docs/21 §5.2 流程，发布前须重打 + 重算 SHA-256）。
+- 本轮改动已随 `desktop-v0.1.1` 重构建真机验证；便携 zip 与安装包由 `desktop-release` CI 重打并附 SHA-256（见 docs/06 §3.3 与 docs/releases/desktop-v0.1.1.md）。
 
 ## 7. 交付报告要求（AGENTS.md）
 

@@ -81,9 +81,9 @@ LoadImage(nullptr, iconPath, IMAGE_ICON,
 `23-pc-tray-overflow.png`（溢出区图标）、`23-pc-tray-menu.png`（最小化后的托盘菜单）、
 `23-pc-card-restored.png`（从托盘恢复后的固定窗）。
 
-## 5. 未验证 / 外部依赖
+## 5. 发布与未验证
 
-- 便携 zip 与安装包尚未重新打包；发布前需重打并更新 SHA-256。
-- Windows CI 真机联跑、代码签名未在本轮执行。
+- `desktop-v0.1.1`（prerelease）由 `desktop-release` CI 构建并发布；安装包 `FJOB-Setup-0.1.1.exe` 11,761,991 B / `8935e505…`，便携 zip `fjob-desktop-0.1.1-win-x64.zip` 14,053,487 B / `a39e0c61…`，与 `SHA256SUMS` 一致（docs/06 §3.3）。
+- 未配置代码签名 Secrets，安装包与 exe 均为 `NotSigned`。
 - Windows 11 托盘“固定到任务栏”属于系统用户设置，应用不写入注册表、不替用户更改。
 - 200% 缩放、多显示器拔插、Narrator 下的托盘/最小化流程未本轮复测。
