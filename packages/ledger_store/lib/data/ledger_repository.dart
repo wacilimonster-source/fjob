@@ -642,6 +642,14 @@ final class LedgerRepository {
         'schedule_version_id': scheduleId,
         'created_at': timestamp,
       });
+      // Salary + schedule is a complete ledger regardless of how it was
+      // created. Record onboarding completion so exports and future onboarding
+      // decisions do not treat a manually configured PC ledger as unfinished.
+      await txn.rawUpdate(
+        'UPDATE app_settings SET onboarding_completed_at = ? '
+        'WHERE id = 1 AND onboarding_completed_at IS NULL',
+        [timestamp],
+      );
     });
     return read(nowUtc: nowUtc);
   }

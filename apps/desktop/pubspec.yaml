@@ -1,7 +1,7 @@
 name: todayagain_desktop
 description: "今日又白干 PC 伴生端：工位固定窗与配置台。"
 publish_to: 'none'
-version: 0.1.1+2
+version: 0.1.2+3
 
 environment:
   sdk: ^3.13.7

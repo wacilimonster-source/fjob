@@ -112,10 +112,13 @@ final class LedgerState {
   final Map<String, String> instrumentNames;
   final bool goldReferenceSessionActive;
 
+  /// A ledger is usable as soon as it has a salary and a schedule. The
+  /// onboarding timestamp is provenance for the mobile welcome flow, not a
+  /// prerequisite: PC users can create a complete ledger by editing
+  /// configuration directly, and bundles exported from that ledger must open
+  /// without replaying onboarding on the phone.
   bool get isConfigured =>
-      settings.hasCompletedOnboarding &&
-      salaryVersions.isNotEmpty &&
-      schedules.isNotEmpty;
+      salaryVersions.isNotEmpty && schedules.isNotEmpty;
 
   LedgerState copyWith({
     AppSettings? settings,

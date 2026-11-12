@@ -27,6 +27,7 @@
 19. [PC 固定窗走查与修复记录](docs/21-pc-fixed-window-walkthrough.md)。记录固定窗真机走查、视觉层级、位置记忆与检查更新。
 20. [PC 体验打磨走查与修复说明](docs/22-pc-experience-polish-walkthrough.md)。记录配置页表格布局作废、桌面页预览折叠的根因与最小修复，及无界宽度的关键教训。
 21. [PC 托盘图标与小窗最小化修复](docs/23-pc-tray-and-card-minimize.md)。记录 PNG 无法作为 Windows 托盘图标、固定窗最小化/恢复路径的根因与实测。
+22. [PC 手动配置可用性与手机导出兜底](docs/24-pc-manual-config-and-mobile-export.md)。记录 `isConfigured` 与手机引导解耦、Downloads 免权限导出通道及局域网互传的评估结论。
 
 [打开交互原型](prototype/index.html)。可直接用浏览器打开，首次进入体验引导，进入后底部可重新走流程。`prototype/source.html` 为可编辑源片段，`index.html` 为独立浏览器版本。
 

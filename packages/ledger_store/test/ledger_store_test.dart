@@ -178,6 +178,22 @@ void main() {
     expect((await export()).encode(), before);
   });
 
+  test('manual compensation save makes a standalone ledger usable', () async {
+    final result = await repository.replaceCompensation(
+      expectedRevision: 0,
+      monthlySalary: Rational.parse('12000'),
+      week: WeekTemplate.standardOffice(),
+      effectiveFrom: const LocalDate(2026, 11, 2),
+      nowUtc: now,
+    );
+    expect(result.salaryVersions, hasLength(1));
+    expect(result.schedules, hasLength(1));
+    expect(result.settings.hasCompletedOnboarding, isTrue,
+        reason: '保存工资+排班后应记录为已完成配置');
+    expect(result.isConfigured, isTrue,
+        reason: 'PC 不导入手机账本、手动保存后必须直接可用');
+  });
+
   test('commitSetup optional expectedRevision and retry compatibility', () async {
     final draft = SetupDraft.fresh('session', today: const LocalDate(2026, 11, 4))..salaryText = '12000';
     final commit = draft.validate().commit!;

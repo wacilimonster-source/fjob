@@ -2,6 +2,7 @@ package cn.fjob.todayagain
 
 import android.content.Intent
 import android.os.Bundle
+import cn.fjob.todayagain.files.LedgerFilesPlugin
 import cn.fjob.todayagain.update.UpdateInstallerPlugin
 import cn.fjob.todayagain.widget.WidgetBridgePlugin
 import cn.fjob.todayagain.widget.WidgetUpdateWorker
@@ -25,6 +26,7 @@ class MainActivity : FlutterActivity() {
         val messenger = flutterEngine.dartExecutor.binaryMessenger
         WidgetBridgePlugin.register(messenger, applicationContext)
         UpdateInstallerPlugin.register(messenger, applicationContext)
+        LedgerFilesPlugin.register(messenger, applicationContext)
 
         MethodChannel(messenger, DEEP_LINK_CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "getInitialDeepLink") {

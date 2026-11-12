@@ -10,6 +10,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'package:ledger_store/ledger_store.dart';
 import 'package:market_data/market_data.dart';
+import '../data/ledger_exporter.dart';
 import '../data/widget_bridge.dart';
 import 'package:ledger_model/ledger_model.dart';
 import '../features/ledger/ledger_controller.dart';
@@ -70,6 +71,11 @@ final ledgerRepositoryProvider = FutureProvider<LedgerRepository>((ref) async {
   final database = await ref.watch(databaseProvider.future);
   return LedgerRepository(database, ref.watch(calendarProvider));
 });
+
+/// Export path selection (system picker first, Downloads fallback). Overridable
+/// in tests; the real exporter uses the native no-picker bridge on Android.
+final ledgerExporterProvider =
+    Provider<LedgerExporter>((ref) => LedgerExporter());
 
 final marketClientProvider = Provider<MarketClient>((ref) {
   final calendar = ref.watch(calendarProvider);
